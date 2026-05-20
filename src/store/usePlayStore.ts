@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { CourtType, Player, PositionMap, BallState, PlaySet } from '../models/types'
+import type { CourtType, PositionMap, BallState, PlaySet } from '../models/types'
 
 interface SetupDraft {
   name: string

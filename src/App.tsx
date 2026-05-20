@@ -1,3 +1,15 @@
+import { Routes, Route, Navigate } from 'react-router-dom'
+import HomePage from './pages/HomePage'
+import SetupPage from './pages/SetupPage'
+import EditorPage from './pages/EditorPage'
+
 export default function App() {
-  return <div>SetPlay</div>
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/setup" element={<SetupPage />} />
+      <Route path="/editor/:setId" element={<EditorPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
 }
