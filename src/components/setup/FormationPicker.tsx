@@ -5,10 +5,12 @@ interface Props {
   team: 'offense' | 'defense'
   onSelect: (formation: FormationPreset) => void
   selectedId?: string
+  courtType?: 'half' | 'full'
 }
 
-export default function FormationPicker({ team, onSelect, selectedId }: Props) {
-  const formations = team === 'offense' ? OFFENSE_FORMATIONS : DEFENSE_FORMATIONS
+export default function FormationPicker({ team, onSelect, selectedId, courtType }: Props) {
+  const all = team === 'offense' ? OFFENSE_FORMATIONS : DEFENSE_FORMATIONS
+  const formations = all.filter(f => !f.courtOnly || f.courtOnly === courtType)
 
   return (
     <div>

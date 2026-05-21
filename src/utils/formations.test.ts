@@ -6,8 +6,8 @@ describe('formations', () => {
     expect(OFFENSE_FORMATIONS).toHaveLength(6)
   })
 
-  it('has 6 defense formations', () => {
-    expect(DEFENSE_FORMATIONS).toHaveLength(6)
+  it('has 8 defense formations', () => {
+    expect(DEFENSE_FORMATIONS).toHaveLength(8)
   })
 
   it('each offense formation has exactly 5 positions', () => {

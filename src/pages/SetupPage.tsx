@@ -54,6 +54,24 @@ export default function SetupPage() {
 
     if (formation.id === 'custom') return
 
+    if (formation.id === 'man-to-man' && team === 'defense') {
+      const hasOffense = Object.keys(draftPositions).some(k => k.startsWith('o'))
+      if (hasOffense) {
+        const merged = { ...draftPositions }
+        for (let i = 1; i <= setupDraft.defenseCount; i++) {
+          const offPos = draftPositions[`o${i}`]
+          if (offPos) {
+            merged[`d${i}`] = { x: offPos.x, y: Math.max(0, offPos.y - 0.05) }
+          } else {
+            const fallback = formation.positions[`d${i}`]
+            if (fallback) merged[`d${i}`] = fallback
+          }
+        }
+        setDraftPositions(merged)
+        return
+      }
+    }
+
     const merged = { ...draftPositions }
     Object.entries(formation.positions).forEach(([key, pos]) => {
       merged[key] = pos
@@ -145,6 +163,7 @@ export default function SetupPage() {
           {setupDraft.offenseCount > 0 && (
             <FormationPicker
               team="offense"
+              courtType={setupDraft.courtType}
               selectedId={selectedOffFormation}
               onSelect={(f) => handleFormationSelect('offense', f)}
             />
@@ -152,6 +171,7 @@ export default function SetupPage() {
           {setupDraft.defenseCount > 0 && (
             <FormationPicker
               team="defense"
+              courtType={setupDraft.courtType}
               selectedId={selectedDefFormation}
               onSelect={(f) => handleFormationSelect('defense', f)}
             />
