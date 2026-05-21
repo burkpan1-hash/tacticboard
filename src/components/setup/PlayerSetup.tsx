@@ -27,12 +27,12 @@ export default function PlayerSetup({ offenseCount, defenseCount, onChange }: Pr
   return (
     <div className="flex gap-10 justify-center">
       <CountSelector
-        label="Hücum 🟠"
+        label="Offense 🟠"
         value={offenseCount}
         onChange={(v) => onChange(v, defenseCount)}
       />
       <CountSelector
-        label="Savunma 🔵"
+        label="Defense 🔵"
         value={defenseCount}
         onChange={(v) => onChange(offenseCount, v)}
       />

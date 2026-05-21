@@ -18,14 +18,14 @@ export default function HomePage() {
           onClick={() => navigate('/setup')}
           className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-6 py-2 rounded-lg transition-colors"
         >
-          + Yeni Set
+          + New Play
         </button>
       </div>
 
       {savedSets.length === 0 ? (
         <div className="text-center py-24 text-slate-400">
           <div className="text-5xl mb-4">🏀</div>
-          <p className="text-lg">Henüz set yok. İlk setini oluştur!</p>
+          <p className="text-lg">No plays yet. Create your first!</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -34,7 +34,7 @@ export default function HomePage() {
               <div>
                 <p className="font-semibold text-white">{s.name}</p>
                 <p className="text-sm text-slate-400 mt-1">
-                  {s.courtType === 'half' ? 'Yarım Kort' : 'Tam Kort'} · {s.actions.length} aksiyon
+                  {s.courtType === 'half' ? 'Half Court' : 'Full Court'} · {s.actions.length} {s.actions.length === 1 ? 'action' : 'actions'}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -42,10 +42,10 @@ export default function HomePage() {
                   onClick={() => navigate(`/editor/${s.id}`)}
                   className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
                 >
-                  Aç
+                  Open
                 </button>
                 <button
-                  onClick={() => { if (confirm('Bu seti silmek istediğinden emin misin?')) deleteSet(s.id) }}
+                  onClick={() => { if (confirm('Are you sure you want to delete this play?')) deleteSet(s.id) }}
                   className="text-slate-400 hover:text-red-400 px-2 py-2 rounded-lg transition-colors"
                 >
                   ✕

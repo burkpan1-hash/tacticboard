@@ -1,63 +1,66 @@
 # SetPlay — Basketball Tactical Board
 ## Design Spec
 
-**Uygulama adı:** SetPlay
+**App name:** SetPlay  
 **Tagline:** Create. Animate. Share your plays.
-
-## Context
-
-Sıfırdan bir basketbol taktik tahtası uygulaması. Mevcut araçların (thehoopsgeek, vb.) kullanımı karmaşık — bu uygulamanın ana fark noktası **kolay kullanım**. Hedef kitle: antrenörler, içerik üreticiler, analistler, taraftarlar.
-
-Çalışma dizini: `/Users/burakbozkurt/Desktop/basketball board tactics`
 
 ---
 
-## Teknoloji Stack
+## Context
 
-| Katman | Seçim |
+A basketball tactical board built from scratch. Competing tools (thehoopsgeek etc.) are overly complex — the main differentiator here is **ease of use**. Target audience: coaches, content creators, analysts, fans.
+
+Working directory: `/Users/burakbozkurt/Desktop/basketball board tactics`
+
+---
+
+## Tech Stack
+
+| Layer | Choice |
 |---|---|
 | Framework | React 18 + TypeScript |
 | Build | Vite |
 | Canvas | react-konva (Konva.js) |
 | State | Zustand |
-| Stil | Tailwind CSS v4 |
+| Styling | Tailwind CSS v4 |
 | GIF Export | gif.js |
 | Video Export | MediaRecorder API |
-| Depolama (MVP) | localStorage |
-| Dev Ortamı | Docker (setplay.sh start/stop) |
+| Storage (MVP) | localStorage |
+| Dev env | Docker (`setplay.sh start/stop`) |
 
 ---
 
-## Oyuncu Yapısı
+## Player Structure
 
-- Hücum: 1–5 numara, **turuncu** (`#F97316`)
-- Savunma: 1–5 numara, **koyu mavi** (`#1D4ED8`)
-- Kurulumda sadece "kaç hücum / kaç savunma" seçilir
-
----
-
-## Kort
-
-- **Yarım kort** (Half Court): 560×470 px canvas (500px kort + her yanda 30px `COURT_PADDING_X`)
-- **Tam kort** (Full Court): 560×940 px canvas
-- Koordinat sistemi: normalize `{x: 0–1, y: 0–1}` — y=0 basket ucu (üst), y=1 orta saha (alt)
-- `COURT_PADDING_X = 30`: canvas yanlara genişletilmiş, kort çizgileri ve oyuncular `Group x={30}` offset ile ortalanır. Drag normalizasyonu (`node.x() / HALF_COURT_W`) bozulmaz — Konva `node.x()` parent Group'a göre yerel koordinat döndürür.
-
-### Kort Çizgileri
-
-- Üç nokta yayı: merkez (250, 53), r=238, `angle=136°` (köşe-yay bağlantısı piksel hassasiyetinde)
-- Köşe çizgileri: x=30 / x=470, y=0'dan y=144'e (yay kesişim noktasıyla eşleşecek şekilde)
-- **Post çizgileri (block marks)**: key'in her iki yanında y=100 ve y=135'te 15px yatay çizgiler
-- **Post dikdörtgenleri**: key dışında, restricted arc seviyesinde (y=50), 15×20px outlined kutucuklar
-- Tüm bu çizgiler HalfCourt ve FullCourt (üst + alt) bileşenlerinde mevcut
+- Offense: numbers 1–5, **orange** (`#F97316`)
+- Defense: numbers 1–5, **dark blue** (`#1D4ED8`)
+- Setup only asks "how many offense / how many defense"
 
 ---
 
-## Dizilimler
+## Court
 
-### Hücum (6 adet — tümü yarım korta özel)
+- **Half Court**: 560×470 px canvas (500px court + 30px `COURT_PADDING_X` each side)
+- **Full Court**: 560×940 px canvas
+- Coordinate system: normalized `{x: 0–1, y: 0–1}` — y=0 = basket end (top), y=1 = midcourt (bottom)
+- `COURT_PADDING_X = 30`: Stage is wider than the court; court lines and players live inside `Group x={30}`. Drag normalization (`node.x() / HALF_COURT_W`) remains intact — Konva `node.x()` returns local coords relative to parent Group.
+- **Click normalization in EditorPage**: `nx = (pos.x - COURT_PADDING_X) / HALF_COURT_W` — must subtract 30px because the court group is offset inside the Stage.
 
-| ID | İsim |
+### Court Lines
+
+- Three-point arc: center (250, 53), r=238, `angle=136°` (corner-arc junction pixel-precise)
+- Corner lines: x=30 / x=470, y=0 to y=144 (matches arc intersection)
+- **Post marks (block marks)**: 15px horizontal lines at y=100 and y=135 on both sides of the key
+- **Post boxes**: 15×20px outlined rectangles outside the key at restricted-arc level (y=50)
+- All lines present in both `HalfCourt` and `FullCourt` (top + bottom ends)
+
+---
+
+## Formations
+
+### Offense (6 — all half-court only)
+
+| ID | Name |
 |---|---|
 | five-out | 5-Out |
 | four-out-one-in | 4-Out 1-In |
@@ -66,38 +69,44 @@ Sıfırdan bir basketbol taktik tahtası uygulaması. Mevcut araçların (thehoo
 | high-post | High Post |
 | double-post | Double Post |
 
-### Savunma (8 adet)
+### Defense (8)
 
-| ID | İsim | Sadece Yarım Kort? | Özellik |
+| ID | Name | Half-court only? | Notes |
 |---|---|---|---|
-| man-to-man | Man-to-Man | Hayır | Hücum varsa oyuncuların dibine yerleşir |
-| two-three-zone | 2-3 Zone | **Evet** | — |
-| three-two-zone | 3-2 Zone | **Evet** | — |
-| one-three-one | 1-3-1 Zone | **Evet** | — |
-| two-one-two-zone | 2-1-2 Zone | **Evet** | — |
-| one-two-two-zone | 1-2-2 Zone | **Evet** | — |
-| full-court-press | Full Court Press | Hayır | — |
-| half-court-trap | Half Court Trap | Hayır | — |
+| man-to-man | Man-to-Man | No | If offense is placed, defenders auto-position near their matched offensive player |
+| two-three-zone | 2-3 Zone | **Yes** | — |
+| three-two-zone | 3-2 Zone | **Yes** | — |
+| one-three-one | 1-3-1 Zone | **Yes** | — |
+| two-one-two-zone | 2-1-2 Zone | **Yes** | — |
+| one-two-two-zone | 1-2-2 Zone | **Yes** | — |
+| full-court-press | Full Court Press | No | — |
+| half-court-trap | Half Court Trap | No | — |
 
-> `FormationPreset.courtOnly?: 'half' | 'full'` — set ise yalnızca o kort tipinde gösterilir.
-> Man-to-Man: Hücum oyuncuları yerleştirilmişse savunmacılar `oN` pozisyonuna +y:-0.05 offset ile otomatik yerleşir.
+> `FormationPreset.courtOnly?: 'half' | 'full'` — if set, only shown for that court type.  
+> Man-to-Man: if offense is placed, each defender spawns at `oN` position with `y - 0.05` offset.
 
 ---
 
-## Aksiyon Tipleri (6 adet)
+## Action Types (6)
 
-| Tip | Kimler Yapabilir | Çizgi | Uç Sembol |
-|---|---|---|---|
-| Pas | Toplu oyuncu | Kesik çizgi `- - -` | Ok başı `→` |
-| Dribble | Toplu oyuncu | Dalgalı çizgi `∿` | Ok başı `→` |
-| Kesme (Cut) | Herhangi oyuncu | Düz çizgi `—` | Ok başı `→` |
-| Ekran (Screen) | Herhangi oyuncu | Düz çizgi `—` | Dik bar `⊣` |
-| Şut | Toplu oyuncu | Kesik çizgi `- - -` | Hedef `⊕` |
-| Handoff | Toplu oyuncu | Düz çizgi `—` | Çift artı `╋╋` |
+All action labels and UI are in **English**.
+
+| Type | Who | Line style | End symbol | Color |
+|---|---|---|---|---|
+| Pass | Ball holder | Dashed `- - -` | Arrowhead | amber `#fbbf24` |
+| Dribble | Ball holder | Wavy `∿` | Arrowhead | indigo `#818cf8` |
+| Cut | Any player | Solid | Arrowhead | pink `#f472b6` |
+| Screen | Any player | Solid | Thick perpendicular bar | sky blue `#38bdf8` |
+| Shot | Ball holder | Dashed arc → basket | Crosshair circle | coral red `#f87171` |
+| Handoff | Ball holder | Solid | Double bars | orange `#fb923c` |
+
+**Color source of truth:** `src/utils/actionColors.ts` — imported by ActionArrow, ActionPreview, ActionToolbar, and ActionCard. Change once, updates everywhere.
+
+**Screen bar**: `halfLen=22`, `strokeWidth=6`, `strokeLinecap=round` — deliberately large to distinguish from Cut's arrowhead.
 
 ---
 
-## Veri Modeli (mevcut — `src/models/types.ts`)
+## Data Model (`src/models/types.ts`)
 
 ```typescript
 type CourtType = 'half' | 'full'
@@ -108,14 +117,14 @@ interface NormalizedPosition { x: number; y: number }
 type PositionMap = Record<string, NormalizedPosition>
 
 interface Player {
-  id: string           // 'o1'–'o5' hücum, 'd1'–'d5' savunma
+  id: string           // 'o1'–'o5' offense, 'd1'–'d5' defense
   number: 1 | 2 | 3 | 4 | 5
   team: Team
 }
 
 interface BallState { holderId: string }
 
-// optionText: animasyon sırasında ball holder yanında badge olarak gösterilir
+// optionText: optional step label shown as a badge near the ball holder during animation
 interface PassAction    { id: string; type: 'pass';    fromId: string; toId: string; optionText?: string }
 interface CutAction     { id: string; type: 'cut';     playerId: string; toPosition: NormalizedPosition; optionText?: string }
 interface DribbleAction { id: string; type: 'dribble'; playerId: string; toPosition: NormalizedPosition; optionText?: string }
@@ -132,106 +141,134 @@ interface PlaySet {
   players: Player[]
   initialPositions: PositionMap
   initialBall: BallState
-  actions: Action[]   // event sourcing — tüm aksiyonlar sırayla uygulanır
+  actions: Action[]   // event sourcing — replayed in order to compute any state
 }
 ```
 
 ---
 
-## Kullanıcı Akışı (MVP)
+## User Flow (MVP)
 
-### Aşama 1 — Yeni Set Oluştur ✅
-- Set'e isim ver
-- Kort tipi: Yarım / Tam
-- Kaç hücum (1–5) + kaç savunma (0–5)
+### Phase 1 — Create New Play ✅
+- Name the play
+- Choose court type: Half / Full
+- Choose offense (1–5) + defense (0–5) count
 
-### Aşama 2 — Başlangıç Kurulumu ✅
-- Hücum ve/veya savunma dizilimi seç (kort tipine göre filtrelenir)
-- Man-to-Man: hücum varsa otomatik dibe konumlar
-- Sürükle-bırak ile fine-tune
-- Topa sahip oyuncuyu seç → "Hazır"
+### Phase 2 — Starting Formation ✅
+- Pick offense and/or defense formation (filtered by court type)
+- Man-to-Man: auto-positions defenders near their matched offensive player
+- Fine-tune with drag-and-drop
+- Assign ball to a player → "Ready ✓"
 
-### Aşama 3 — Aksiyon Ekle (Plan 2)
-- Araç çubuğundan aksiyon tipi seçilir
-- 2-adımlı tıklama: kaynak → hedef
-- Aksiyon eklenince oyuncu pozisyonu güncellenir
+### Phase 3 — Add Actions ✅
+- Select action type from toolbar (left side)
+- 2-click flow: source → target (or 1-click for Pass/Dribble/Shot)
+- **Cursor preview**: while hovering court with an action selected, a ghost arrow/symbol follows the cursor in the action's color, showing what the result will look like
+- Action added → `activeStep` jumps to the new action automatically
+- Player positions update after each action (event sourcing)
 
-### Aşama 4 — Aksiyon Yönetimi (Plan 2)
-- ✏️ düzenle, ✕ sil (onay dialog)
-- Ctrl+Z undo
-- Herhangi bir aksiyon kartına tıkla → o adıma git
-- `optionText`: aksiyon sonrası badge metni (animasyonda görünür)
+### Phase 4 — Action Management ✅
+- ✕ delete with confirmation ("Sure? Yes / No")
+- **Clear All** button in panel header (with confirmation)
+- Ctrl+Z / Cmd+Z undo
+- Click any action card → court shows state at that step
+- **Action labels**: each card shows type + player info (e.g. "Pass: #1 → #3")
+- **Step label** (`optionText`): optional text per action; shown as small badge on card and will appear during animation (Plan 3)
+- All action names in English: Pass, Dribble, Cut, Screen, Shot, Handoff
 
-### Aşama 5 — Animasyon & Export (Plan 3)
-- ▶ Oynat → tüm aksiyon dizisi animasyonla oynar
-- optionText badge → Konva shape olarak canvas'ta (GIF/MP4'e gömülür)
-- Hız: Yavaş / Normal / Hızlı
-- Export: **GIF** veya **Video (MP4)**
+### Phase 5 — Animation & Export (Plan 3)
+- ▶ Play → full action sequence plays with Konva.Tween animation
+- optionText badge → Konva shape on canvas (included in GIF/MP4)
+- Speed: Slow / Normal / Fast
+- Export: **GIF** or **MP4**
 
 ---
 
-## Klasör Yapısı
+## Zustand Store (`src/store/usePlayStore.ts`)
+
+Key behavior notes:
+- `setActiveSet(newSet)`: resets `activeStep` to 0 **only** when switching to a different set. Updating the same set (e.g. after addAction triggers savedSets change → useEffect) preserves current step.
+- `addAction(action)`: sets `activeStep` to the new `actions.length` (jumps to latest).
+- `clearAllActions()`: resets actions array and `activeStep` to 0.
+- `deleteAction(id)`: clamps `activeStep` to new length if needed.
+- `undoLastAction()`: removes last action, clamps step.
+
+---
+
+## Folder Structure
 
 ```
 src/
   models/
-    types.ts
+    types.ts                  ✅
   store/
-    usePlayStore.ts
+    usePlayStore.ts           ✅
   utils/
-    stateEngine.ts        ← Plan 2
-    formations.ts         ← ✅ 6 hücum + 8 savunma dizilimi
-    courtCoords.ts        ← ✅
+    stateEngine.ts            ✅  pure: applyAction, computeStateAtStep
+    stateEngine.test.ts       ✅  22 tests, all passing
+    formations.ts             ✅  6 offense + 8 defense formations
+    courtCoords.ts            ✅  normalize/denormalize, COURT_PADDING_X
+    arrowGeometry.ts          ✅  wavyPoints, perpendicularBar
+    actionColors.ts           ✅  single source of truth for 6 action colors
   components/
     court/
-      CourtCanvas.tsx     ← ✅
-      HalfCourt.tsx       ← ✅
-      FullCourt.tsx       ← ✅
+      CourtCanvas.tsx         ✅  Stage + Layer, onStageClick + onMouseMove + onMouseLeave
+      HalfCourt.tsx           ✅
+      FullCourt.tsx           ✅
     players/
-      PlayerNode.tsx      ← ✅
-    actions/              ← Plan 2
-    toolbar/              ← Plan 2
+      PlayerNode.tsx          ✅  draggable Konva Circle + label
+    actions/
+      ActionArrow.tsx         ✅  6 visual styles, imports from actionColors.ts
+      ActionOverlay.tsx       ✅  renders all arrows up to activeStep
+      ActionPreview.tsx       ✅  ghost cursor preview while creating an action
+      ActionPanel.tsx         ✅  right panel: action list + Clear All
+      ActionCard.tsx          ✅  card with delete confirm, player info, optionText badge
+      OptionBadge.tsx         ✅  inline add/edit for step label; closes on blur
+    toolbar/
+      ActionToolbar.tsx       ✅  6 SVG icon buttons, colored from actionColors.ts
     setup/
-      PlayerSetup.tsx     ← ✅
-      FormationPicker.tsx ← ✅ (courtType filtresi dahil)
-    playback/             ← Plan 3
-    export/               ← Plan 3
+      PlayerSetup.tsx         ✅
+      FormationPicker.tsx     ✅  filtered by courtType
+    playback/
+      PlaybackControls.tsx    ✅  ◀ ▶ step-through + Undo button
+    export/
+      ExportPanel.tsx         ← Plan 3
   pages/
-    HomePage.tsx          ← ✅
-    EditorPage.tsx        ← stub (Plan 2'de tamamlanacak)
-    SetupPage.tsx         ← ✅
-  App.tsx                 ← ✅
-  main.tsx                ← ✅
-setplay.sh                ← ✅ Docker/npm start+stop scripti
-Dockerfile                ← ✅
-docker-compose.yml        ← ✅
+    HomePage.tsx              ✅
+    EditorPage.tsx            ✅
+    SetupPage.tsx             ✅
+  App.tsx                     ✅
+  main.tsx                    ✅
+setplay.sh                    ✅  Docker/npm start+stop script
+Dockerfile                    ✅
+docker-compose.yml            ✅
 ```
 
 ---
 
-## Geliştirme Ortamı
+## Dev Environment
 
 ```bash
-./setplay.sh start   # Docker varsa container, yoksa npm dev server
-./setplay.sh stop    # Tüm servisleri durdur
+./setplay.sh start   # Docker if available, otherwise npm dev server
+./setplay.sh stop    # Stop all services
 ```
 
-Uygulama: `http://localhost:5173`
+App: `http://localhost:5173`
 
 ---
 
-## Faz Durumu
+## Phase Status
 
-| Faz | İçerik | Durum |
+| Phase | Content | Status |
 |---|---|---|
-| Plan 1 | Scaffold, kort canvas, kurulum akışı, dizilimler | ✅ Tamamlandı |
-| Plan 2 | State engine, 6 aksiyon tipi, editor page | Bekliyor |
-| Plan 3 | Animasyon, playback, GIF/MP4 export | Bekliyor |
+| Plan 1 | Scaffold, court canvas, setup flow, formations | ✅ Complete |
+| Plan 2 | State engine, 6 action types, editor page | ✅ Complete |
+| Plan 3 | Animation, playback, GIF/MP4 export | Pending |
 
 ---
 
-## MVP Kapsam Dışı
+## Out of Scope for MVP
 
-- Kullanıcı hesabı / bulut kayıt
-- Community / Publish
+- User accounts / cloud storage
+- Community / Publish feature
 - Real-time collaboration

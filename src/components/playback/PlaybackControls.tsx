@@ -29,8 +29,8 @@ export default function PlaybackControls() {
         onClick={undoLastAction}
         disabled={total === 0}
         className="text-sm text-slate-400 hover:text-white disabled:opacity-30 transition-colors"
-        title="Geri Al (Ctrl+Z)"
-      >↩ Geri Al</button>
+        title="Undo (Ctrl+Z)"
+      >↩ Undo</button>
     </div>
   )
 }

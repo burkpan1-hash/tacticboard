@@ -1,10 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { nanoid } from 'nanoid'
 import type Konva from 'konva'
 import CourtCanvas from '../components/court/CourtCanvas'
 import PlayerNode from '../components/players/PlayerNode'
 import ActionOverlay from '../components/actions/ActionOverlay'
+import ActionPreview from '../components/actions/ActionPreview'
 import ActionToolbar from '../components/toolbar/ActionToolbar'
 import ActionPanel from '../components/actions/ActionPanel'
 import PlaybackControls from '../components/playback/PlaybackControls'
@@ -23,14 +24,14 @@ export default function EditorPage() {
     addAction,
   } = usePlayStore()
 
+  const [mousePos, setMousePos] = useState<NormalizedPosition | null>(null)
+
   useEffect(() => {
+    if (activeSet?.id === setId) return
     const found = savedSets.find(s => s.id === setId)
-    if (found) {
-      setActiveSet(found)
-    } else {
-      usePlayStore.getState().loadSetsFromStorage()
-    }
-  }, [setId, savedSets, setActiveSet])
+    if (found) setActiveSet(found)
+    else usePlayStore.getState().loadSetsFromStorage()
+  }, [setId, savedSets, setActiveSet, activeSet])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -43,10 +44,14 @@ export default function EditorPage() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  useEffect(() => {
+    if (!actionCreation.type) setMousePos(null)
+  }, [actionCreation.type])
+
   if (!activeSet) {
     return (
       <div className="min-h-screen flex items-center justify-center text-slate-400">
-        <p>Set yükleniyor...</p>
+        <p>Loading...</p>
       </div>
     )
   }
@@ -56,13 +61,22 @@ export default function EditorPage() {
   )
   const cH = activeSet.courtType === 'half' ? HALF_COURT_H : FULL_COURT_H
 
+  function handleMouseMove(e: Konva.KonvaEventObject<MouseEvent>) {
+    if (!actionCreation.type) return
+    const pos = e.target.getStage()?.getPointerPosition()
+    if (!pos) return
+    setMousePos({
+      x: (pos.x - COURT_PADDING_X) / HALF_COURT_W,
+      y: pos.y / cH,
+    })
+  }
+
   function handleCourtClick(e: Konva.KonvaEventObject<MouseEvent>) {
     const { type, pendingSourceId } = actionCreation
     if (!type) return
 
     const pos = e.target.getStage()?.getPointerPosition()
     if (!pos) return
-    // Subtract COURT_PADDING_X because court group is offset inside Stage
     const normPos: NormalizedPosition = {
       x: (pos.x - COURT_PADDING_X) / HALF_COURT_W,
       y: pos.y / cH,
@@ -133,31 +147,28 @@ export default function EditorPage() {
   const instructionText = (() => {
     const { type, pendingSourceId } = actionCreation
     if (!type) return null
-    if (type === 'pass') return 'Topu alacak oyuncuya tıkla'
-    if (type === 'dribble') return 'Kortta hedefe tıkla'
-    if (type === 'shot') return 'Şut için kortta herhangi yere tıkla'
-    if (type === 'cut') return pendingSourceId ? 'Kortta hedefe tıkla' : 'Keseceği oyuncuya tıkla'
-    if (type === 'screen') return pendingSourceId ? 'Ekran kurulacak yere tıkla' : 'Ekran kuracak oyuncuya tıkla'
-    if (type === 'handoff') return pendingSourceId ? 'Handoff noktasına tıkla' : 'Topu alacak oyuncuya tıkla'
+    if (type === 'pass') return 'Click the player to receive the pass'
+    if (type === 'dribble') return 'Click the target position on court'
+    if (type === 'shot') return 'Click anywhere to shoot'
+    if (type === 'cut') return pendingSourceId ? 'Click the destination on court' : 'Click the player who will cut'
+    if (type === 'screen') return pendingSourceId ? 'Click the screen position' : 'Click the player setting the screen'
+    if (type === 'handoff') return pendingSourceId ? 'Click the meet position' : 'Click the player to receive the handoff'
     return null
   })()
 
   return (
     <div className="h-screen flex flex-col bg-slate-900 overflow-hidden">
-      {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/')} className="text-slate-400 hover:text-white transition-colors text-sm">← Ana Sayfa</button>
+          <button onClick={() => navigate('/')} className="text-slate-400 hover:text-white transition-colors text-sm">← Home</button>
           <span className="text-white font-semibold">{activeSet.name}</span>
         </div>
         <span className="text-slate-400 text-sm">
-          {activeSet.courtType === 'half' ? 'Yarım Kort' : 'Tam Kort'}
+          {activeSet.courtType === 'half' ? 'Half Court' : 'Full Court'}
         </span>
       </div>
 
-      {/* Main area */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left toolbar */}
         <div className="p-2 border-r border-slate-700">
           <ActionToolbar
             activeType={actionCreation.type}
@@ -167,21 +178,33 @@ export default function EditorPage() {
           />
         </div>
 
-        {/* Court */}
         <div className="flex-1 flex items-center justify-center bg-slate-950 overflow-auto p-4">
           <div className="relative">
             {instructionText && (
               <div className="absolute -top-10 left-0 right-0 text-center text-sm text-orange-300 font-medium">
                 {instructionText}
-                <button onClick={cancelActionCreation} className="ml-3 text-slate-400 hover:text-white text-xs underline">İptal</button>
+                <button onClick={cancelActionCreation} className="ml-3 text-slate-400 hover:text-white text-xs underline">Cancel</button>
               </div>
             )}
-            <CourtCanvas courtType={activeSet.courtType} onStageClick={handleCourtClick}>
+            <CourtCanvas
+              courtType={activeSet.courtType}
+              onStageClick={handleCourtClick}
+              onMouseMove={handleMouseMove}
+              onMouseLeave={() => setMousePos(null)}
+            >
               <ActionOverlay
                 actions={activeSet.actions}
                 initialPositions={activeSet.initialPositions}
                 initialBall={activeSet.initialBall}
                 activeStep={activeStep}
+                courtType={activeSet.courtType}
+              />
+              <ActionPreview
+                actionType={actionCreation.type}
+                pendingSourceId={actionCreation.pendingSourceId}
+                ballHolderId={currentState.ball.holderId}
+                positions={currentState.positions}
+                mousePos={mousePos}
                 courtType={activeSet.courtType}
               />
               {activeSet.players.map(player => {
@@ -203,13 +226,11 @@ export default function EditorPage() {
           </div>
         </div>
 
-        {/* Right panel */}
         <div className="w-64 flex flex-col border-l border-slate-700">
           <ActionPanel />
         </div>
       </div>
 
-      {/* Bottom playback */}
       <PlaybackControls />
     </div>
   )

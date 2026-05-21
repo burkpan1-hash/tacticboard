@@ -44,6 +44,7 @@ interface PlayStoreState {
   addAction: (action: Action) => void
   deleteAction: (actionId: string) => void
   updateAction: (actionId: string, updated: Action) => void
+  clearAllActions: () => void
   undoLastAction: () => void
 
   // ── Option text ──────────────────────────────────────────────
@@ -101,7 +102,10 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   },
 
   activeSet: null,
-  setActiveSet: (activeSet) => set({ activeSet, activeStep: 0 }),
+  setActiveSet: (newSet) => set(s => ({
+    activeSet: newSet,
+    activeStep: s.activeSet?.id !== newSet.id ? 0 : s.activeStep,
+  })),
 
   activeStep: 0,
   setActiveStep: (activeStep) => set({ activeStep }),
@@ -134,6 +138,15 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
       }
       get().saveSet(updated)
       return { activeSet: updated, actionCreation: EMPTY_CREATION }
+    })
+  },
+
+  clearAllActions: () => {
+    set(s => {
+      if (!s.activeSet) return s
+      const updated = { ...s.activeSet, actions: [] }
+      get().saveSet(updated)
+      return { activeSet: updated, activeStep: 0 }
     })
   },
 

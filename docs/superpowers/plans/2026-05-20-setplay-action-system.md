@@ -1,4 +1,25 @@
-# SetPlay Action System — Implementation Plan
+# SetPlay Action System — Implementation Plan [✅ COMPLETE]
+
+> **Status:** All tasks complete. See implementation notes below for deviations from this plan.
+
+## Implementation Notes (actual vs planned)
+
+- **`ScreenSymbol.tsx` not created** — screen rendering is inside `ActionArrow.tsx` alongside the other 5 types.
+- **`players` prop removed** from `ActionArrow` and `ActionOverlay` — unused; positions map is sufficient.
+- **`COURT_PADDING_X` click fix** — plan had `nx = pos.x / HALF_COURT_W` but the court group is offset 30px inside Stage, so correct formula is `nx = (pos.x - COURT_PADDING_X) / HALF_COURT_W`.
+- **`setActiveSet` step fix** — store now preserves `activeStep` when updating the same set (prevents step resetting to 0 after every action).
+- **Action colors moved** to `src/utils/actionColors.ts` — single source used by ActionArrow, ActionPreview, ActionToolbar, ActionCard.
+- **New colors**: cut changed from green `#34d399` to pink `#f472b6` (green was indistinguishable from court). All colors updated for distinctiveness.
+- **Screen bar enlarged**: `halfLen=22`, `strokeWidth=6`, `strokeLinecap=round` (was 14/3.5).
+- **`ActionPreview.tsx` added** (not in plan) — ghost cursor preview while creating an action.
+- **`onMouseMove` / `onMouseLeave` added** to `CourtCanvas` for cursor preview.
+- **`clearAllActions()` added** to store — "Clear" button in ActionPanel header.
+- **✏️ edit button removed** from ActionCard — user preference.
+- **`optionText` renamed** to "label" in UI ("Add label" instead of "Option ekle").
+- **All UI text in English** — no Turkish strings remain in any component.
+- **ActionCard**: player description added ("Pass: #1 → #3"); optionText always visible even when card not active; uses `ACTION_COLORS` hex values (not Tailwind classes) for border + label color.
+
+---
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

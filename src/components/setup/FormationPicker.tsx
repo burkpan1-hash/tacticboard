@@ -15,7 +15,7 @@ export default function FormationPicker({ team, onSelect, selectedId, courtType 
   return (
     <div>
       <p className="text-sm text-slate-400 mb-3">
-        {team === 'offense' ? 'Hücum Dizilimi' : 'Savunma Dizilimi'} seç veya elle yerleştir
+        {team === 'offense' ? 'Offense Formation' : 'Defense Formation'} — or place manually
       </p>
       <div className="grid grid-cols-3 gap-2">
         {formations.map((f) => (
@@ -34,7 +34,7 @@ export default function FormationPicker({ team, onSelect, selectedId, courtType 
           </button>
         ))}
         <button
-          onClick={() => onSelect({ id: 'custom', name: 'Elle Yerleştir', positions: {} })}
+          onClick={() => onSelect({ id: 'custom', name: 'Custom', positions: {} })}
           className={`
             px-3 py-2 rounded-lg text-sm font-medium transition-colors border
             ${selectedId === 'custom'
@@ -43,7 +43,7 @@ export default function FormationPicker({ team, onSelect, selectedId, courtType 
             }
           `}
         >
-          Elle Yerleştir
+          Custom
         </button>
       </div>
     </div>

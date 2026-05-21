@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Status:** Tüm tasklar tamamlandı. Git: `dcb817b`. Sonraki: Plan 2 (action system).
+**Status:** All tasks complete. Plan 2 (action system) also complete. Next: Plan 3 (animation + export).
 
 > **Plan 1 sonrası ek değişiklikler (commit `46d2ed2`):**
 > - Savunma dizilimleri 6→8 oldu: 2-1-2 Zone ve 1-2-2 Zone eklendi

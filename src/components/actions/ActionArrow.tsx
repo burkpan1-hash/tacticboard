@@ -2,6 +2,7 @@ import { Line, Arrow, Circle, Group } from 'react-konva'
 import type { Action, PositionMap } from '../../models/types'
 import { denormalize, HALF_COURT_W, HALF_COURT_H, FULL_COURT_H } from '../../utils/courtCoords'
 import { wavyPoints, perpendicularBar } from '../../utils/arrowGeometry'
+import { ACTION_COLORS } from '../../utils/actionColors'
 
 interface Props {
   action: Action
@@ -9,18 +10,9 @@ interface Props {
   courtType: 'half' | 'full'
 }
 
-const COLORS: Record<string, string> = {
-  pass:    '#facc15',
-  dribble: '#a78bfa',
-  cut:     '#34d399',
-  screen:  '#60a5fa',
-  shot:    '#f87171',
-  handoff: '#fb923c',
-}
-
 export default function ActionArrow({ action, positions, courtType }: Props) {
   const cH = courtType === 'half' ? HALF_COURT_H : FULL_COURT_H
-  const color = COLORS[action.type]
+  const color = ACTION_COLORS[action.type]
 
   function px(id: string) { return denormalize(positions[id].x, positions[id].y, HALF_COURT_W, cH) }
   function pxPos(pos: { x: number; y: number }) { return denormalize(pos.x, pos.y, HALF_COURT_W, cH) }
@@ -71,11 +63,11 @@ export default function ActionArrow({ action, positions, courtType }: Props) {
     case 'screen': {
       const from = px(action.screenerId)
       const to   = pxPos(action.screenPosition)
-      const [bx1, by1, bx2, by2] = perpendicularBar(to.x, to.y, from.x, from.y)
+      const [bx1, by1, bx2, by2] = perpendicularBar(to.x, to.y, from.x, from.y, 22)
       return (
         <Group>
           <Line points={[from.x, from.y, to.x, to.y]} stroke={color} strokeWidth={2.5} />
-          <Line points={[bx1, by1, bx2, by2]} stroke={color} strokeWidth={3.5} />
+          <Line points={[bx1, by1, bx2, by2]} stroke={color} strokeWidth={6} strokeLinecap="round" />
         </Group>
       )
     }

@@ -15,7 +15,7 @@ export default function OptionBadge({ text, onChange }: Props) {
         onClick={() => { setDraft(''); setEditing(true) }}
         className="text-xs text-orange-500 hover:text-orange-400 mt-1.5 flex items-center gap-1 transition-colors"
       >
-        <span>◈</span> Option ekle
+        <span>◈</span> Add label
       </button>
     )
   }
@@ -47,10 +47,12 @@ export default function OptionBadge({ text, onChange }: Props) {
           if (e.key === 'Enter') { onChange(draft); setEditing(false) }
           if (e.key === 'Escape') setEditing(false)
         }}
-        placeholder="örn. Boşsan şut at — Enter ile kaydet"
+        onBlur={() => setEditing(false)}
+        placeholder="e.g. If open, shoot — Enter to save"
         className="flex-1 text-xs bg-slate-700 text-white rounded px-2 py-1 outline-none focus:ring-1 focus:ring-orange-500 placeholder-slate-500"
       />
       <button
+        onMouseDown={e => e.preventDefault()}
         onClick={() => { onChange(draft); setEditing(false) }}
         className="text-xs bg-orange-600 hover:bg-orange-500 text-white rounded px-2 transition-colors"
       >✓</button>

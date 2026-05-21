@@ -81,12 +81,12 @@ export default function SetupPage() {
 
   function handleReady() {
     if (!draftBall) {
-      alert('Topu bir oyuncuya ver!')
+      alert('Select a player to hold the ball!')
       return
     }
     const set: PlaySet = {
       id: nanoid(),
-      name: setupDraft.name || 'İsimsiz Set',
+      name: setupDraft.name || 'Untitled Play',
       courtType: setupDraft.courtType,
       players,
       initialPositions: draftPositions,
@@ -97,25 +97,24 @@ export default function SetupPage() {
     navigate(`/editor/${set.id}`)
   }
 
-  // ── Step: Info ────────────────────────────────────────────────
   if (step === 'info') {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="w-full max-w-md bg-slate-800 rounded-2xl p-8 space-y-6">
-          <h2 className="text-2xl font-bold text-white">Yeni Set</h2>
+          <h2 className="text-2xl font-bold text-white">New Play</h2>
 
           <div className="space-y-2">
-            <label className="text-sm text-slate-400">Set İsmi</label>
+            <label className="text-sm text-slate-400">Play Name</label>
             <input
               value={setupDraft.name}
               onChange={(e) => setSetupDraft({ name: e.target.value })}
-              placeholder="örn. Horns, Blob, 5-Out Motion"
+              placeholder="e.g. Horns, Blob, 5-Out Motion"
               className="w-full bg-slate-700 text-white rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-orange-500 placeholder-slate-500"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm text-slate-400">Kort Tipi</label>
+            <label className="text-sm text-slate-400">Court Type</label>
             <div className="flex gap-3">
               {(['half', 'full'] as const).map((ct) => (
                 <button
@@ -127,7 +126,7 @@ export default function SetupPage() {
                       : 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600'
                   }`}
                 >
-                  {ct === 'half' ? 'Yarım Kort' : 'Tam Kort'}
+                  {ct === 'half' ? 'Half Court' : 'Full Court'}
                 </button>
               ))}
             </div>
@@ -146,18 +145,17 @@ export default function SetupPage() {
             }}
             className="w-full bg-orange-500 hover:bg-orange-400 text-white font-semibold py-3 rounded-xl transition-colors"
           >
-            İleri →
+            Next →
           </button>
         </div>
       </div>
     )
   }
 
-  // ── Step: Positions ───────────────────────────────────────────
   if (step === 'positions') {
     return (
       <div className="min-h-screen flex flex-col items-center p-6 gap-6">
-        <h2 className="text-xl font-bold text-white">Başlangıç Dizilimi</h2>
+        <h2 className="text-xl font-bold text-white">Starting Formation</h2>
 
         <div className="w-full max-w-sm space-y-4">
           {setupDraft.offenseCount > 0 && (
@@ -193,28 +191,27 @@ export default function SetupPage() {
           })}
         </CourtCanvas>
 
-        <p className="text-slate-400 text-sm">Oyuncuları sürükleyerek pozisyonlarını ayarla</p>
+        <p className="text-slate-400 text-sm">Drag players to adjust their positions</p>
 
         <div className="flex gap-4">
           <button onClick={() => setStep('info')} className="text-slate-400 hover:text-white transition-colors">
-            ← Geri
+            ← Back
           </button>
           <button
             onClick={() => setStep('ball')}
             className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-8 py-2 rounded-xl transition-colors"
           >
-            İleri →
+            Next →
           </button>
         </div>
       </div>
     )
   }
 
-  // ── Step: Ball assignment ────────────────────────────────────
   return (
     <div className="min-h-screen flex flex-col items-center p-6 gap-6">
-      <h2 className="text-xl font-bold text-white">Topu Ver</h2>
-      <p className="text-slate-400 text-sm">Başlangıçta topu kimin tutacağını seç</p>
+      <h2 className="text-xl font-bold text-white">Assign Ball</h2>
+      <p className="text-slate-400 text-sm">Select who starts with the ball</p>
 
       <CourtCanvas courtType={setupDraft.courtType}>
         {players.map((p) => {
@@ -236,13 +233,13 @@ export default function SetupPage() {
 
       <div className="flex gap-4">
         <button onClick={() => setStep('positions')} className="text-slate-400 hover:text-white transition-colors">
-          ← Geri
+          ← Back
         </button>
         <button
           onClick={handleReady}
           className="bg-green-600 hover:bg-green-500 text-white font-semibold px-8 py-3 rounded-xl transition-colors"
         >
-          Hazır ✓
+          Ready ✓
         </button>
       </div>
     </div>
