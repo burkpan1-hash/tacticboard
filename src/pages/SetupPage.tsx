@@ -225,7 +225,7 @@ export default function SetupPage() {
               hasBall={draftBall?.holderId === p.id}
               isSelected={draftBall?.holderId === p.id}
               onDragEnd={() => {}}
-              onClick={(id) => setDraftBall({ holderId: id })}
+              onClick={p.team === 'offense' ? (id) => setDraftBall({ holderId: id }) : undefined}
             />
           )
         })}

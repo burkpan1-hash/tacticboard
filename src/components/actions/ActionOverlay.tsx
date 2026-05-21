@@ -9,13 +9,14 @@ interface Props {
   initialBall: BallState
   activeStep: number
   courtType: CourtType
+  markings?: Record<string, string>
 }
 
-export default function ActionOverlay({ actions, initialPositions, initialBall, activeStep, courtType }: Props) {
+export default function ActionOverlay({ actions, initialPositions, initialBall, activeStep, courtType, markings }: Props) {
   return (
     <Group>
       {actions.slice(0, activeStep).map((action, i) => {
-        const stateBefore = computeStateAtStep(actions, i, initialPositions, initialBall)
+        const stateBefore = computeStateAtStep(actions, i, initialPositions, initialBall, markings)
         const isLatest = i === activeStep - 1
         return (
           <Group key={action.id} opacity={isLatest ? 1 : 0.45}>

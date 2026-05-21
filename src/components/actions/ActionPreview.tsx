@@ -1,7 +1,7 @@
 import { Arrow, Line, Circle, Group } from 'react-konva'
 import type { ActionType, CourtType, PositionMap, NormalizedPosition } from '../../models/types'
 import { denormalize, HALF_COURT_W, HALF_COURT_H, FULL_COURT_H } from '../../utils/courtCoords'
-import { wavyPoints, perpendicularBar } from '../../utils/arrowGeometry'
+import { wavyPoints, wavyAlongPath, perpendicularBar } from '../../utils/arrowGeometry'
 import { ACTION_COLORS } from '../../utils/actionColors'
 
 interface Props {
@@ -11,12 +11,13 @@ interface Props {
   positions: PositionMap
   mousePos: NormalizedPosition | null
   courtType: CourtType
+  dribbleWaypoints?: NormalizedPosition[]
 }
 
 const OP = 0.5
 
 export default function ActionPreview({
-  actionType, pendingSourceId, ballHolderId, positions, mousePos, courtType,
+  actionType, pendingSourceId, ballHolderId, positions, mousePos, courtType, dribbleWaypoints,
 }: Props) {
   if (!actionType) return null
 
@@ -51,6 +52,22 @@ export default function ActionPreview({
       const from = pxId(ballHolderId)
       const to   = mousePos ? pxN(mousePos) : null
       if (!from || !to) return null
+
+      if (dribbleWaypoints && dribbleWaypoints.length > 1) {
+        const allPx = [from, ...dribbleWaypoints.map(pxN), to]
+        const pts = wavyAlongPath(allPx)
+        return (
+          <Group opacity={OP} listening={false}>
+            <Line points={pts} stroke={color} strokeWidth={2.5} />
+            <Arrow
+              points={[pts[pts.length - 4], pts[pts.length - 3], to.x, to.y]}
+              stroke={color} fill={color} strokeWidth={2.5}
+              pointerLength={10} pointerWidth={8}
+            />
+          </Group>
+        )
+      }
+
       const pts = wavyPoints(from.x, from.y, to.x, to.y)
       return (
         <Group opacity={OP} listening={false}>
@@ -79,6 +96,7 @@ export default function ActionPreview({
       }
       const from = pxId(pendingSourceId)
       if (!from) return null
+
       return (
         <Arrow
           points={[from.x, from.y, to.x, to.y]}
@@ -104,11 +122,37 @@ export default function ActionPreview({
       const from = pxId(pendingSourceId)
       if (!from) return null
       const [bx1, by1, bx2, by2] = perpendicularBar(to.x, to.y, from.x, from.y, 22)
+
       return (
         <Group opacity={OP} listening={false}>
           <Line points={[from.x, from.y, to.x, to.y]} stroke={color} strokeWidth={2.5} />
           <Line points={[bx1, by1, bx2, by2]} stroke={color} strokeWidth={6} strokeLinecap="round" />
         </Group>
+      )
+    }
+
+    case 'defense-move': {
+      if (!mousePos) return null
+      const to = pxN(mousePos)
+      if (!pendingSourceId) {
+        return (
+          <Arrow
+            points={[to.x - 22, to.y, to.x, to.y]}
+            stroke={color} fill={color}
+            strokeWidth={2} pointerLength={8} pointerWidth={6}
+            opacity={OP * 0.7} listening={false}
+          />
+        )
+      }
+      const from = pxId(pendingSourceId)
+      if (!from) return null
+      return (
+        <Arrow
+          points={[from.x, from.y, to.x, to.y]}
+          stroke={color} fill={color}
+          strokeWidth={2.5} pointerLength={10} pointerWidth={8}
+          opacity={OP} listening={false}
+        />
       )
     }
 

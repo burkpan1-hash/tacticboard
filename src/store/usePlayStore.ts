@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type {
   CourtType, PositionMap, BallState,
-  PlaySet, Action, ActionType,
+  PlaySet, Action, ActionType, Player, NormalizedPosition,
 } from '../models/types'
 
 interface SetupDraft {
@@ -49,6 +49,12 @@ interface PlayStoreState {
 
   // ── Option text ──────────────────────────────────────────────
   setOptionText: (actionId: string, text: string) => void
+
+  // ── Bench ────────────────────────────────────────────────────
+  addPlayerToCourt: (playerId: string, position: NormalizedPosition) => void
+
+  // ── Markings ─────────────────────────────────────────────────
+  updateMarkings: (markings: Record<string, string>) => void
 
   // ── Action creation UI state ─────────────────────────────────
   actionCreation: ActionCreation
@@ -146,7 +152,7 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
       if (!s.activeSet) return s
       const updated = { ...s.activeSet, actions: [] }
       get().saveSet(updated)
-      return { activeSet: updated, activeStep: 0 }
+      return { activeSet: updated, activeStep: 0, actionCreation: EMPTY_CREATION }
     })
   },
 
@@ -156,7 +162,7 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
       const updated = { ...s.activeSet, actions: s.activeSet.actions.slice(0, -1) }
       const newStep = Math.min(s.activeStep, updated.actions.length)
       get().saveSet(updated)
-      return { activeSet: updated, activeStep: newStep }
+      return { activeSet: updated, activeStep: newStep, actionCreation: EMPTY_CREATION }
     })
   },
 
@@ -174,10 +180,35 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
     })
   },
 
+  addPlayerToCourt: (playerId, position) => {
+    set(s => {
+      if (!s.activeSet) return s
+      const isOffense = playerId.startsWith('o')
+      const number = parseInt(playerId.slice(1)) as Player['number']
+      const newPlayer: Player = { id: playerId, number, team: isOffense ? 'offense' : 'defense' }
+      const updated: PlaySet = {
+        ...s.activeSet,
+        players: [...s.activeSet.players, newPlayer],
+        initialPositions: { ...s.activeSet.initialPositions, [playerId]: position },
+      }
+      get().saveSet(updated)
+      return { activeSet: updated }
+    })
+  },
+
   actionCreation: EMPTY_CREATION,
   startActionCreation: (type) => set({ actionCreation: { type, pendingSourceId: null, editingActionId: null } }),
   setPendingSource: (playerId) => set(s => ({
     actionCreation: { ...s.actionCreation, pendingSourceId: playerId },
   })),
   cancelActionCreation: () => set({ actionCreation: EMPTY_CREATION }),
+
+  updateMarkings: (markings) => {
+    set(s => {
+      if (!s.activeSet) return s
+      const updated: PlaySet = { ...s.activeSet, markings }
+      get().saveSet(updated)
+      return { activeSet: updated }
+    })
+  },
 }))

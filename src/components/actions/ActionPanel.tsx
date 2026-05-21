@@ -5,7 +5,7 @@ import { usePlayStore } from '../../store/usePlayStore'
 export default function ActionPanel() {
   const {
     activeSet, activeStep,
-    setActiveStep, deleteAction, clearAllActions, setOptionText,
+    setActiveStep, clearAllActions, setOptionText,
   } = usePlayStore()
   const [confirmClear, setConfirmClear] = useState(false)
 
@@ -29,12 +29,12 @@ export default function ActionPanel() {
               <button onClick={handleClear}
                 className="text-xs bg-red-600 hover:bg-red-500 text-white px-2 py-0.5 rounded transition-colors">Yes</button>
               <button onClick={() => setConfirmClear(false)}
-                className="text-xs text-slate-400 hover:text-white transition-colors">No</button>
+                className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2 py-0.5 rounded transition-colors">No</button>
             </div>
           ) : (
             <button onClick={() => setConfirmClear(true)}
-              className="text-xs text-slate-500 hover:text-red-400 transition-colors">
-              Clear
+              className="text-xs bg-slate-700 hover:bg-red-600 text-slate-300 hover:text-white px-2 py-1 rounded transition-colors">
+              Clear All
             </button>
           )
         )}
@@ -55,7 +55,6 @@ export default function ActionPanel() {
             players={activeSet.players}
             isActive={activeStep === i + 1}
             onClick={() => setActiveStep(i + 1)}
-            onDelete={() => deleteAction(action.id)}
             onOptionTextChange={(text) => setOptionText(action.id, text)}
           />
         ))}

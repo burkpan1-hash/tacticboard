@@ -28,7 +28,7 @@ export default function PlaybackControls() {
       <button
         onClick={undoLastAction}
         disabled={total === 0}
-        className="text-sm text-slate-400 hover:text-white disabled:opacity-30 transition-colors"
+        className="px-3 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white text-sm disabled:opacity-30 transition-colors"
         title="Undo (Ctrl+Z)"
       >↩ Undo</button>
     </div>

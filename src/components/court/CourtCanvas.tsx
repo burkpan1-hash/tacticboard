@@ -10,10 +10,12 @@ interface Props {
   children?: React.ReactNode
   onStageClick?: (e: Konva.KonvaEventObject<MouseEvent>) => void
   onMouseMove?: (e: Konva.KonvaEventObject<MouseEvent>) => void
+  onMouseDown?: (e: Konva.KonvaEventObject<MouseEvent>) => void
+  onMouseUp?: (e: Konva.KonvaEventObject<MouseEvent>) => void
   onMouseLeave?: () => void
 }
 
-export default function CourtCanvas({ courtType, children, onStageClick, onMouseMove, onMouseLeave }: Props) {
+export default function CourtCanvas({ courtType, children, onStageClick, onMouseMove, onMouseDown, onMouseUp, onMouseLeave }: Props) {
   const height = courtType === 'half' ? HALF_COURT_H : FULL_COURT_H
 
   return (
@@ -21,6 +23,8 @@ export default function CourtCanvas({ courtType, children, onStageClick, onMouse
       width={HALF_COURT_W + 2 * COURT_PADDING_X} height={height}
       onClick={onStageClick}
       onMouseMove={onMouseMove}
+      onMouseDown={onMouseDown}
+      onMouseUp={onMouseUp}
       onMouseLeave={onMouseLeave}
     >
       <Layer>

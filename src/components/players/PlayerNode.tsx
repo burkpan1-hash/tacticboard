@@ -9,6 +9,7 @@ interface Props {
   courtType: 'half' | 'full'
   hasBall?: boolean
   isSelected?: boolean
+  draggable?: boolean
   onDragEnd: (playerId: string, newPos: NormalizedPosition) => void
   onClick?: (playerId: string) => void
 }
@@ -17,7 +18,7 @@ const OFFENSE_COLOR = '#f97316'
 const DEFENSE_COLOR = '#1d4ed8'
 const RADIUS = 20
 
-export default function PlayerNode({ player, position, courtType, hasBall, isSelected, onDragEnd, onClick }: Props) {
+export default function PlayerNode({ player, position, courtType, hasBall, isSelected, draggable = true, onDragEnd, onClick }: Props) {
   const canvasH = courtType === 'half' ? HALF_COURT_H : FULL_COURT_H
   const { x, y } = denormalize(position.x, position.y, HALF_COURT_W, canvasH)
   const fill = player.team === 'offense' ? OFFENSE_COLOR : DEFENSE_COLOR
@@ -33,7 +34,7 @@ export default function PlayerNode({ player, position, courtType, hasBall, isSel
   return (
     <Group
       x={x} y={y}
-      draggable
+      draggable={draggable}
       onDragEnd={handleDragEnd}
       onClick={() => onClick?.(player.id)}
     >
@@ -49,7 +50,10 @@ export default function PlayerNode({ player, position, courtType, hasBall, isSel
         width={RADIUS * 2}
       />
       {hasBall && (
-        <Circle x={RADIUS - 6} y={-RADIUS + 6} radius={7} fill="#f59e0b" stroke="white" strokeWidth={1.5} />
+        <>
+          <Circle radius={RADIUS + 7} stroke="#f59e0b" strokeWidth={3} fill="transparent" />
+          <Circle x={RADIUS - 5} y={-RADIUS + 5} radius={6} fill="#f59e0b" stroke="white" strokeWidth={1.5} />
+        </>
       )}
     </Group>
   )

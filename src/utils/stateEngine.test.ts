@@ -41,9 +41,10 @@ describe('applyAction', () => {
     expect(s.positions).toEqual(P)
   })
 
-  it('handoff: moves fromId to meetPosition, transfers ball', () => {
+  it('handoff: receiver moves to meetPosition, giver overshoots, ball transfers', () => {
     const s = applyAction({ id: '1', type: 'handoff', fromId: 'o1', toId: 'o2', meetPosition: { x: 0.65, y: 0.6 } }, { positions: P, ball: B })
-    expect(s.positions.o1).toEqual({ x: 0.65, y: 0.6 })
+    expect(s.positions.o2).toEqual({ x: 0.65, y: 0.6 })
+    expect(s.positions.o1.x).toBeGreaterThan(0.65)
     expect(s.ball.holderId).toBe('o2')
   })
 

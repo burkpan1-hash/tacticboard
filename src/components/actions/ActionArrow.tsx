@@ -1,8 +1,18 @@
 import { Line, Arrow, Circle, Group } from 'react-konva'
 import type { Action, PositionMap } from '../../models/types'
 import { denormalize, HALF_COURT_W, HALF_COURT_H, FULL_COURT_H } from '../../utils/courtCoords'
-import { wavyPoints, perpendicularBar } from '../../utils/arrowGeometry'
+import { wavyPoints, wavyAlongPath, perpendicularBar } from '../../utils/arrowGeometry'
 import { ACTION_COLORS } from '../../utils/actionColors'
+
+const PLAYER_RADIUS = 20
+const ARROW_GAP = 6
+const SCREEN_GAP = 3
+
+function shortenEnd(x1: number, y1: number, x2: number, y2: number, d: number): { x: number; y: number } {
+  const dx = x2 - x1, dy = y2 - y1
+  const len = Math.sqrt(dx * dx + dy * dy) || 1
+  return { x: x2 - (dx / len) * d, y: y2 - (dy / len) * d }
+}
 
 interface Props {
   action: Action
@@ -21,9 +31,10 @@ export default function ActionArrow({ action, positions, courtType }: Props) {
     case 'pass': {
       const from = px(action.fromId)
       const to   = px(action.toId)
+      const end  = shortenEnd(from.x, from.y, to.x, to.y, PLAYER_RADIUS + ARROW_GAP)
       return (
         <Arrow
-          points={[from.x, from.y, to.x, to.y]}
+          points={[from.x, from.y, end.x, end.y]}
           stroke={color} strokeWidth={2.5}
           fill={color}
           dash={[10, 6]}
@@ -35,12 +46,33 @@ export default function ActionArrow({ action, positions, courtType }: Props) {
     case 'dribble': {
       const from = px(action.playerId)
       const to   = pxPos(action.toPosition)
-      const pts  = wavyPoints(from.x, from.y, to.x, to.y)
+
+      if (action.waypoints && action.waypoints.length > 1) {
+        const allPx = [from, ...action.waypoints.map(pxPos)]
+        const last  = allPx[allPx.length - 1]
+        const prev  = allPx[allPx.length - 2]
+        const end   = shortenEnd(prev.x, prev.y, last.x, last.y, PLAYER_RADIUS + ARROW_GAP)
+        allPx[allPx.length - 1] = end
+        const pts = wavyAlongPath(allPx)
+        return (
+          <Group>
+            <Line points={pts} stroke={color} strokeWidth={2.5} />
+            <Arrow
+              points={[pts[pts.length - 4], pts[pts.length - 3], end.x, end.y]}
+              stroke={color} fill={color}
+              strokeWidth={2.5} pointerLength={10} pointerWidth={8}
+            />
+          </Group>
+        )
+      }
+
+      const end  = shortenEnd(from.x, from.y, to.x, to.y, PLAYER_RADIUS + ARROW_GAP)
+      const pts  = wavyPoints(from.x, from.y, end.x, end.y)
       return (
         <Group>
           <Line points={pts} stroke={color} strokeWidth={2.5} />
           <Arrow
-            points={[pts[pts.length - 4], pts[pts.length - 3], to.x, to.y]}
+            points={[pts[pts.length - 4], pts[pts.length - 3], end.x, end.y]}
             stroke={color} fill={color}
             strokeWidth={2.5} pointerLength={10} pointerWidth={8}
           />
@@ -51,9 +83,11 @@ export default function ActionArrow({ action, positions, courtType }: Props) {
     case 'cut': {
       const from = px(action.playerId)
       const to   = pxPos(action.toPosition)
+
+      const end  = shortenEnd(from.x, from.y, to.x, to.y, PLAYER_RADIUS + ARROW_GAP)
       return (
         <Arrow
-          points={[from.x, from.y, to.x, to.y]}
+          points={[from.x, from.y, end.x, end.y]}
           stroke={color} fill={color}
           strokeWidth={2.5} pointerLength={10} pointerWidth={8}
         />
@@ -63,12 +97,27 @@ export default function ActionArrow({ action, positions, courtType }: Props) {
     case 'screen': {
       const from = px(action.screenerId)
       const to   = pxPos(action.screenPosition)
-      const [bx1, by1, bx2, by2] = perpendicularBar(to.x, to.y, from.x, from.y, 22)
+      const end  = shortenEnd(from.x, from.y, to.x, to.y, PLAYER_RADIUS + SCREEN_GAP)
+      const [bx1, by1, bx2, by2] = perpendicularBar(end.x, end.y, from.x, from.y, 22)
+
       return (
         <Group>
-          <Line points={[from.x, from.y, to.x, to.y]} stroke={color} strokeWidth={2.5} />
+          <Line points={[from.x, from.y, end.x, end.y]} stroke={color} strokeWidth={2.5} />
           <Line points={[bx1, by1, bx2, by2]} stroke={color} strokeWidth={6} strokeLinecap="round" />
         </Group>
+      )
+    }
+
+    case 'defense-move': {
+      const from = px(action.playerId)
+      const to   = pxPos(action.toPosition)
+      const end  = shortenEnd(from.x, from.y, to.x, to.y, PLAYER_RADIUS + ARROW_GAP)
+      return (
+        <Arrow
+          points={[from.x, from.y, end.x, end.y]}
+          stroke={color} fill={color}
+          strokeWidth={2.5} pointerLength={10} pointerWidth={8}
+        />
       )
     }
 

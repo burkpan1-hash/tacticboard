@@ -1,0 +1,5 @@
+node_modules/
+dist/
+.playwright-mcp/
+.superpowers/
+test-home.png

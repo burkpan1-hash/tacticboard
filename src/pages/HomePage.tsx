@@ -1,12 +1,30 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { usePlayStore } from '../store/usePlayStore'
 
 export default function HomePage() {
   const navigate = useNavigate()
-  const { savedSets, deleteSet, loadSetsFromStorage } = usePlayStore()
+  const { savedSets, deleteSet, saveSet, loadSetsFromStorage } = usePlayStore()
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingName, setEditingName] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { loadSetsFromStorage() }, [loadSetsFromStorage])
+
+  useEffect(() => {
+    if (editingId) inputRef.current?.select()
+  }, [editingId])
+
+  function startEdit(id: string, name: string) {
+    setEditingId(id)
+    setEditingName(name)
+  }
+
+  function commitEdit(id: string) {
+    const set = savedSets.find(s => s.id === id)
+    if (set) saveSet({ ...set, name: editingName.trim() || set.name })
+    setEditingId(null)
+  }
 
   return (
     <div className="min-h-screen p-8 max-w-4xl mx-auto">
@@ -31,13 +49,33 @@ export default function HomePage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {savedSets.map((s) => (
             <div key={s.id} className="bg-slate-800 rounded-xl p-5 flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-white">{s.name}</p>
+              <div className="flex-1 min-w-0 mr-3">
+                {editingId === s.id ? (
+                  <input
+                    ref={inputRef}
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                    onBlur={() => commitEdit(s.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') commitEdit(s.id)
+                      if (e.key === 'Escape') setEditingId(null)
+                    }}
+                    className="bg-slate-700 text-white rounded px-2 py-0.5 outline-none focus:ring-2 focus:ring-orange-500 w-full font-semibold"
+                  />
+                ) : (
+                  <p
+                    className="font-semibold text-white truncate cursor-text hover:text-orange-300 transition-colors"
+                    title="Click to rename"
+                    onClick={() => startEdit(s.id, s.name)}
+                  >
+                    {s.name}
+                  </p>
+                )}
                 <p className="text-sm text-slate-400 mt-1">
                   {s.courtType === 'half' ? 'Half Court' : 'Full Court'} · {s.actions.length} {s.actions.length === 1 ? 'action' : 'actions'}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 shrink-0">
                 <button
                   onClick={() => navigate(`/editor/${s.id}`)}
                   className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
