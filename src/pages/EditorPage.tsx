@@ -13,8 +13,58 @@ import PlaybackControls from '../components/playback/PlaybackControls'
 import { usePlayStore } from '../store/usePlayStore'
 import { computeStateAtStep } from '../utils/stateEngine'
 import { denormalize } from '../utils/courtCoords'
-import type { Action, NormalizedPosition, Player } from '../models/types'
+import type { Action, NormalizedPosition, Player, PositionMap } from '../models/types'
 import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_PADDING_X } from '../utils/courtCoords'
+import { ACTION_COLORS, ACTION_LABELS } from '../utils/actionColors'
+
+// Returns the start/end pixel coords of the arrow's direction vector (for label placement)
+function arrowLine(action: Action, positions: PositionMap, cH: number): { x1: number; y1: number; x2: number; y2: number } | null {
+  const px = (id: string) => { const p = positions[id]; return p ? denormalize(p.x, p.y, HALF_COURT_W, cH) : null }
+  const pp = (p: NormalizedPosition) => denormalize(p.x, p.y, HALF_COURT_W, cH)
+  switch (action.type) {
+    case 'pass':        { const f = px(action.fromId), t = px(action.toId); if (!f || !t) return null; return { x1: f.x, y1: f.y, x2: t.x, y2: t.y } }
+    case 'cut':         { const f = px(action.playerId), t = pp(action.toPosition); if (!f) return null; return { x1: f.x, y1: f.y, x2: t.x, y2: t.y } }
+    case 'screen':      { const f = px(action.screenerId), t = pp(action.screenPosition); if (!f) return null; return { x1: f.x, y1: f.y, x2: t.x, y2: t.y } }
+    case 'shot':        { const f = px(action.shooterId); if (!f) return null; const b = denormalize(0.5, 0.113, HALF_COURT_W, cH); return { x1: f.x, y1: f.y, x2: b.x, y2: b.y } }
+    case 'handoff':     { const f = px(action.fromId), t = pp(action.meetPosition); if (!f) return null; return { x1: f.x, y1: f.y, x2: t.x, y2: t.y } }
+    case 'defense-move':{ const f = px(action.playerId), t = pp(action.toPosition); if (!f) return null; return { x1: f.x, y1: f.y, x2: t.x, y2: t.y } }
+    case 'dribble': {
+      const f = px(action.playerId); if (!f) return null
+      if (action.waypoints && action.waypoints.length > 0) {
+        const mid = pp(action.waypoints[Math.floor(action.waypoints.length / 2)])
+        return { x1: f.x, y1: f.y, x2: mid.x, y2: mid.y }
+      }
+      const t = pp(action.toPosition); return { x1: f.x, y1: f.y, x2: t.x, y2: t.y }
+    }
+  }
+}
+
+// Pick the candidate position (midpoint ± perpendicular offset) farthest from all players
+function smartLabelCenter(
+  x1: number, y1: number, x2: number, y2: number,
+  playersPx: Array<{ x: number; y: number }>,
+): { cx: number; cy: number } {
+  const mx = (x1 + x2) / 2, my = (y1 + y2) / 2
+  const dx = x2 - x1, dy = y2 - y1
+  const len = Math.sqrt(dx * dx + dy * dy) || 1
+  const perpX = -dy / len, perpY = dx / len
+
+  function minDist(cx: number, cy: number) {
+    if (!playersPx.length) return Infinity
+    return Math.min(...playersPx.map(p => Math.sqrt((p.x - cx) ** 2 + (p.y - cy) ** 2)))
+  }
+
+  let bestCx = mx + perpX * 16, bestCy = my + perpY * 16, bestScore = -1
+  for (const offset of [16, 22, 30]) {
+    for (const sign of [1, -1] as const) {
+      const cx = mx + perpX * offset * sign
+      const cy = my + perpY * offset * sign
+      const score = minDist(cx, cy)
+      if (score > bestScore) { bestScore = score; bestCx = cx; bestCy = cy }
+    }
+  }
+  return { cx: bestCx, cy: bestCy }
+}
 
 export default function EditorPage() {
   const { setId } = useParams<{ setId: string }>()
@@ -400,7 +450,53 @@ export default function EditorPage() {
                   />
                 )
               })}
-              {/* optionText badge — canvas label for the current step's label */}
+
+              {/* Players — rendered above arrows */}
+              {activeSet.players.map(player => {
+                const pos = displayPositions[player.id] ?? { x: 0.5, y: 0.5 }
+                return (
+                  <PlayerNode
+                    key={player.id}
+                    player={player}
+                    position={pos}
+                    courtType={activeSet.courtType}
+                    hasBall={currentState.ball.holderId === player.id}
+                    isSelected={actionCreation.pendingSourceId === player.id}
+                    draggable={!(actionCreation.type && player.team === 'defense')}
+                    onDragEnd={() => {}}
+                    onClick={handlePlayerClick}
+                  />
+                )
+              })}
+
+              {/* Action type labels — rendered last (above players) with smart placement */}
+              {activeSet.actions.slice(0, activeStep).map((action, i) => {
+                const stateBefore = computeStateAtStep(
+                  activeSet.actions, i, activeSet.initialPositions, activeSet.initialBall, activeMarkings
+                )
+                const line = arrowLine(action, stateBefore.positions, cH)
+                if (!line) return null
+                const playersPx = Object.values(stateBefore.positions).map(p =>
+                  denormalize(p.x, p.y, HALF_COURT_W, cH)
+                )
+                const { cx, cy } = smartLabelCenter(line.x1, line.y1, line.x2, line.y2, playersPx)
+                const isLatest = i === activeStep - 1
+                return (
+                  <Text
+                    key={action.id + '-lbl'}
+                    x={cx - 25} y={cy - 6}
+                    width={50}
+                    text={ACTION_LABELS[action.type]}
+                    fontSize={10} fontStyle="bold"
+                    fill={ACTION_COLORS[action.type]}
+                    align="center"
+                    opacity={isLatest ? 1 : 0.45}
+                    listening={false}
+                  />
+                )
+              })}
+
+              {/* optionText badge — rendered topmost, above labels and players */}
               {(() => {
                 const action = activeSet.actions[activeStep - 1]
                 if (!action?.optionText) return null
@@ -419,23 +515,6 @@ export default function EditorPage() {
                   </Group>
                 )
               })()}
-
-              {activeSet.players.map(player => {
-                const pos = displayPositions[player.id] ?? { x: 0.5, y: 0.5 }
-                return (
-                  <PlayerNode
-                    key={player.id}
-                    player={player}
-                    position={pos}
-                    courtType={activeSet.courtType}
-                    hasBall={currentState.ball.holderId === player.id}
-                    isSelected={actionCreation.pendingSourceId === player.id}
-                    draggable={!(actionCreation.type && player.team === 'defense')}
-                    onDragEnd={() => {}}
-                    onClick={handlePlayerClick}
-                  />
-                )
-              })}
             </CourtCanvas>
           </div>
 

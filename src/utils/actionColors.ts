@@ -9,3 +9,13 @@ export const ACTION_COLORS: Record<ActionType, string> = {
   handoff:        '#fb923c',  // orange
   'defense-move': '#60a5fa',  // light blue
 }
+
+export const ACTION_LABELS: Record<ActionType, string> = {
+  pass:           'Pass',
+  dribble:        'Dribble',
+  cut:            'Cut',
+  screen:         'Screen',
+  shot:           'Shot',
+  handoff:        'Handoff',
+  'defense-move': 'Move',
+}
