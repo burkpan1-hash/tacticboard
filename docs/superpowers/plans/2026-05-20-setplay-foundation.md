@@ -4,13 +4,19 @@
 
 **Status:** Tüm tasklar tamamlandı. Git: `dcb817b`. Sonraki: Plan 2 (action system).
 
-> **Plan 1 sonrası ek değişiklikler:**
+> **Plan 1 sonrası ek değişiklikler (commit `46d2ed2`):**
 > - Savunma dizilimleri 6→8 oldu: 2-1-2 Zone ve 1-2-2 Zone eklendi
 > - `FormationPreset.courtOnly?: 'half' | 'full'` alanı eklendi (zone setler yarım korta kilitlendi)
 > - Man-to-Man: hücum dizilmişse dinamik konumlandırma (SetupPage.handleFormationSelect)
 > - `formations.test.ts`: defense count 6→8 güncellendi
 > - Docker ortamı eklendi (Dockerfile, docker-compose.yml, setplay.sh)
-> - PlayerNode: geçici koordinat göstergesi (silinecek compact öncesi)
+> - Hücum dizilimleri yenilendi: Motion ve 2-3 Low → High Post ve Double Post; tümü `courtOnly: 'half'`; koordinatlar uygulamadan kalibre edildi
+>
+> **Kort canvas iyileştirmeleri (henüz commit edilmedi):**
+> - `COURT_PADDING_X = 30` eklendi; Stage 500→560px genişledi, kort + oyuncular `Group x={30}` offset
+> - Post çizgileri (block marks): key yanlarında y=100 ve y=135; post dikdörtgenleri: y=50 (restricted arc seviyesi)
+> - Üç nokta yayı düzeltmesi: `threeCornerY` 142→144, `angle` 135→136°
+> - HalfCourt ve FullCourt (her iki basket ucu) güncellendi
 
 **Goal:** Build the project scaffold, basketball court canvas, draggable player nodes, and formation picker setup flow. End state: user can name a set, choose court type, pick a formation, adjust player positions with drag-and-drop, assign the ball, and press "Hazır" to enter the editor.
 

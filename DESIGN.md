@@ -38,9 +38,18 @@ Sıfırdan bir basketbol taktik tahtası uygulaması. Mevcut araçların (thehoo
 
 ## Kort
 
-- **Yarım kort** (Half Court): 500×470 px canvas
-- **Tam kort** (Full Court): 500×940 px canvas
+- **Yarım kort** (Half Court): 560×470 px canvas (500px kort + her yanda 30px `COURT_PADDING_X`)
+- **Tam kort** (Full Court): 560×940 px canvas
 - Koordinat sistemi: normalize `{x: 0–1, y: 0–1}` — y=0 basket ucu (üst), y=1 orta saha (alt)
+- `COURT_PADDING_X = 30`: canvas yanlara genişletilmiş, kort çizgileri ve oyuncular `Group x={30}` offset ile ortalanır. Drag normalizasyonu (`node.x() / HALF_COURT_W`) bozulmaz — Konva `node.x()` parent Group'a göre yerel koordinat döndürür.
+
+### Kort Çizgileri
+
+- Üç nokta yayı: merkez (250, 53), r=238, `angle=136°` (köşe-yay bağlantısı piksel hassasiyetinde)
+- Köşe çizgileri: x=30 / x=470, y=0'dan y=144'e (yay kesişim noktasıyla eşleşecek şekilde)
+- **Post çizgileri (block marks)**: key'in her iki yanında y=100 ve y=135'te 15px yatay çizgiler
+- **Post dikdörtgenleri**: key dışında, restricted arc seviyesinde (y=50), 15×20px outlined kutucuklar
+- Tüm bu çizgiler HalfCourt ve FullCourt (üst + alt) bileşenlerinde mevcut
 
 ---
 

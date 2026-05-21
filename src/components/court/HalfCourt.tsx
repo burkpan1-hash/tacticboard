@@ -42,9 +42,19 @@ export default function HalfCourt() {
       <Arc
         x={threeArc.cx} y={threeArc.cy}
         innerRadius={threeArc.r} outerRadius={threeArc.r}
-        angle={135} rotation={22}
+        angle={136} rotation={22}
         stroke={STROKE} strokeWidth={STROKE_W}
       />
+
+      {/* Block marks — low post and mid post (moved away from restricted arc) */}
+      <Line points={[keyLeft - 15, 100, keyLeft, 100]} stroke={STROKE} strokeWidth={STROKE_W} />
+      <Line points={[keyRight, 100, keyRight + 15, 100]} stroke={STROKE} strokeWidth={STROKE_W} />
+      <Line points={[keyLeft - 15, 135, keyLeft, 135]} stroke={STROKE} strokeWidth={STROKE_W} />
+      <Line points={[keyRight, 135, keyRight + 15, 135]} stroke={STROKE} strokeWidth={STROKE_W} />
+
+      {/* Post rectangles at restricted arc level */}
+      <Rect x={keyLeft - 15} y={50} width={15} height={20} stroke={STROKE} strokeWidth={STROKE_W} fill="transparent" />
+      <Rect x={keyRight} y={50} width={15} height={20} stroke={STROKE} strokeWidth={STROKE_W} fill="transparent" />
 
       <Line points={[basket.x - 30, 0, basket.x + 30, 0]} stroke="#f97316" strokeWidth={3} />
       <Circle x={basket.x} y={basket.y} radius={15} stroke="#f97316" strokeWidth={2} fill="transparent" />

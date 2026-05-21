@@ -4,6 +4,7 @@ export const HALF_COURT_W = 500
 export const HALF_COURT_H = 470
 export const FULL_COURT_W = 500
 export const FULL_COURT_H = 940
+export const COURT_PADDING_X = 30
 
 export function normalize(
   px: number, py: number,
@@ -31,6 +32,6 @@ export const HALF_COURT = {
   ftCircle:     { cx: 250, cy: 190, r: 60  },
   restricted:   { cx: 250, cy: 53,  r: 40  },
   threeCornerX: { left: 30, right: 470 },
-  threeCornerY: 142,
+  threeCornerY: 144,
   threeArc:     { cx: 250, cy: 53,  r: 238 },
 } as const
