@@ -1,4 +1,5 @@
 import { Stage, Layer, Group } from 'react-konva'
+import type Konva from 'konva'
 import type { CourtType } from '../../models/types'
 import HalfCourt from './HalfCourt'
 import FullCourt from './FullCourt'
@@ -7,13 +8,14 @@ import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_PADDING_X } from '../..
 interface Props {
   courtType: CourtType
   children?: React.ReactNode
+  onStageClick?: (e: Konva.KonvaEventObject<MouseEvent>) => void
 }
 
-export default function CourtCanvas({ courtType, children }: Props) {
+export default function CourtCanvas({ courtType, children, onStageClick }: Props) {
   const height = courtType === 'half' ? HALF_COURT_H : FULL_COURT_H
 
   return (
-    <Stage width={HALF_COURT_W + 2 * COURT_PADDING_X} height={height}>
+    <Stage width={HALF_COURT_W + 2 * COURT_PADDING_X} height={height} onClick={onStageClick}>
       <Layer>
         <Group x={COURT_PADDING_X}>
           {courtType === 'half' ? <HalfCourt /> : <FullCourt />}
