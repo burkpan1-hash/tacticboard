@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import type { ActionType } from '../../models/types'
 import { ACTION_COLORS } from '../../utils/actionColors'
 
@@ -63,57 +62,43 @@ interface Props {
 }
 
 export default function ActionToolbar({ activeType, ballHolderId, onSelect, onCancel, markingsEnabled, onToggleMarkings }: Props) {
-  const [activeTab, setActiveTab] = useState<'offense' | 'defense'>('offense')
-
-  function handleTabChange(tab: 'offense' | 'defense') {
-    setActiveTab(tab)
-    onCancel()
-  }
-
   return (
     <div className="flex flex-col gap-2 p-2 bg-slate-800 rounded-xl border border-slate-700">
-      {/* Tab switcher */}
-      <div className="flex rounded-lg overflow-hidden border border-slate-600 text-xs font-medium">
-        <button
-          onClick={() => handleTabChange('offense')}
-          className={`flex-1 py-1 transition-colors ${activeTab === 'offense' ? 'bg-orange-600 text-white' : 'bg-slate-700 text-slate-400 hover:bg-slate-600'}`}
-        >
-          ATK
-        </button>
-        <button
-          onClick={() => handleTabChange('defense')}
-          className={`flex-1 py-1 transition-colors ${activeTab === 'defense' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-400 hover:bg-slate-600'}`}
-        >
-          DEF
-        </button>
-      </div>
 
-      {activeTab === 'offense' && OFFENSE_TOOLS.map(t => {
-        const disabled = t.requiresBall && !ballHolderId
-        const active = activeType === t.type
-        return (
-          <button
-            key={t.type}
-            title={t.label}
-            disabled={disabled}
-            onClick={() => active ? onCancel() : onSelect(t.type)}
-            className={`
-              flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors
-              ${active ? 'bg-slate-600 ring-1 ring-white/30' : ''}
-              ${!active && !disabled ? 'bg-slate-700 text-slate-200 hover:bg-slate-600' : ''}
-              ${disabled ? 'opacity-30 cursor-not-allowed bg-slate-800 text-slate-500' : ''}
-            `}
-          >
-            {ICONS[t.type]}
-            <span style={{ color: disabled ? undefined : ACTION_COLORS[t.type] }}>{t.label}</span>
-            <span className="text-slate-500 text-[9px] leading-tight text-center">{HINTS[t.type]}</span>
-          </button>
-        )
-      })}
+      {/* ATK + DEF yan yana */}
+      <div className="flex flex-row gap-2">
 
-      {activeTab === 'defense' && (
-        <>
-          {/* Hareket */}
+        {/* ATK kolonu */}
+        <div className="flex flex-col gap-2">
+          <div className="text-[10px] text-orange-400 font-semibold px-1 tracking-wide">ATK</div>
+          {OFFENSE_TOOLS.map(t => {
+            const disabled = t.requiresBall && !ballHolderId
+            const active = activeType === t.type
+            return (
+              <button
+                key={t.type}
+                title={t.label}
+                disabled={disabled}
+                onClick={() => active ? onCancel() : onSelect(t.type)}
+                className={`
+                  flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors
+                  ${active ? 'bg-slate-600 ring-1 ring-white/30' : ''}
+                  ${!active && !disabled ? 'bg-slate-700 text-slate-200 hover:bg-slate-600' : ''}
+                  ${disabled ? 'opacity-30 cursor-not-allowed bg-slate-800 text-slate-500' : ''}
+                `}
+              >
+                {ICONS[t.type]}
+                <span style={{ color: disabled ? undefined : ACTION_COLORS[t.type] }}>{t.label}</span>
+                <span className="text-slate-500 text-[9px] leading-tight text-center">{HINTS[t.type]}</span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* DEF kolonu */}
+        <div className="flex flex-col gap-2">
+          <div className="text-[10px] text-blue-400 font-semibold px-1 tracking-wide">DEF</div>
+
           {(() => {
             const active = activeType === 'defense-move'
             const c = ACTION_COLORS['defense-move']
@@ -124,13 +109,12 @@ export default function ActionToolbar({ activeType, ballHolderId, onSelect, onCa
                   ${active ? 'bg-slate-600 ring-1 ring-white/30' : 'bg-slate-700 text-slate-200 hover:bg-slate-600'}`}
               >
                 {ICONS['defense-move']}
-                <span style={{ color: c }}>Hareket</span>
+                <span style={{ color: c }}>Move</span>
                 <span className="text-slate-500 text-[9px] leading-tight text-center">player → spot</span>
               </button>
             )
           })()}
 
-          {/* Markaj toggle */}
           <div className="flex flex-col items-center gap-1.5 px-2 py-2 bg-slate-700 rounded-lg">
             <svg viewBox="0 0 32 14" width={32} height={14} fill="none" strokeLinecap="round">
               <circle cx="8" cy="7" r="5" stroke="#60a5fa" strokeWidth="1.5" strokeDasharray="2 2"/>
@@ -150,7 +134,17 @@ export default function ActionToolbar({ activeType, ballHolderId, onSelect, onCa
               {markingsEnabled ? 'ON' : 'OFF'}
             </span>
           </div>
-        </>
+        </div>
+
+      </div>
+
+      {activeType && (
+        <button
+          onClick={onCancel}
+          className="w-full py-1.5 rounded-lg bg-red-700 hover:bg-red-600 text-white text-xs font-semibold transition-colors"
+        >
+          ✕ Cancel
+        </button>
       )}
     </div>
   )

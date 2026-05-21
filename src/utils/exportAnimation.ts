@@ -9,14 +9,17 @@ export function downloadBlob(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
-/** Composite all Konva layers onto a single canvas element (synchronous). */
+/** Composite all Konva layers onto a single canvas element (synchronous).
+ *  Uses 5-arg drawImage to handle Retina/HiDPI: Konva's internal canvas is
+ *  devicePixelRatio × the logical size, but we want the logical size output. */
 function composeStage(stage: Konva.Stage): HTMLCanvasElement {
   const w = stage.width(), h = stage.height()
   const out = document.createElement('canvas'); out.width = w; out.height = h
   const ctx = out.getContext('2d')!
   for (const layer of stage.getLayers()) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ctx.drawImage((layer as any).getCanvas()._canvas as HTMLCanvasElement, 0, 0)
+    const src = (layer as any).getCanvas()._canvas as HTMLCanvasElement
+    ctx.drawImage(src, 0, 0, w, h)
   }
   return out
 }
@@ -187,27 +190,38 @@ export function exportGif(
   const frameDelay = Math.round(1000 / fps)
   const frames: Array<{ canvas: HTMLCanvasElement; delayMs: number }> = []
   let elapsed = 0, cancelled = false
-  let timer: ReturnType<typeof setInterval> | null = null
+  let rafId: number
+  let lastCaptureTs = 0
 
-  timer = setInterval(() => {
+  // RAF-based capture: fires after each browser paint so the Konva canvas
+  // always reflects the latest React render (avoids stale-frame issue with setInterval).
+  function captureLoop(ts: number) {
     if (cancelled) return
-    frames.push({ canvas: composeStage(stage), delayMs: frameDelay })
-    elapsed += frameDelay
-    onProgress(Math.min(0.9, elapsed / durationMs))
+    if (lastCaptureTs === 0) lastCaptureTs = ts
 
-    if (elapsed >= durationMs) {
-      if (timer) clearInterval(timer)
-      onEncodeProgress(0)
-      setTimeout(() => {
-        if (cancelled) return
-        const gif = buildAnimatedGif(frames, scale)
-        onEncodeProgress(1)
-        onDone(new Blob([gif], { type: 'image/gif' }))
-      }, 16)
+    const sinceLast = ts - lastCaptureTs
+    if (sinceLast >= frameDelay) {
+      frames.push({ canvas: composeStage(stage), delayMs: frameDelay })
+      elapsed += sinceLast
+      lastCaptureTs = ts
+      onProgress(Math.min(0.9, elapsed / durationMs))
+
+      if (elapsed >= durationMs) {
+        onEncodeProgress(0)
+        setTimeout(() => {
+          if (cancelled) return
+          const gif = buildAnimatedGif(frames, scale)
+          onEncodeProgress(1)
+          onDone(new Blob([gif], { type: 'image/gif' }))
+        }, 16)
+        return
+      }
     }
-  }, frameDelay)
+    rafId = requestAnimationFrame(captureLoop)
+  }
+  rafId = requestAnimationFrame(captureLoop)
 
-  return { cancel: () => { cancelled = true; if (timer) clearInterval(timer) } }
+  return { cancel: () => { cancelled = true; cancelAnimationFrame(rafId) } }
 }
 
 // ─── Public: Export Video (WebM) ──────────────────────────────────────────────

@@ -111,6 +111,8 @@ export default function EditorPage() {
   const lastWaypoint = useRef<NormalizedPosition | null>(null)
   const SAMPLE_DIST = 15
 
+  const cH = activeSet?.courtType === 'half' ? HALF_COURT_H : FULL_COURT_H
+
 
   useEffect(() => {
     if (activeSet?.id === setId) return
@@ -125,6 +127,7 @@ export default function EditorPage() {
         e.preventDefault()
         usePlayStore.getState().undoLastAction()
       }
+      if (e.key === 'Escape') cancelAll()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -182,7 +185,6 @@ export default function EditorPage() {
   const currentState = computeStateAtStep(
     activeSet.actions, activeStep, activeSet.initialPositions, activeSet.initialBall, activeMarkings
   )
-  const cH = activeSet.courtType === 'half' ? HALF_COURT_H : FULL_COURT_H
   const total = activeSet.actions.length
 
   const displayPositions = (() => {
@@ -505,19 +507,22 @@ export default function EditorPage() {
           />
         </div>
 
-        <div className="flex-1 flex items-center justify-center bg-slate-950 overflow-hidden p-4">
-          <div className="flex flex-row items-center gap-3">
+        <div className="flex-1 flex flex-col bg-slate-950 overflow-x-hidden">
+          <div className="h-10 flex items-center justify-center flex-shrink-0">
+            {showInstruction && (
+              <div className="text-sm text-orange-300 font-medium flex items-center gap-2">
+                {instructionText}
+                <button onClick={cancelAll} className="ml-3 text-slate-400 hover:text-white text-xs underline">Cancel</button>
+              </div>
+            )}
+          </div>
+          <div className="flex-1 flex items-end justify-center px-4 overflow-hidden">
+          <div className="flex flex-row items-end gap-3">
           <div
             className="relative"
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleCourtDrop}
           >
-            {showInstruction && (
-              <div className="absolute -top-10 left-0 right-0 text-center text-sm text-orange-300 font-medium">
-                {instructionText}
-                <button onClick={cancelAll} className="ml-3 text-slate-400 hover:text-white text-xs underline">Cancel</button>
-              </div>
-            )}
             <CourtCanvas
               courtType={activeSet.courtType}
               stageRef={stageRef}
@@ -683,6 +688,7 @@ export default function EditorPage() {
               ))}
             </div>
           )}
+          </div>
           </div>
         </div>
 
