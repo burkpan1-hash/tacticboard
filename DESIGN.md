@@ -87,18 +87,19 @@ Working directory: `/Users/burakbozkurt/Desktop/basketball board tactics`
 
 ---
 
-## Action Types (6)
+## Action Types (7)
 
 All action labels and UI are in **English**.
 
 | Type | Who | Line style | End symbol | Color |
 |---|---|---|---|---|
 | Pass | Ball holder | Dashed `- - -` | Arrowhead | amber `#fbbf24` |
-| Dribble | Ball holder | Wavy `∿` | Arrowhead | indigo `#818cf8` |
-| Cut | Any player | Solid | Arrowhead | pink `#f472b6` |
-| Screen | Any player | Solid | Thick perpendicular bar | sky blue `#38bdf8` |
+| Dribble | Ball holder | Wavy `∿` (or path via waypoints) | Arrowhead | indigo `#818cf8` |
+| Cut | Any offense player | Solid | Arrowhead | pink `#f472b6` |
+| Screen | Any offense player | Solid | Thick perpendicular bar | sky blue `#38bdf8` |
 | Shot | Ball holder | Dashed arc → basket | Crosshair circle | coral red `#f87171` |
 | Handoff | Ball holder | Solid | Double bars | orange `#fb923c` |
+| Defense Move | Any defense player | Solid | Arrowhead | blue `#60a5fa` |
 
 **Color source of truth:** `src/utils/actionColors.ts` — imported by ActionArrow, ActionPreview, ActionToolbar, and ActionCard. Change once, updates everywhere.
 
@@ -111,7 +112,7 @@ All action labels and UI are in **English**.
 ```typescript
 type CourtType = 'half' | 'full'
 type Team = 'offense' | 'defense'
-type ActionType = 'pass' | 'cut' | 'dribble' | 'screen' | 'shot' | 'handoff'
+type ActionType = 'pass' | 'cut' | 'dribble' | 'screen' | 'shot' | 'handoff' | 'defense-move'
 
 interface NormalizedPosition { x: number; y: number }
 type PositionMap = Record<string, NormalizedPosition>
@@ -124,15 +125,16 @@ interface Player {
 
 interface BallState { holderId: string }
 
-// optionText: optional step label shown as a badge near the ball holder during animation
-interface PassAction    { id: string; type: 'pass';    fromId: string; toId: string; optionText?: string }
-interface CutAction     { id: string; type: 'cut';     playerId: string; toPosition: NormalizedPosition; optionText?: string }
-interface DribbleAction { id: string; type: 'dribble'; playerId: string; toPosition: NormalizedPosition; optionText?: string }
-interface ScreenAction  { id: string; type: 'screen';  screenerId: string; screenPosition: NormalizedPosition; optionText?: string }
-interface ShotAction    { id: string; type: 'shot';    shooterId: string; optionText?: string }
-interface HandoffAction { id: string; type: 'handoff'; fromId: string; toId: string; meetPosition: NormalizedPosition; optionText?: string }
+// optionText: optional step label shown as a badge on the ActionCard
+interface PassAction         { id: string; type: 'pass';         fromId: string; toId: string; optionText?: string }
+interface CutAction          { id: string; type: 'cut';          playerId: string; toPosition: NormalizedPosition; optionText?: string }
+interface DribbleAction      { id: string; type: 'dribble';      playerId: string; toPosition: NormalizedPosition; waypoints?: NormalizedPosition[]; optionText?: string }
+interface ScreenAction       { id: string; type: 'screen';       screenerId: string; screenPosition: NormalizedPosition; optionText?: string }
+interface ShotAction         { id: string; type: 'shot';         shooterId: string; optionText?: string }
+interface HandoffAction      { id: string; type: 'handoff';      fromId: string; toId: string; meetPosition: NormalizedPosition; optionText?: string }
+interface DefenseMoveAction  { id: string; type: 'defense-move'; playerId: string; toPosition: NormalizedPosition; optionText?: string }
 
-type Action = PassAction | CutAction | DribbleAction | ScreenAction | ShotAction | HandoffAction
+type Action = PassAction | CutAction | DribbleAction | ScreenAction | ShotAction | HandoffAction | DefenseMoveAction
 
 interface PlaySet {
   id: string
@@ -141,7 +143,8 @@ interface PlaySet {
   players: Player[]
   initialPositions: PositionMap
   initialBall: BallState
-  actions: Action[]   // event sourcing — replayed in order to compute any state
+  actions: Action[]             // event sourcing — replayed in order to compute any state
+  markings?: Record<string, string>  // defenderId → offensePlayerId (man-to-man assignment)
 }
 ```
 
@@ -176,11 +179,13 @@ interface PlaySet {
 - **Step label** (`optionText`): optional text per action; shown as small badge on card and will appear during animation (Plan 3)
 - All action names in English: Pass, Dribble, Cut, Screen, Shot, Handoff
 
-### Phase 5 — Animation & Export (Plan 3)
-- ▶ Play → full action sequence plays with Konva.Tween animation
-- optionText badge → Konva shape on canvas (included in GIF/MP4)
-- Speed: Slow / Normal / Fast
-- Export: **GIF** or **MP4**
+### Phase 5 — Animation & Playback ✅ (Export deferred)
+- ▶ Play → full action sequence animates via React RAF + lerp interpolation (60 fps)
+- ⏸ Pause / ◀ ▶ step navigation
+- Speed: 0.5× / 1× / 1.5× / 2× buttons
+- Players interpolate smoothly between integer step positions
+- Playback auto-stops at last action; restarting from end resets to step 0
+- Export (GIF / MP4): explicitly deferred — not implemented
 
 ---
 
@@ -192,6 +197,8 @@ Key behavior notes:
 - `clearAllActions()`: resets actions array and `activeStep` to 0.
 - `deleteAction(id)`: clamps `activeStep` to new length if needed.
 - `undoLastAction()`: removes last action, clamps step.
+- **Playback state** (`isPlaying`, `playbackSpeed`): live in the store; RAF loop in `EditorPage` reads both via `usePlayStore.getState()` to avoid stale closure.
+- `updateMarkings(markings)`: saves man-to-man defense assignments (defenderId → offensePlayerId).
 
 ---
 
@@ -204,12 +211,12 @@ src/
   store/
     usePlayStore.ts           ✅
   utils/
-    stateEngine.ts            ✅  pure: applyAction, computeStateAtStep
+    stateEngine.ts            ✅  pure: applyAction, computeStateAtStep (handles defense-move + markings)
     stateEngine.test.ts       ✅  22 tests, all passing
     formations.ts             ✅  6 offense + 8 defense formations
     courtCoords.ts            ✅  normalize/denormalize, COURT_PADDING_X
     arrowGeometry.ts          ✅  wavyPoints, perpendicularBar
-    actionColors.ts           ✅  single source of truth for 6 action colors
+    actionColors.ts           ✅  single source of truth for 7 action colors
   components/
     court/
       CourtCanvas.tsx         ✅  Stage + Layer, onStageClick + onMouseMove + onMouseLeave
@@ -218,21 +225,19 @@ src/
     players/
       PlayerNode.tsx          ✅  draggable Konva Circle + label
     actions/
-      ActionArrow.tsx         ✅  6 visual styles, imports from actionColors.ts
+      ActionArrow.tsx         ✅  7 visual styles (incl. defense-move), imports from actionColors.ts
       ActionOverlay.tsx       ✅  renders all arrows up to activeStep
       ActionPreview.tsx       ✅  ghost cursor preview while creating an action
       ActionPanel.tsx         ✅  right panel: action list + Clear All
       ActionCard.tsx          ✅  card with delete confirm, player info, optionText badge
       OptionBadge.tsx         ✅  inline add/edit for step label; closes on blur
     toolbar/
-      ActionToolbar.tsx       ✅  6 SVG icon buttons, colored from actionColors.ts
+      ActionToolbar.tsx       ✅  ATK/DEF tab switcher + 6 offense tools + defense-move + markings toggle
     setup/
       PlayerSetup.tsx         ✅
       FormationPicker.tsx     ✅  filtered by courtType
     playback/
-      PlaybackControls.tsx    ✅  ◀ ▶ step-through + Undo button
-    export/
-      ExportPanel.tsx         ← Plan 3
+      PlaybackControls.tsx    ✅  ◀ ▶ step-through, ▶/⏸ play/pause, 0.5×/1×/1.5×/2× speed, Undo
   pages/
     HomePage.tsx              ✅
     EditorPage.tsx            ✅
@@ -262,8 +267,9 @@ App: `http://localhost:5173`
 | Phase | Content | Status |
 |---|---|---|
 | Plan 1 | Scaffold, court canvas, setup flow, formations | ✅ Complete |
-| Plan 2 | State engine, 6 action types, editor page | ✅ Complete |
-| Plan 3 | Animation, playback, GIF/MP4 export | Pending |
+| Plan 2 | State engine, 7 action types (incl. defense-move), editor page, markings | ✅ Complete |
+| Plan 3 | Animation (RAF + lerp), speed control, play/pause | ✅ Complete |
+| Plan 3 (export) | GIF / MP4 export | Deferred |
 
 ---
 

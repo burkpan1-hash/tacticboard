@@ -24,10 +24,16 @@ export default function EditorPage() {
     activeStep,
     actionCreation, startActionCreation, setPendingSource, cancelActionCreation,
     addAction, addPlayerToCourt, updateMarkings,
+    isPlaying, setIsPlaying,
   } = usePlayStore()
 
   const [markingsEnabled, setMarkingsEnabled] = useState(false)
   const [mousePos, setMousePos] = useState<NormalizedPosition | null>(null)
+  const [animFraction, setAnimFraction] = useState(0)
+  const animFractionRef = useRef(0)
+  const rafRef = useRef(0)
+  const lastTsRef = useRef(0)
+  const STEP_MS = 800
   const [dribbleWaypoints, setDribbleWaypoints] = useState<NormalizedPosition[]>([])
   const isDraggingDribble = useRef(false)
   const dragWasUsed = useRef(false)
@@ -57,6 +63,42 @@ export default function EditorPage() {
     if (!actionCreation.type) setMousePos(null)
   }, [actionCreation.type])
 
+  useEffect(() => {
+    if (!isPlaying) {
+      cancelAnimationFrame(rafRef.current)
+      animFractionRef.current = 0
+      lastTsRef.current = 0
+      setAnimFraction(0)
+      return
+    }
+    const total = usePlayStore.getState().activeSet?.actions.length ?? 0
+    if (usePlayStore.getState().activeStep >= total) {
+      setIsPlaying(false)
+      return
+    }
+    function tick(ts: number) {
+      const dt = lastTsRef.current ? ts - lastTsRef.current : 0
+      lastTsRef.current = ts
+      const speed = usePlayStore.getState().playbackSpeed
+      const next = Math.min(1, animFractionRef.current + dt / (STEP_MS / speed))
+      animFractionRef.current = next
+      setAnimFraction(next)
+      if (next >= 1) {
+        const s = usePlayStore.getState()
+        const newStep = s.activeStep + 1
+        const tot = s.activeSet?.actions.length ?? 0
+        s.setActiveStep(newStep)
+        animFractionRef.current = 0
+        lastTsRef.current = 0
+        setAnimFraction(0)
+        if (newStep >= tot) { s.setIsPlaying(false); return }
+      }
+      rafRef.current = requestAnimationFrame(tick)
+    }
+    rafRef.current = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(rafRef.current)
+  }, [isPlaying, setIsPlaying])
+
   if (!activeSet) {
     return (
       <div className="min-h-screen flex items-center justify-center text-slate-400">
@@ -70,6 +112,22 @@ export default function EditorPage() {
     activeSet.actions, activeStep, activeSet.initialPositions, activeSet.initialBall, activeMarkings
   )
   const cH = activeSet.courtType === 'half' ? HALF_COURT_H : FULL_COURT_H
+  const total = activeSet.actions.length
+
+  const displayPositions = (() => {
+    if (!isPlaying || activeStep >= total) return currentState.positions
+    const toState = computeStateAtStep(
+      activeSet.actions, activeStep + 1, activeSet.initialPositions, activeSet.initialBall, activeMarkings
+    )
+    const t = animFraction
+    return Object.fromEntries(
+      Object.keys(currentState.positions).map(id => {
+        const from = currentState.positions[id] ?? { x: 0.5, y: 0.5 }
+        const to = toState.positions[id] ?? from
+        return [id, { x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t }]
+      })
+    )
+  })()
 
   const inPlayIds = new Set(activeSet.players.map(p => p.id))
   const benchPlayers: Player[] = []
@@ -343,7 +401,7 @@ export default function EditorPage() {
                 )
               })}
               {activeSet.players.map(player => {
-                const pos = currentState.positions[player.id] ?? { x: 0.5, y: 0.5 }
+                const pos = displayPositions[player.id] ?? { x: 0.5, y: 0.5 }
                 return (
                   <PlayerNode
                     key={player.id}

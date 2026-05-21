@@ -61,6 +61,12 @@ interface PlayStoreState {
   startActionCreation: (type: ActionType) => void
   setPendingSource: (playerId: string) => void
   cancelActionCreation: () => void
+
+  // ── Playback ─────────────────────────────────────────────────
+  isPlaying: boolean
+  playbackSpeed: number
+  setIsPlaying: (v: boolean) => void
+  setPlaybackSpeed: (v: number) => void
 }
 
 const EMPTY_CREATION: ActionCreation = {
@@ -202,6 +208,11 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
     actionCreation: { ...s.actionCreation, pendingSourceId: playerId },
   })),
   cancelActionCreation: () => set({ actionCreation: EMPTY_CREATION }),
+
+  isPlaying: false,
+  playbackSpeed: 1,
+  setIsPlaying: (isPlaying) => set({ isPlaying }),
+  setPlaybackSpeed: (playbackSpeed) => set({ playbackSpeed }),
 
   updateMarkings: (markings) => {
     set(s => {

@@ -1,4 +1,18 @@
-# SetPlay Playback & Export — Implementation Plan
+# SetPlay Playback & Export — Implementation Plan [✅ PARTIALLY COMPLETE]
+
+## Implementation Notes (actual vs. planned)
+
+- **Animation approach changed**: Konva.Tween was **not** used. Instead, a React `requestAnimationFrame` loop with lerp interpolation drives player movement — this keeps animation inside React's render pipeline (PlayerNode → Konva Circle) without bypassing React state.
+- **`animationEngine.ts` not created** — no separate engine file; all animation logic lives in `EditorPage.tsx` as a `useEffect` RAF loop.
+- **`displayPositions` computed in EditorPage** — interpolated per-frame between integer-step states using `computeStateAtStep(step)` and `computeStateAtStep(step+1)`.
+- **Store holds playback state** — `isPlaying` and `playbackSpeed` live in Zustand; RAF reads both via `usePlayStore.getState()` inside `tick()` to avoid stale closure.
+- **`PlaybackControls.tsx` complete** — ◀ ▶ step buttons, ▶/⏸ play/pause, 0.5×/1×/1.5×/2× speed, Undo. No `getAnimationContext` prop needed.
+- **Speed 1.5× added** — plan had [0.5×, 1×, 2×]; actual UI has [0.5×, 1×, 1.5×, 2×].
+- **Konva option badge (canvas) not implemented** — `optionText` displayed as DOM badge on ActionCard only. Not yet on canvas.
+- **ExportPanel deferred** — user confirmed "Şimdilik gerek yok" (not needed now). Tasks 4 and 5 (export) remain unimplemented.
+- **`STEP_MS = 800`** — one action animates in 800ms at 1× speed. Dividing by `playbackSpeed` scales duration.
+
+---
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
