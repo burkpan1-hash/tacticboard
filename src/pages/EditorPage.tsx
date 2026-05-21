@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { nanoid } from 'nanoid'
 import type Konva from 'konva'
-import { Line } from 'react-konva'
+import { Line, Group, Rect, Text } from 'react-konva'
 import CourtCanvas from '../components/court/CourtCanvas'
 import PlayerNode from '../components/players/PlayerNode'
 import ActionOverlay from '../components/actions/ActionOverlay'
@@ -400,6 +400,26 @@ export default function EditorPage() {
                   />
                 )
               })}
+              {/* optionText badge — canvas label for the current step's label */}
+              {(() => {
+                const action = activeSet.actions[activeStep - 1]
+                if (!action?.optionText) return null
+                const holder = displayPositions[currentState.ball.holderId]
+                if (!holder) return null
+                const hpx = denormalize(holder.x, holder.y, HALF_COURT_W, cH)
+                const W = Math.min(Math.max(action.optionText.length * 7 + 16, 60), 140)
+                const H = 20
+                return (
+                  <Group x={hpx.x + 24} y={hpx.y - H / 2} listening={false}>
+                    <Rect width={W} height={H} fill="#1e293b" cornerRadius={4}
+                      stroke="#fb923c" strokeWidth={1.5} shadowBlur={6} shadowColor="rgba(0,0,0,0.5)" />
+                    <Text text={action.optionText} width={W} height={H}
+                      fontSize={10} fontStyle="bold" fill="#f1f5f9"
+                      align="center" verticalAlign="middle" listening={false} />
+                  </Group>
+                )
+              })()}
+
               {activeSet.players.map(player => {
                 const pos = displayPositions[player.id] ?? { x: 0.5, y: 0.5 }
                 return (

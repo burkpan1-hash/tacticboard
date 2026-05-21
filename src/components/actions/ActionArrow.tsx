@@ -1,4 +1,4 @@
-import { Line, Arrow, Circle, Group } from 'react-konva'
+import { Line, Arrow, Circle, Group, Text } from 'react-konva'
 import type { Action, PositionMap } from '../../models/types'
 import { denormalize, HALF_COURT_W, HALF_COURT_H, FULL_COURT_H } from '../../utils/courtCoords'
 import { wavyPoints, wavyAlongPath, perpendicularBar } from '../../utils/arrowGeometry'
@@ -7,6 +7,35 @@ import { ACTION_COLORS } from '../../utils/actionColors'
 const PLAYER_RADIUS = 20
 const ARROW_GAP = 6
 const SCREEN_GAP = 3
+
+const ACTION_LABELS: Record<string, string> = {
+  pass: 'Pass', dribble: 'Dribble', cut: 'Cut',
+  screen: 'Screen', shot: 'Shot', handoff: 'Handoff', 'defense-move': 'Move',
+}
+
+function ArrowLabel({ x1, y1, x2, y2, color, type }: {
+  x1: number; y1: number; x2: number; y2: number; color: string; type: string
+}) {
+  const mx = (x1 + x2) / 2
+  const my = (y1 + y2) / 2
+  const dx = x2 - x1, dy = y2 - y1
+  const len = Math.sqrt(dx * dx + dy * dy) || 1
+  const px = -dy / len, py = dx / len
+  const OFFSET = 13
+  return (
+    <Text
+      x={mx + px * OFFSET - 25}
+      y={my + py * OFFSET - 6}
+      width={50}
+      text={ACTION_LABELS[type] ?? type}
+      fontSize={10}
+      fontStyle="bold"
+      fill={color}
+      align="center"
+      listening={false}
+    />
+  )
+}
 
 function shortenEnd(x1: number, y1: number, x2: number, y2: number, d: number): { x: number; y: number } {
   const dx = x2 - x1, dy = y2 - y1
@@ -33,13 +62,16 @@ export default function ActionArrow({ action, positions, courtType }: Props) {
       const to   = px(action.toId)
       const end  = shortenEnd(from.x, from.y, to.x, to.y, PLAYER_RADIUS + ARROW_GAP)
       return (
-        <Arrow
-          points={[from.x, from.y, end.x, end.y]}
-          stroke={color} strokeWidth={2.5}
-          fill={color}
-          dash={[10, 6]}
-          pointerLength={10} pointerWidth={8}
-        />
+        <Group>
+          <Arrow
+            points={[from.x, from.y, end.x, end.y]}
+            stroke={color} strokeWidth={2.5}
+            fill={color}
+            dash={[10, 6]}
+            pointerLength={10} pointerWidth={8}
+          />
+          <ArrowLabel x1={from.x} y1={from.y} x2={end.x} y2={end.y} color={color} type={action.type} />
+        </Group>
       )
     }
 
@@ -54,6 +86,8 @@ export default function ActionArrow({ action, positions, courtType }: Props) {
         const end   = shortenEnd(prev.x, prev.y, last.x, last.y, PLAYER_RADIUS + ARROW_GAP)
         allPx[allPx.length - 1] = end
         const pts = wavyAlongPath(allPx)
+        const mid = allPx[Math.floor(allPx.length / 2)]
+        const pre = allPx[Math.max(0, Math.floor(allPx.length / 2) - 1)]
         return (
           <Group>
             <Line points={pts} stroke={color} strokeWidth={2.5} />
@@ -62,6 +96,7 @@ export default function ActionArrow({ action, positions, courtType }: Props) {
               stroke={color} fill={color}
               strokeWidth={2.5} pointerLength={10} pointerWidth={8}
             />
+            <ArrowLabel x1={pre.x} y1={pre.y} x2={mid.x} y2={mid.y} color={color} type={action.type} />
           </Group>
         )
       }
@@ -76,6 +111,7 @@ export default function ActionArrow({ action, positions, courtType }: Props) {
             stroke={color} fill={color}
             strokeWidth={2.5} pointerLength={10} pointerWidth={8}
           />
+          <ArrowLabel x1={from.x} y1={from.y} x2={end.x} y2={end.y} color={color} type={action.type} />
         </Group>
       )
     }
@@ -83,14 +119,16 @@ export default function ActionArrow({ action, positions, courtType }: Props) {
     case 'cut': {
       const from = px(action.playerId)
       const to   = pxPos(action.toPosition)
-
       const end  = shortenEnd(from.x, from.y, to.x, to.y, PLAYER_RADIUS + ARROW_GAP)
       return (
-        <Arrow
-          points={[from.x, from.y, end.x, end.y]}
-          stroke={color} fill={color}
-          strokeWidth={2.5} pointerLength={10} pointerWidth={8}
-        />
+        <Group>
+          <Arrow
+            points={[from.x, from.y, end.x, end.y]}
+            stroke={color} fill={color}
+            strokeWidth={2.5} pointerLength={10} pointerWidth={8}
+          />
+          <ArrowLabel x1={from.x} y1={from.y} x2={end.x} y2={end.y} color={color} type={action.type} />
+        </Group>
       )
     }
 
@@ -104,6 +142,7 @@ export default function ActionArrow({ action, positions, courtType }: Props) {
         <Group>
           <Line points={[from.x, from.y, end.x, end.y]} stroke={color} strokeWidth={2.5} />
           <Line points={[bx1, by1, bx2, by2]} stroke={color} strokeWidth={6} strokeLinecap="round" />
+          <ArrowLabel x1={from.x} y1={from.y} x2={end.x} y2={end.y} color={color} type={action.type} />
         </Group>
       )
     }
@@ -113,11 +152,14 @@ export default function ActionArrow({ action, positions, courtType }: Props) {
       const to   = pxPos(action.toPosition)
       const end  = shortenEnd(from.x, from.y, to.x, to.y, PLAYER_RADIUS + ARROW_GAP)
       return (
-        <Arrow
-          points={[from.x, from.y, end.x, end.y]}
-          stroke={color} fill={color}
-          strokeWidth={2.5} pointerLength={10} pointerWidth={8}
-        />
+        <Group>
+          <Arrow
+            points={[from.x, from.y, end.x, end.y]}
+            stroke={color} fill={color}
+            strokeWidth={2.5} pointerLength={10} pointerWidth={8}
+          />
+          <ArrowLabel x1={from.x} y1={from.y} x2={end.x} y2={end.y} color={color} type={action.type} />
+        </Group>
       )
     }
 
@@ -136,6 +178,7 @@ export default function ActionArrow({ action, positions, courtType }: Props) {
           <Circle x={cx} y={cy} radius={9} stroke={color} strokeWidth={2} fill="transparent" />
           <Line points={[cx - 13, cy, cx + 13, cy]} stroke={color} strokeWidth={2} />
           <Line points={[cx, cy - 13, cx, cy + 13]} stroke={color} strokeWidth={2} />
+          <ArrowLabel x1={from.x} y1={from.y} x2={cx} y2={cy} color={color} type={action.type} />
         </Group>
       )
     }
@@ -157,6 +200,7 @@ export default function ActionArrow({ action, positions, courtType }: Props) {
           />
           <Line points={[bx1, by1, bx2, by2]} stroke={color} strokeWidth={3} />
           <Line points={[bx1 + ux * off, by1 + uy * off, bx2 + ux * off, by2 + uy * off]} stroke={color} strokeWidth={3} />
+          <ArrowLabel x1={from.x} y1={from.y} x2={meet.x} y2={meet.y} color={color} type={action.type} />
         </Group>
       )
     }
