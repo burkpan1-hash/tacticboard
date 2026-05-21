@@ -4,7 +4,7 @@ import { usePlayStore } from '../../store/usePlayStore'
 
 export default function ActionPanel() {
   const {
-    activeSet, activeStep,
+    activeSet, activeStep, isPlaying,
     setActiveStep, clearAllActions, setOptionText,
   } = usePlayStore()
   const [confirmClear, setConfirmClear] = useState(false)
@@ -53,7 +53,7 @@ export default function ActionPanel() {
             index={i}
             action={action}
             players={activeSet.players}
-            isActive={activeStep === i + 1}
+            isActive={isPlaying ? activeStep === i : activeStep === i + 1}
             onClick={() => setActiveStep(i + 1)}
             onOptionTextChange={(text) => setOptionText(action.id, text)}
           />

@@ -48,7 +48,7 @@ export default function ActionCard({
       </div>
 
       {action.optionText && !isActive && (
-        <div className="px-3 pb-2" onClick={e => e.stopPropagation()}>
+        <div className="px-3 pb-2">
           <span className="text-xs text-orange-300/70"><span className="opacity-60 mr-1">◈</span>{action.optionText}</span>
         </div>
       )}

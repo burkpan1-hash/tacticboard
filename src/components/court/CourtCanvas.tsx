@@ -8,6 +8,7 @@ import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_PADDING_X } from '../..
 interface Props {
   courtType: CourtType
   children?: React.ReactNode
+  stageRef?: React.RefObject<Konva.Stage | null>
   onStageClick?: (e: Konva.KonvaEventObject<MouseEvent>) => void
   onMouseMove?: (e: Konva.KonvaEventObject<MouseEvent>) => void
   onMouseDown?: (e: Konva.KonvaEventObject<MouseEvent>) => void
@@ -15,11 +16,12 @@ interface Props {
   onMouseLeave?: () => void
 }
 
-export default function CourtCanvas({ courtType, children, onStageClick, onMouseMove, onMouseDown, onMouseUp, onMouseLeave }: Props) {
+export default function CourtCanvas({ courtType, children, stageRef, onStageClick, onMouseMove, onMouseDown, onMouseUp, onMouseLeave }: Props) {
   const height = courtType === 'half' ? HALF_COURT_H : FULL_COURT_H
 
   return (
     <Stage
+      ref={stageRef}
       width={HALF_COURT_W + 2 * COURT_PADDING_X} height={height}
       onClick={onStageClick}
       onMouseMove={onMouseMove}

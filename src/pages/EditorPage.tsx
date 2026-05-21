@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
+import type Konva from 'konva'
 import { useParams, useNavigate } from 'react-router-dom'
 import { nanoid } from 'nanoid'
-import type Konva from 'konva'
-import { Line, Group, Rect, Text } from 'react-konva'
+import { Line, Group, Rect, Text, Arrow } from 'react-konva'
 import CourtCanvas from '../components/court/CourtCanvas'
 import PlayerNode from '../components/players/PlayerNode'
 import ActionOverlay from '../components/actions/ActionOverlay'
@@ -10,11 +10,12 @@ import ActionPreview from '../components/actions/ActionPreview'
 import ActionToolbar from '../components/toolbar/ActionToolbar'
 import ActionPanel from '../components/actions/ActionPanel'
 import PlaybackControls from '../components/playback/PlaybackControls'
+import ExportModal from '../components/export/ExportModal'
 import { usePlayStore } from '../store/usePlayStore'
 import { computeStateAtStep } from '../utils/stateEngine'
 import { denormalize } from '../utils/courtCoords'
 import type { Action, NormalizedPosition, Player, PositionMap } from '../models/types'
-import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_PADDING_X } from '../utils/courtCoords'
+import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_PADDING_X, HALF_COURT } from '../utils/courtCoords'
 import { ACTION_COLORS, ACTION_LABELS } from '../utils/actionColors'
 
 // Returns the start/end pixel coords of the arrow's direction vector (for label placement)
@@ -25,7 +26,7 @@ function arrowLine(action: Action, positions: PositionMap, cH: number): { x1: nu
     case 'pass':        { const f = px(action.fromId), t = px(action.toId); if (!f || !t) return null; return { x1: f.x, y1: f.y, x2: t.x, y2: t.y } }
     case 'cut':         { const f = px(action.playerId), t = pp(action.toPosition); if (!f) return null; return { x1: f.x, y1: f.y, x2: t.x, y2: t.y } }
     case 'screen':      { const f = px(action.screenerId), t = pp(action.screenPosition); if (!f) return null; return { x1: f.x, y1: f.y, x2: t.x, y2: t.y } }
-    case 'shot':        { const f = px(action.shooterId); if (!f) return null; const b = denormalize(0.5, 0.113, HALF_COURT_W, cH); return { x1: f.x, y1: f.y, x2: b.x, y2: b.y } }
+    case 'shot':        { const f = px(action.shooterId); if (!f) return null; return { x1: f.x, y1: f.y, x2: HALF_COURT.basket.x, y2: HALF_COURT.basket.y } }
     case 'handoff':     { const f = px(action.fromId), t = pp(action.meetPosition); if (!f) return null; return { x1: f.x, y1: f.y, x2: t.x, y2: t.y } }
     case 'defense-move':{ const f = px(action.playerId), t = pp(action.toPosition); if (!f) return null; return { x1: f.x, y1: f.y, x2: t.x, y2: t.y } }
     case 'dribble': {
@@ -73,7 +74,7 @@ export default function EditorPage() {
     savedSets, activeSet, setActiveSet,
     activeStep,
     actionCreation, startActionCreation, setPendingSource, cancelActionCreation,
-    addAction, addPlayerToCourt, updateMarkings,
+    addAction, addPlayerToCourt, updateMarkings, saveSet,
     isPlaying, setIsPlaying,
   } = usePlayStore()
 
@@ -81,12 +82,32 @@ export default function EditorPage() {
   const [mousePos, setMousePos] = useState<NormalizedPosition | null>(null)
   const [animFraction, setAnimFraction] = useState(0)
   const animFractionRef = useRef(0)
+  const [editingName, setEditingName] = useState(false)
+  const [nameInput, setNameInput] = useState('')
+  const nameInputRef = useRef<HTMLInputElement>(null)
+
+  function startNameEdit() {
+    setNameInput(activeSet.name)
+    setEditingName(true)
+    setTimeout(() => nameInputRef.current?.select(), 0)
+  }
+
+  function commitNameEdit() {
+    const trimmed = nameInput.trim()
+    if (trimmed) saveSet({ ...activeSet, name: trimmed })
+    setEditingName(false)
+  }
+  const stageRef = useRef<Konva.Stage | null>(null)
+  const [showExport, setShowExport] = useState(false)
   const rafRef = useRef(0)
   const lastTsRef = useRef(0)
-  const STEP_MS = 800
+  const STEP_MS = 1600
   const [dribbleWaypoints, setDribbleWaypoints] = useState<NormalizedPosition[]>([])
   const isDraggingDribble = useRef(false)
   const dragWasUsed = useRef(false)
+  const [cutWaypoints, setCutWaypoints] = useState<NormalizedPosition[]>([])
+  const isDraggingCut = useRef(false)
+  const cutDragWasUsed = useRef(false)
   const lastWaypoint = useRef<NormalizedPosition | null>(null)
   const SAMPLE_DIST = 15
 
@@ -170,10 +191,46 @@ export default function EditorPage() {
       activeSet.actions, activeStep + 1, activeSet.initialPositions, activeSet.initialBall, activeMarkings
     )
     const t = animFraction
+    const currentAction = activeSet.actions[activeStep]
+
     return Object.fromEntries(
       Object.keys(currentState.positions).map(id => {
         const from = currentState.positions[id] ?? { x: 0.5, y: 0.5 }
         const to = toState.positions[id] ?? from
+
+        // Follow drawn waypoint path for dribble or cut
+        if (
+          (currentAction?.type === 'dribble' || currentAction?.type === 'cut') &&
+          currentAction.playerId === id &&
+          currentAction.waypoints && currentAction.waypoints.length > 1
+        ) {
+          const path = [from, ...currentAction.waypoints]
+          // Arc-length parameterization for uniform speed along path
+          const lens: number[] = []
+          let total = 0
+          for (let i = 1; i < path.length; i++) {
+            const dx = path[i].x - path[i - 1].x
+            const dy = path[i].y - path[i - 1].y
+            const l = Math.sqrt(dx * dx + dy * dy)
+            lens.push(l)
+            total += l
+          }
+          if (total === 0) return [id, from]
+          const target = t * total
+          let acc = 0
+          for (let i = 0; i < lens.length; i++) {
+            if (acc + lens[i] >= target) {
+              const localT = lens[i] === 0 ? 0 : (target - acc) / lens[i]
+              return [id, {
+                x: path[i].x + (path[i + 1].x - path[i].x) * localT,
+                y: path[i].y + (path[i + 1].y - path[i].y) * localT,
+              }]
+            }
+            acc += lens[i]
+          }
+          return [id, path[path.length - 1]]
+        }
+
         return [id, { x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t }]
       })
     )
@@ -226,24 +283,40 @@ export default function EditorPage() {
   }
 
   function handleMouseDown(e: Konva.KonvaEventObject<MouseEvent>) {
-    if (actionCreation.type !== 'dribble') return
     const norm = normFromEvent(e)
     if (!norm) return
-    isDraggingDribble.current = true
-    dragWasUsed.current = false
-    lastWaypoint.current = norm
-    setDribbleWaypoints([])
+    if (actionCreation.type === 'dribble') {
+      isDraggingDribble.current = true
+      dragWasUsed.current = false
+      lastWaypoint.current = norm
+      setDribbleWaypoints([])
+    } else if (actionCreation.type === 'cut' && actionCreation.pendingSourceId) {
+      isDraggingCut.current = true
+      cutDragWasUsed.current = false
+      lastWaypoint.current = norm
+      setCutWaypoints([])
+    }
   }
 
   function handleMouseUp(e: Konva.KonvaEventObject<MouseEvent>) {
-    if (!isDraggingDribble.current || actionCreation.type !== 'dribble') return
-    isDraggingDribble.current = false
-    if (dragWasUsed.current && dribbleWaypoints.length > 2) {
-      const last = dribbleWaypoints[dribbleWaypoints.length - 1]
-      addAction({ id: nanoid(), type: 'dribble', playerId: currentState.ball.holderId, toPosition: last, waypoints: dribbleWaypoints })
+    if (isDraggingDribble.current && actionCreation.type === 'dribble') {
+      isDraggingDribble.current = false
+      if (dragWasUsed.current && dribbleWaypoints.length > 2) {
+        const last = dribbleWaypoints[dribbleWaypoints.length - 1]
+        addAction({ id: nanoid(), type: 'dribble', playerId: currentState.ball.holderId, toPosition: last, waypoints: dribbleWaypoints })
+      }
+      setDribbleWaypoints([])
+      lastWaypoint.current = null
     }
-    setDribbleWaypoints([])
-    lastWaypoint.current = null
+    if (isDraggingCut.current && actionCreation.type === 'cut' && actionCreation.pendingSourceId) {
+      isDraggingCut.current = false
+      if (cutDragWasUsed.current && cutWaypoints.length > 2) {
+        const last = cutWaypoints[cutWaypoints.length - 1]
+        addAction({ id: nanoid(), type: 'cut', playerId: actionCreation.pendingSourceId, toPosition: last, waypoints: cutWaypoints })
+      }
+      setCutWaypoints([])
+      lastWaypoint.current = null
+    }
   }
 
   function handleMouseMove(e: Konva.KonvaEventObject<MouseEvent>) {
@@ -259,6 +332,16 @@ export default function EditorPage() {
       if (Math.sqrt(dx * dx + dy * dy) >= SAMPLE_DIST) {
         dragWasUsed.current = true
         setDribbleWaypoints(prev => [...prev, norm])
+        lastWaypoint.current = norm
+      }
+    }
+    if (isDraggingCut.current && actionCreation.type === 'cut' && lastWaypoint.current) {
+      const last = lastWaypoint.current
+      const dx = (norm.x - last.x) * HALF_COURT_W
+      const dy = (norm.y - last.y) * cH
+      if (Math.sqrt(dx * dx + dy * dy) >= SAMPLE_DIST) {
+        cutDragWasUsed.current = true
+        setCutWaypoints(prev => [...prev, norm])
         lastWaypoint.current = norm
       }
     }
@@ -288,8 +371,8 @@ export default function EditorPage() {
     }
 
     if (type === 'cut' && pendingSourceId) {
-      const action: Action = { id: nanoid(), type: 'cut', playerId: pendingSourceId, toPosition: normPos }
-      addAction(action)
+      if (cutDragWasUsed.current) { cutDragWasUsed.current = false; return }
+      addAction({ id: nanoid(), type: 'cut', playerId: pendingSourceId, toPosition: normPos })
       return
     }
 
@@ -377,11 +460,37 @@ export default function EditorPage() {
       <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/')} className="text-slate-400 hover:text-white transition-colors text-sm">← Home</button>
-          <span className="text-white font-semibold">{activeSet.name}</span>
+          {editingName ? (
+            <input
+              ref={nameInputRef}
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              onBlur={commitNameEdit}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') commitNameEdit()
+                if (e.key === 'Escape') setEditingName(false)
+              }}
+              className="bg-slate-700 text-white rounded px-2 py-0.5 outline-none focus:ring-2 focus:ring-orange-500 font-semibold text-sm"
+            />
+          ) : (
+            <span
+              className="text-white font-semibold cursor-text hover:text-orange-300 transition-colors"
+              title="Click to rename"
+              onClick={startNameEdit}
+            >{activeSet.name}</span>
+          )}
         </div>
-        <span className="text-slate-400 text-sm">
-          {activeSet.courtType === 'half' ? 'Half Court' : 'Full Court'}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-slate-400 text-sm">
+            {activeSet.courtType === 'half' ? 'Half Court' : 'Full Court'}
+          </span>
+          <button
+            onClick={() => setShowExport(true)}
+            disabled={isPlaying || total === 0}
+            className="px-3 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-medium disabled:opacity-30 transition-colors"
+            title="Export animation"
+          >⬇ Export</button>
+        </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
@@ -396,8 +505,8 @@ export default function EditorPage() {
           />
         </div>
 
-        <div className="flex-1 flex items-center justify-center bg-slate-950 overflow-auto p-4">
-          <div className="flex flex-col items-center gap-3">
+        <div className="flex-1 flex items-center justify-center bg-slate-950 overflow-hidden p-4">
+          <div className="flex flex-row items-center gap-3">
           <div
             className="relative"
             onDragOver={(e) => e.preventDefault()}
@@ -411,6 +520,7 @@ export default function EditorPage() {
             )}
             <CourtCanvas
               courtType={activeSet.courtType}
+              stageRef={stageRef}
               onStageClick={handleCourtClick}
               onMouseMove={handleMouseMove}
               onMouseDown={handleMouseDown}
@@ -433,6 +543,7 @@ export default function EditorPage() {
                 mousePos={mousePos}
                 courtType={activeSet.courtType}
                 dribbleWaypoints={dribbleWaypoints}
+                cutWaypoints={cutWaypoints}
               />
               {/* Marking lines — only when enabled */}
               {markingsEnabled && Object.entries(activeSet.markings ?? {}).map(([defId, offId]) => {
@@ -450,6 +561,39 @@ export default function EditorPage() {
                   />
                 )
               })}
+
+              {/* Growing pass arrow during animation */}
+              {(() => {
+                if (!isPlaying || activeStep >= total) return null
+                const action = activeSet.actions[activeStep]
+                if (action?.type !== 'pass') return null
+                const fromPos = currentState.positions[action.fromId]
+                const toPos = currentState.positions[action.toId]
+                if (!fromPos || !toPos) return null
+                const from = denormalize(fromPos.x, fromPos.y, HALF_COURT_W, cH)
+                const to   = denormalize(toPos.x, toPos.y, HALF_COURT_W, cH)
+                const PLAYER_R = Math.round(20 * 1.4)
+                const ARROW_G  = Math.round(6 * 1.4)
+                const gap = PLAYER_R + ARROW_G
+                const dxF = to.x - from.x, dyF = to.y - from.y
+                const lenF = Math.sqrt(dxF * dxF + dyF * dyF) || 1
+                const finalEnd = { x: to.x - (dxF / lenF) * gap, y: to.y - (dyF / lenF) * gap }
+                const rawTipX  = from.x + (to.x - from.x) * animFraction
+                const rawTipY  = from.y + (to.y - from.y) * animFraction
+                const rawDist   = Math.hypot(rawTipX - from.x, rawTipY - from.y)
+                const finalDist = Math.hypot(finalEnd.x - from.x, finalEnd.y - from.y)
+                const end = rawDist < finalDist ? { x: rawTipX, y: rawTipY } : finalEnd
+                const color = ACTION_COLORS['pass']
+                return (
+                  <Arrow
+                    points={[from.x, from.y, end.x, end.y]}
+                    stroke={color} fill={color}
+                    strokeWidth={2.5} dash={[10, 6]}
+                    pointerLength={10} pointerWidth={8}
+                    listening={false}
+                  />
+                )
+              })()}
 
               {/* Players — rendered above arrows */}
               {activeSet.players.map(player => {
@@ -470,7 +614,7 @@ export default function EditorPage() {
               })}
 
               {/* Action type labels — rendered last (above players) with smart placement */}
-              {activeSet.actions.slice(0, activeStep).map((action, i) => {
+              {activeSet.actions.slice(0, isPlaying ? activeStep + 1 : activeStep).map((action, i) => {
                 const stateBefore = computeStateAtStep(
                   activeSet.actions, i, activeSet.initialPositions, activeSet.initialBall, activeMarkings
                 )
@@ -480,7 +624,7 @@ export default function EditorPage() {
                   denormalize(p.x, p.y, HALF_COURT_W, cH)
                 )
                 const { cx, cy } = smartLabelCenter(line.x1, line.y1, line.x2, line.y2, playersPx)
-                const isLatest = i === activeStep - 1
+                const isLatest = isPlaying ? i === activeStep : i === activeStep - 1
                 return (
                   <Text
                     key={action.id + '-lbl'}
@@ -519,8 +663,8 @@ export default function EditorPage() {
           </div>
 
           {benchPlayers.length > 0 && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-slate-800/60 rounded-xl border border-slate-700">
-              <span className="text-slate-500 text-xs mr-1">Bench</span>
+            <div className="flex flex-col items-center gap-2 px-2 py-3 bg-slate-800/60 rounded-xl border border-slate-700">
+              <span className="text-slate-500 text-xs">Bench</span>
               {benchPlayers.map(p => (
                 <div
                   key={p.id}
@@ -548,6 +692,14 @@ export default function EditorPage() {
       </div>
 
       <PlaybackControls />
+
+      {showExport && (
+        <ExportModal
+          stageRef={stageRef}
+          stepMs={STEP_MS}
+          onClose={() => setShowExport(false)}
+        />
+      )}
     </div>
   )
 }

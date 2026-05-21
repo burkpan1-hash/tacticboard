@@ -1,17 +1,18 @@
 import { Line, Arc, Circle, Rect } from 'react-konva'
-import { HALF_COURT } from '../../utils/courtCoords'
+import { HALF_COURT, HALF_COURT_W, HALF_COURT_H, COURT_SCALE } from '../../utils/courtCoords'
 
 const { basket, keyLeft, keyRight, keyBottom, ftCircle, restricted, threeCornerX, threeCornerY, threeArc } = HALF_COURT
 
 const STROKE = '#4ade80'
 const STROKE_W = 2
+const S = COURT_SCALE
 
 export default function HalfCourt() {
   return (
     <>
-      <Rect x={0} y={0} width={500} height={470} stroke={STROKE} strokeWidth={STROKE_W} fill="#1a3a1a" />
+      <Rect x={0} y={0} width={HALF_COURT_W} height={HALF_COURT_H} stroke={STROKE} strokeWidth={STROKE_W} fill="#1a3a1a" />
 
-      <Line points={[0, 470, 500, 470]} stroke={STROKE} strokeWidth={STROKE_W} />
+      <Line points={[0, HALF_COURT_H, HALF_COURT_W, HALF_COURT_H]} stroke={STROKE} strokeWidth={STROKE_W} />
 
       <Rect x={keyLeft} y={0} width={keyRight - keyLeft} height={keyBottom} stroke={STROKE} strokeWidth={STROKE_W} fill="transparent" />
 
@@ -46,18 +47,18 @@ export default function HalfCourt() {
         stroke={STROKE} strokeWidth={STROKE_W}
       />
 
-      {/* Block marks — low post and mid post (moved away from restricted arc) */}
-      <Line points={[keyLeft - 15, 100, keyLeft, 100]} stroke={STROKE} strokeWidth={STROKE_W} />
-      <Line points={[keyRight, 100, keyRight + 15, 100]} stroke={STROKE} strokeWidth={STROKE_W} />
-      <Line points={[keyLeft - 15, 135, keyLeft, 135]} stroke={STROKE} strokeWidth={STROKE_W} />
-      <Line points={[keyRight, 135, keyRight + 15, 135]} stroke={STROKE} strokeWidth={STROKE_W} />
+      {/* Block marks */}
+      <Line points={[keyLeft - S*15, S*100, keyLeft, S*100]} stroke={STROKE} strokeWidth={STROKE_W} />
+      <Line points={[keyRight, S*100, keyRight + S*15, S*100]} stroke={STROKE} strokeWidth={STROKE_W} />
+      <Line points={[keyLeft - S*15, S*135, keyLeft, S*135]} stroke={STROKE} strokeWidth={STROKE_W} />
+      <Line points={[keyRight, S*135, keyRight + S*15, S*135]} stroke={STROKE} strokeWidth={STROKE_W} />
 
-      {/* Post rectangles at restricted arc level */}
-      <Rect x={keyLeft - 15} y={50} width={15} height={20} stroke={STROKE} strokeWidth={STROKE_W} fill="transparent" />
-      <Rect x={keyRight} y={50} width={15} height={20} stroke={STROKE} strokeWidth={STROKE_W} fill="transparent" />
+      {/* Post rectangles */}
+      <Rect x={keyLeft - S*15} y={S*50} width={S*15} height={S*20} stroke={STROKE} strokeWidth={STROKE_W} fill="transparent" />
+      <Rect x={keyRight} y={S*50} width={S*15} height={S*20} stroke={STROKE} strokeWidth={STROKE_W} fill="transparent" />
 
-      <Line points={[basket.x - 30, 0, basket.x + 30, 0]} stroke="#f97316" strokeWidth={3} />
-      <Circle x={basket.x} y={basket.y} radius={15} stroke="#f97316" strokeWidth={2} fill="transparent" />
+      <Line points={[basket.x - S*30, 0, basket.x + S*30, 0]} stroke="#f97316" strokeWidth={3} />
+      <Circle x={basket.x} y={basket.y} radius={S*15} stroke="#f97316" strokeWidth={2} fill="transparent" />
     </>
   )
 }

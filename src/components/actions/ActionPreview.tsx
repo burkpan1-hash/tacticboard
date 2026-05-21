@@ -12,12 +12,13 @@ interface Props {
   mousePos: NormalizedPosition | null
   courtType: CourtType
   dribbleWaypoints?: NormalizedPosition[]
+  cutWaypoints?: NormalizedPosition[]
 }
 
 const OP = 0.5
 
 export default function ActionPreview({
-  actionType, pendingSourceId, ballHolderId, positions, mousePos, courtType, dribbleWaypoints,
+  actionType, pendingSourceId, ballHolderId, positions, mousePos, courtType, dribbleWaypoints, cutWaypoints,
 }: Props) {
   if (!actionType) return null
 
@@ -96,6 +97,21 @@ export default function ActionPreview({
       }
       const from = pxId(pendingSourceId)
       if (!from) return null
+
+      if (cutWaypoints && cutWaypoints.length > 1) {
+        const allPx = [from, ...cutWaypoints.map(pxN), to]
+        const pts = allPx.flatMap(p => [p.x, p.y])
+        return (
+          <Group opacity={OP} listening={false}>
+            <Line points={pts} stroke={color} strokeWidth={2.5} lineJoin="round" />
+            <Arrow
+              points={[pts[pts.length - 4], pts[pts.length - 3], to.x, to.y]}
+              stroke={color} fill={color}
+              strokeWidth={2.5} pointerLength={10} pointerWidth={8}
+            />
+          </Group>
+        )
+      }
 
       return (
         <Arrow

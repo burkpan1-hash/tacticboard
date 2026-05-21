@@ -1,7 +1,7 @@
 import { Circle, Text, Group } from 'react-konva'
 import type Konva from 'konva'
 import type { Player, NormalizedPosition } from '../../models/types'
-import { denormalize, HALF_COURT_W, HALF_COURT_H, FULL_COURT_H } from '../../utils/courtCoords'
+import { denormalize, HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_SCALE } from '../../utils/courtCoords'
 
 interface Props {
   player: Player
@@ -16,7 +16,7 @@ interface Props {
 
 const OFFENSE_COLOR = '#f97316'
 const DEFENSE_COLOR = '#1d4ed8'
-const RADIUS = 20
+const RADIUS = Math.round(20 * COURT_SCALE)
 
 export default function PlayerNode({ player, position, courtType, hasBall, isSelected, draggable = true, onDragEnd, onClick }: Props) {
   const canvasH = courtType === 'half' ? HALF_COURT_H : FULL_COURT_H
