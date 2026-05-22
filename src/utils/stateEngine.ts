@@ -5,10 +5,75 @@ export interface GameState {
   ball: BallState
 }
 
+// basketY: normalized y of the attack basket (default = half-court top basket)
+const DEFAULT_BASKET_Y = 42 / 658
+
+export function computeDoubleTeamPositions(
+  defender1Id: string,
+  defender2Id: string,
+  targetId: string,
+  positions: PositionMap,
+  basketY: number = DEFAULT_BASKET_Y,
+): { p1: NormalizedPosition; p2: NormalizedPosition } | null {
+  const target = positions[targetId]
+  if (!target) return null
+
+  const GAP = 0.05
+  const SIDELINE_THR = 0.15
+  const clamp = (v: number) => Math.max(0, Math.min(1, v))
+
+  const dp1 = positions[defender1Id] ?? target
+  const dp2 = positions[defender2Id] ?? target
+
+  let p1: NormalizedPosition
+  let p2: NormalizedPosition
+
+  const isNearLeft  = target.x < SIDELINE_THR
+  const isNearRight = target.x > 1 - SIDELINE_THR
+
+  if (isNearLeft || isNearRight) {
+    // Sideline trap: interior pressure + baseline pressure toward the attack basket
+    const interiorX = clamp(isNearLeft ? target.x + GAP * 1.2 : target.x - GAP * 1.2)
+    const posA = { x: interiorX, y: target.y }
+    // Toward the attack basket — direction depends on which end is the basket
+    const basketToward = basketY < 0.5 ? clamp(target.y - GAP) : clamp(target.y + GAP)
+    const posB = { x: target.x, y: basketToward }
+
+    const d1ToA = Math.hypot(dp1.x - posA.x, dp1.y - posA.y)
+    const d1ToB = Math.hypot(dp1.x - posB.x, dp1.y - posB.y)
+    if (d1ToA <= d1ToB) { p1 = posA; p2 = posB } else { p1 = posB; p2 = posA }
+  } else {
+    // Open court: one defender directly between target and basket, one lateral
+    const bdx = 0.5 - target.x  // basket x is always 0.5
+    const bdy = basketY - target.y
+    const bdist = Math.sqrt(bdx * bdx + bdy * bdy) || 1
+    const ux = bdx / bdist, uy = bdy / bdist
+
+    // posA: on the direct lane from target toward basket
+    const posA = { x: clamp(target.x + ux * GAP), y: clamp(target.y + uy * GAP) }
+
+    // posB: lateral with a basket-direction offset — pick the side closer to a defender
+    const posL = { x: clamp(target.x - GAP * 1.2), y: clamp(target.y + uy * GAP * 0.6) }
+    const posR = { x: clamp(target.x + GAP * 1.2), y: clamp(target.y + uy * GAP * 0.6) }
+    const minDistTo = (pos: NormalizedPosition) => Math.min(
+      Math.hypot(dp1.x - pos.x, dp1.y - pos.y),
+      Math.hypot(dp2.x - pos.x, dp2.y - pos.y),
+    )
+    const posB = minDistTo(posL) <= minDistTo(posR) ? posL : posR
+
+    const d1ToA = Math.hypot(dp1.x - posA.x, dp1.y - posA.y)
+    const d1ToB = Math.hypot(dp1.x - posB.x, dp1.y - posB.y)
+    if (d1ToA <= d1ToB) { p1 = posA; p2 = posB } else { p1 = posB; p2 = posA }
+  }
+
+  return { p1, p2 }
+}
+
 export function applyAction(
   action: Action,
   state: GameState,
   markings?: Record<string, string>,
+  basketY: number = DEFAULT_BASKET_Y,
 ): GameState {
   const positions = { ...state.positions }
   let ball = { ...state.ball }
@@ -48,59 +113,12 @@ export function applyAction(
       positions[action.playerId] = action.toPosition
       break
     case 'double-team': {
-      const target = positions[action.targetId]
-      if (!target) break
-
-      const GAP = 0.05
-      const SIDELINE_THR = 0.15
-      const BASKET = { x: 0.5, y: 0.1128 }
-      const clamp = (v: number) => Math.max(0, Math.min(1, v))
-
-      const isNearLeft  = target.x < SIDELINE_THR
-      const isNearRight = target.x > 1 - SIDELINE_THR
-
-      const dp1 = positions[action.defender1Id] ?? target
-      const dp2 = positions[action.defender2Id] ?? target
-
-      let p1: NormalizedPosition
-      let p2: NormalizedPosition
-
-      if (isNearLeft || isNearRight) {
-        // Sideline trap: interior pressure (lateral) + baseline pressure (toward basket)
-        const interiorX = clamp(isNearLeft ? target.x + GAP * 1.2 : target.x - GAP * 1.2)
-        const posA = { x: interiorX, y: target.y }
-        // Always toward basket (smaller y), never away from it
-        const posB = { x: target.x, y: clamp(target.y - GAP) }
-
-        const d1ToA = Math.hypot(dp1.x - posA.x, dp1.y - posA.y)
-        const d1ToB = Math.hypot(dp1.x - posB.x, dp1.y - posB.y)
-        if (d1ToA <= d1ToB) { p1 = posA; p2 = posB } else { p1 = posB; p2 = posA }
-      } else {
-        // Open court: one on direct basket lane, one lateral — both basket-side of target
-        const bdx = BASKET.x - target.x
-        const bdy = BASKET.y - target.y
-        const bdist = Math.sqrt(bdx * bdx + bdy * bdy) || 1
-        const ux = bdx / bdist, uy = bdy / bdist
-
-        // posA: directly between target and basket
-        const posA = { x: clamp(target.x + ux * GAP), y: clamp(target.y + uy * GAP) }
-
-        // posB: lateral, but offset toward basket — pick left or right based on defender proximity
-        const posL = { x: clamp(target.x - GAP * 1.2), y: clamp(target.y + uy * GAP * 0.6) }
-        const posR = { x: clamp(target.x + GAP * 1.2), y: clamp(target.y + uy * GAP * 0.6) }
-        const minDistTo = (pos: NormalizedPosition) => Math.min(
-          Math.hypot(dp1.x - pos.x, dp1.y - pos.y),
-          Math.hypot(dp2.x - pos.x, dp2.y - pos.y),
-        )
-        const posB = minDistTo(posL) <= minDistTo(posR) ? posL : posR
-
-        const d1ToA = Math.hypot(dp1.x - posA.x, dp1.y - posA.y)
-        const d1ToB = Math.hypot(dp1.x - posB.x, dp1.y - posB.y)
-        if (d1ToA <= d1ToB) { p1 = posA; p2 = posB } else { p1 = posB; p2 = posA }
-      }
-
-      positions[action.defender1Id] = p1
-      positions[action.defender2Id] = p2
+      const result = computeDoubleTeamPositions(
+        action.defender1Id, action.defender2Id, action.targetId, positions, basketY,
+      )
+      if (!result) break
+      positions[action.defender1Id] = result.p1
+      positions[action.defender2Id] = result.p2
       break
     }
     case 'ball-force':
@@ -135,6 +153,7 @@ export function computeStateAtStep(
   initialPositions: PositionMap,
   initialBall: BallState,
   markings?: Record<string, string>,
+  basketY: number = DEFAULT_BASKET_Y,
 ): GameState {
   let state: GameState = {
     positions: { ...initialPositions },
@@ -142,7 +161,7 @@ export function computeStateAtStep(
   }
   const limit = Math.min(step, actions.length)
   for (let i = 0; i < limit; i++) {
-    state = applyAction(actions[i], state, markings)
+    state = applyAction(actions[i], state, markings, basketY)
   }
   return state
 }

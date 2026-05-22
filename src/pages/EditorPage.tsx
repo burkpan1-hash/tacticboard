@@ -122,6 +122,10 @@ export default function EditorPage() {
 
   const cH = activeSet?.courtType === 'half' ? HALF_COURT_H : FULL_COURT_H
   const atkLeft = activeSet?.courtType === 'full' ? (activeSet.attackBasket ?? 'top') === 'top' : false
+  const BASKET_PX = 42
+  const basketY = activeSet?.courtType === 'full'
+    ? (activeSet.attackBasket === 'bottom' ? 1 - BASKET_PX / FULL_COURT_H : BASKET_PX / FULL_COURT_H)
+    : BASKET_PX / HALF_COURT_H
 
 
   useEffect(() => {
@@ -213,7 +217,7 @@ export default function EditorPage() {
 
   const activeMarkings = markingsEnabled ? (activeSet.markings ?? {}) : undefined
   const currentState = computeStateAtStep(
-    activeSet.actions, activeStep, activeSet.initialPositions, activeSet.initialBall, activeMarkings
+    activeSet.actions, activeStep, activeSet.initialPositions, activeSet.initialBall, activeMarkings, basketY
   )
   const total = activeSet.actions.length
 
@@ -222,7 +226,7 @@ export default function EditorPage() {
   const displayPositions = (() => {
     if (!isPlaying || activeStep >= total) return effectivePositions
     const toState = computeStateAtStep(
-      activeSet.actions, activeStep + 1, activeSet.initialPositions, activeSet.initialBall, activeMarkings
+      activeSet.actions, activeStep + 1, activeSet.initialPositions, activeSet.initialBall, activeMarkings, basketY
     )
     const t = animFraction
     const currentAction = activeSet.actions[activeStep]
@@ -637,6 +641,7 @@ export default function EditorPage() {
                 activeStep={activeStep}
                 courtType={activeSet.courtType}
                 markings={activeMarkings}
+                attackBasket={activeSet.attackBasket}
               />
               <ActionPreview
                 actionType={actionCreation.type}
@@ -769,7 +774,7 @@ export default function EditorPage() {
               {/* Action type labels — rendered last (above players) with smart placement */}
               {activeSet.actions.slice(0, isPlaying ? activeStep + 1 : activeStep).map((action, i) => {
                 const stateBefore = computeStateAtStep(
-                  activeSet.actions, i, activeSet.initialPositions, activeSet.initialBall, activeMarkings
+                  activeSet.actions, i, activeSet.initialPositions, activeSet.initialBall, activeMarkings, basketY
                 )
                 const line = arrowLine(action, stateBefore.positions, cH)
                 if (!line) return null
