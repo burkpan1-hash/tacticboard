@@ -29,6 +29,8 @@ function arrowLine(action: Action, positions: PositionMap, cH: number): { x1: nu
     case 'shot':        { const f = px(action.shooterId); if (!f) return null; return { x1: f.x, y1: f.y, x2: HALF_COURT.basket.x, y2: HALF_COURT.basket.y } }
     case 'handoff':     { const f = px(action.fromId), t = pp(action.meetPosition); if (!f) return null; return { x1: f.x, y1: f.y, x2: t.x, y2: t.y } }
     case 'defense-move':{ const f = px(action.playerId), t = pp(action.toPosition); if (!f) return null; return { x1: f.x, y1: f.y, x2: t.x, y2: t.y } }
+    case 'double-team': { const f = px(action.defender1Id), t = px(action.targetId); if (!f || !t) return null; return { x1: f.x, y1: f.y, x2: t.x, y2: t.y } }
+    case 'ball-force':  { const f = px(action.defenderId), t = pp(action.forcePosition); if (!f) return null; return { x1: f.x, y1: f.y, x2: t.x, y2: t.y } }
     case 'dribble': {
       const f = px(action.playerId); if (!f) return null
       if (action.waypoints && action.waypoints.length > 0) {
@@ -74,10 +76,13 @@ export default function EditorPage() {
     savedSets, activeSet, setActiveSet,
     activeStep,
     actionCreation, startActionCreation, setPendingSource, cancelActionCreation,
-    addAction, addPlayerToCourt, updateMarkings, saveSet,
+    addAction, addPlayerToCourt, updateInitialPosition, updateMarkings, saveSet,
+    flipAttackBasket,
     isPlaying, setIsPlaying,
   } = usePlayStore()
 
+  const courtAreaRef = useRef<HTMLDivElement>(null)
+  const [courtScale, setCourtScale] = useState(1)
   const [markingsEnabled, setMarkingsEnabled] = useState(false)
   const [mousePos, setMousePos] = useState<NormalizedPosition | null>(null)
   const [animFraction, setAnimFraction] = useState(0)
@@ -102,6 +107,10 @@ export default function EditorPage() {
   const rafRef = useRef(0)
   const lastTsRef = useRef(0)
   const STEP_MS = 1600
+  const [positionOverrides, setPositionOverrides] = useState<PositionMap>({})
+  const playerDragWaypoints = useRef<NormalizedPosition[]>([])
+  const lastPlayerDragPt = useRef<NormalizedPosition | null>(null)
+  const playerDragHadPath = useRef(false)
   const [dribbleWaypoints, setDribbleWaypoints] = useState<NormalizedPosition[]>([])
   const isDraggingDribble = useRef(false)
   const dragWasUsed = useRef(false)
@@ -112,6 +121,7 @@ export default function EditorPage() {
   const SAMPLE_DIST = 15
 
   const cH = activeSet?.courtType === 'half' ? HALF_COURT_H : FULL_COURT_H
+  const atkLeft = activeSet?.courtType === 'full' ? (activeSet.attackBasket ?? 'top') === 'top' : false
 
 
   useEffect(() => {
@@ -136,6 +146,26 @@ export default function EditorPage() {
   useEffect(() => {
     if (!actionCreation.type) setMousePos(null)
   }, [actionCreation.type])
+
+  useEffect(() => {
+    setPositionOverrides({})
+  }, [activeStep])
+
+  useEffect(() => {
+    const el = courtAreaRef.current
+    if (!el || activeSet?.courtType !== 'full') return
+    const STAGE_W = HALF_COURT_W + 2 * COURT_PADDING_X
+    function updateScale() {
+      if (!el) return
+      const aw = el.clientWidth - 32
+      const ah = el.clientHeight - 16
+      if (aw > 0 && ah > 0) setCourtScale(Math.min(aw / FULL_COURT_H, ah / STAGE_W))
+    }
+    updateScale()
+    const ro = new ResizeObserver(updateScale)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [activeSet?.courtType])
 
   useEffect(() => {
     if (!isPlaying) {
@@ -187,8 +217,10 @@ export default function EditorPage() {
   )
   const total = activeSet.actions.length
 
+  const effectivePositions: PositionMap = { ...currentState.positions, ...positionOverrides }
+
   const displayPositions = (() => {
-    if (!isPlaying || activeStep >= total) return currentState.positions
+    if (!isPlaying || activeStep >= total) return effectivePositions
     const toState = computeStateAtStep(
       activeSet.actions, activeStep + 1, activeSet.initialPositions, activeSet.initialBall, activeMarkings
     )
@@ -273,6 +305,15 @@ export default function EditorPage() {
     if (!pid) return
     e.preventDefault()
     const rect = e.currentTarget.getBoundingClientRect()
+    if (activeSet.courtType === 'full') {
+      const STAGE_W = HALF_COURT_W + 2 * COURT_PADDING_X
+      const kx = (e.clientX - rect.left) / courtScale
+      const ky = (e.clientY - rect.top) / courtScale
+      const x = Math.max(0.02, Math.min(0.98, (STAGE_W - ky - COURT_PADDING_X) / HALF_COURT_W))
+      const y = Math.max(0.02, Math.min(0.98, kx / FULL_COURT_H))
+      addPlayerToCourt(pid, { x, y })
+      return
+    }
     const x = Math.max(0.02, Math.min(0.98, (e.clientX - rect.left - COURT_PADDING_X) / HALF_COURT_W))
     const y = Math.max(0.02, Math.min(0.98, (e.clientY - rect.top) / cH))
     addPlayerToCourt(pid, { x, y })
@@ -281,6 +322,13 @@ export default function EditorPage() {
   function normFromEvent(e: Konva.KonvaEventObject<MouseEvent>): NormalizedPosition | null {
     const pos = e.target.getStage()?.getPointerPosition()
     if (!pos) return null
+    if (activeSet.courtType === 'full') {
+      const STAGE_W = HALF_COURT_W + 2 * COURT_PADDING_X
+      // pos is in CSS pixels; divide by courtScale to get Stage logical coords
+      const sx = STAGE_W - pos.y / courtScale
+      const sy = pos.x / courtScale
+      return { x: (sx - COURT_PADDING_X) / HALF_COURT_W, y: sy / FULL_COURT_H }
+    }
     return { x: (pos.x - COURT_PADDING_X) / HALF_COURT_W, y: pos.y / cH }
   }
 
@@ -353,12 +401,8 @@ export default function EditorPage() {
     const { type, pendingSourceId } = actionCreation
     if (!type) return
 
-    const pos = e.target.getStage()?.getPointerPosition()
-    if (!pos) return
-    const normPos: NormalizedPosition = {
-      x: (pos.x - COURT_PADDING_X) / HALF_COURT_W,
-      y: pos.y / cH,
-    }
+    const normPos = normFromEvent(e)
+    if (!normPos) return
 
     if (type === 'shot') {
       const action: Action = { id: nanoid(), type: 'shot', shooterId: currentState.ball.holderId }
@@ -395,6 +439,11 @@ export default function EditorPage() {
 
     if (type === 'defense-move' && pendingSourceId) {
       addAction({ id: nanoid(), type: 'defense-move', playerId: pendingSourceId, toPosition: normPos })
+      return
+    }
+
+    if (type === 'ball-force' && pendingSourceId) {
+      addAction({ id: nanoid(), type: 'ball-force', defenderId: pendingSourceId, forcePosition: normPos })
       return
     }
   }
@@ -440,6 +489,25 @@ export default function EditorPage() {
       setPendingSource(playerId)
       return
     }
+
+    if (type === 'double-team' && !pendingSourceId) {
+      const mover = activeSet.players.find(p => p.id === playerId)
+      if (!mover || mover.team !== 'defense') return
+      setPendingSource(playerId)
+      return
+    }
+
+    if (type === 'double-team' && pendingSourceId && playerId !== pendingSourceId) {
+      const mover = activeSet.players.find(p => p.id === playerId)
+      if (!mover || mover.team !== 'defense') return
+      addAction({
+        id: nanoid(), type: 'double-team',
+        defender1Id: pendingSourceId,
+        defender2Id: playerId,
+        targetId: currentState.ball.holderId,
+      })
+      return
+    }
   }
 
   const instructionText = (() => {
@@ -452,6 +520,8 @@ export default function EditorPage() {
     if (type === 'screen') return pendingSourceId ? 'Click the screen position' : 'Click the player setting the screen'
     if (type === 'handoff') return pendingSourceId ? 'Click the meet position' : 'Click the player to receive the handoff'
     if (type === 'defense-move') return pendingSourceId ? 'Click destination on court' : 'Click defender to move'
+    if (type === 'double-team') return pendingSourceId ? 'Click second defender to trap' : 'Click first defender for double team'
+    if (type === 'ball-force') return pendingSourceId ? 'Click force direction on court' : 'Click defender to apply force'
     return null
   })()
 
@@ -482,17 +552,9 @@ export default function EditorPage() {
             >{activeSet.name}</span>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-slate-400 text-sm">
-            {activeSet.courtType === 'half' ? 'Half Court' : 'Full Court'}
-          </span>
-          <button
-            onClick={() => setShowExport(true)}
-            disabled={isPlaying || total === 0}
-            className="px-3 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-medium disabled:opacity-30 transition-colors"
-            title="Export animation"
-          >⬇ Export</button>
-        </div>
+        <span className="text-slate-400 text-sm">
+          {activeSet.courtType === 'half' ? 'Half Court' : 'Full Court'}
+        </span>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
@@ -508,16 +570,49 @@ export default function EditorPage() {
         </div>
 
         <div className="flex-1 flex flex-col bg-slate-950 overflow-x-hidden">
-          <div className="h-10 flex items-center justify-center flex-shrink-0">
-            {showInstruction && (
-              <div className="text-sm text-orange-300 font-medium flex items-center gap-2">
-                {instructionText}
-                <button onClick={cancelAll} className="ml-3 text-slate-400 hover:text-white text-xs underline">Cancel</button>
+          <div className="flex flex-col items-center flex-shrink-0">
+            {/* Instruction text — only when action is active */}
+            <div className="h-8 flex items-center justify-center">
+              {showInstruction && (
+                <div className="text-sm text-orange-300 font-medium flex items-center gap-2">
+                  {instructionText}
+                  <button onClick={cancelAll} className="ml-3 text-slate-400 hover:text-white text-xs underline">Cancel</button>
+                </div>
+              )}
+            </div>
+
+            {/* Full-court direction bar — always visible */}
+            {activeSet.courtType === 'full' && (
+              <div className="flex flex-col items-center w-full px-5 pb-2 gap-1">
+                {atkLeft ? (
+                  <div className="flex items-center w-full text-orange-500">
+                    <span className="text-[11px] font-bold mr-1 whitespace-nowrap">ATK</span>
+                    <svg width="7" height="9" viewBox="0 0 7 9" fill="currentColor"><path d="M7 0L0 4.5L7 9z"/></svg>
+                    <div className="flex-1 h-0.5 bg-orange-500 opacity-60"/>
+                  </div>
+                ) : (
+                  <div className="flex items-center w-full text-orange-500">
+                    <div className="flex-1 h-0.5 bg-orange-500 opacity-60"/>
+                    <svg width="7" height="9" viewBox="0 0 7 9" fill="currentColor"><path d="M0 0L7 4.5L0 9z"/></svg>
+                    <span className="text-[11px] font-bold ml-1 whitespace-nowrap">ATK</span>
+                  </div>
+                )}
+                {/* Flip below the arrows */}
+                <button
+                  onClick={flipAttackBasket}
+                  className="flex items-center gap-1 px-2.5 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white text-xs transition-colors"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/>
+                    <path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/>
+                  </svg>
+                  Flip
+                </button>
               </div>
             )}
           </div>
-          <div className="flex-1 flex items-end justify-center px-4 overflow-hidden">
-          <div className="flex flex-row items-end gap-3">
+          <div ref={courtAreaRef} className="flex-1 flex items-center justify-center px-4 overflow-hidden">
+          <div className={`flex flex-row gap-3 ${activeSet.courtType === 'full' ? 'items-center' : 'items-end'}`}>
           <div
             className="relative"
             onDragOver={(e) => e.preventDefault()}
@@ -526,6 +621,9 @@ export default function EditorPage() {
             <CourtCanvas
               courtType={activeSet.courtType}
               stageRef={stageRef}
+              scale={activeSet.courtType === 'full' ? courtScale : 1}
+              landscape={activeSet.courtType === 'full'}
+              attackBasket={activeSet.attackBasket}
               onStageClick={handleCourtClick}
               onMouseMove={handleMouseMove}
               onMouseDown={handleMouseDown}
@@ -544,7 +642,7 @@ export default function EditorPage() {
                 actionType={actionCreation.type}
                 pendingSourceId={actionCreation.pendingSourceId}
                 ballHolderId={currentState.ball.holderId}
-                positions={currentState.positions}
+                positions={effectivePositions}
                 mousePos={mousePos}
                 courtType={activeSet.courtType}
                 dribbleWaypoints={dribbleWaypoints}
@@ -552,8 +650,8 @@ export default function EditorPage() {
               />
               {/* Marking lines — only when enabled */}
               {markingsEnabled && Object.entries(activeSet.markings ?? {}).map(([defId, offId]) => {
-                const dp = currentState.positions[defId]
-                const op = currentState.positions[offId]
+                const dp = effectivePositions[defId]
+                const op = effectivePositions[offId]
                 if (!dp || !op) return null
                 const d = denormalize(dp.x, dp.y, HALF_COURT_W, cH)
                 const o = denormalize(op.x, op.y, HALF_COURT_W, cH)
@@ -609,10 +707,60 @@ export default function EditorPage() {
                     player={player}
                     position={pos}
                     courtType={activeSet.courtType}
+                    landscape={activeSet.courtType === 'full'}
                     hasBall={currentState.ball.holderId === player.id}
                     isSelected={actionCreation.pendingSourceId === player.id}
                     draggable={!(actionCreation.type && player.team === 'defense')}
-                    onDragEnd={() => {}}
+                    onDragStart={() => {
+                      playerDragWaypoints.current = []
+                      lastPlayerDragPt.current = null
+                      playerDragHadPath.current = false
+                    }}
+                    onDragMove={(_id, pos) => {
+                      const last = lastPlayerDragPt.current
+                      if (!last) { lastPlayerDragPt.current = pos; return }
+                      const dx = (pos.x - last.x) * HALF_COURT_W
+                      const dy = (pos.y - last.y) * cH
+                      if (Math.sqrt(dx * dx + dy * dy) >= SAMPLE_DIST) {
+                        playerDragHadPath.current = true
+                        playerDragWaypoints.current.push(pos)
+                        lastPlayerDragPt.current = pos
+                      }
+                    }}
+                    onDragEnd={(id, newPos) => {
+                      const hasActions = activeSet.actions.some(a => {
+                        switch (a.type) {
+                          case 'pass': return a.fromId === id || a.toId === id
+                          case 'cut': case 'dribble': case 'defense-move': return a.playerId === id
+                          case 'screen': return a.screenerId === id
+                          case 'shot': return a.shooterId === id
+                          case 'handoff': return a.fromId === id || a.toId === id
+                          case 'double-team': return a.defender1Id === id || a.defender2Id === id || a.targetId === id
+                          case 'ball-force': return a.defenderId === id
+                          default: return false
+                        }
+                      })
+                      if (activeStep === 0 || !hasActions) {
+                        updateInitialPosition(id, newPos)
+                        return
+                      }
+                      if (actionCreation.type) {
+                        setPositionOverrides(prev => ({ ...prev, [id]: newPos }))
+                        return
+                      }
+                      const player = activeSet.players.find(p => p.id === id)
+                      if (!player) return
+                      const waypoints = playerDragHadPath.current && playerDragWaypoints.current.length > 2
+                        ? [...playerDragWaypoints.current]
+                        : undefined
+                      if (player.team === 'defense') {
+                        addAction({ id: nanoid(), type: 'defense-move', playerId: id, toPosition: newPos })
+                      } else if (currentState.ball.holderId === id) {
+                        addAction({ id: nanoid(), type: 'dribble', playerId: id, toPosition: newPos, waypoints })
+                      } else {
+                        addAction({ id: nanoid(), type: 'cut', playerId: id, toPosition: newPos, waypoints })
+                      }
+                    }}
                     onClick={handlePlayerClick}
                   />
                 )
@@ -630,11 +778,14 @@ export default function EditorPage() {
                 )
                 const { cx, cy } = smartLabelCenter(line.x1, line.y1, line.x2, line.y2, playersPx)
                 const isLatest = isPlaying ? i === activeStep : i === activeStep - 1
+                const isLandscape = activeSet.courtType === 'full'
                 return (
                   <Text
                     key={action.id + '-lbl'}
-                    x={cx - 25} y={cy - 6}
+                    x={cx} y={cy}
+                    offsetX={25} offsetY={5}
                     width={50}
+                    rotation={isLandscape ? 90 : 0}
                     text={ACTION_LABELS[action.type]}
                     fontSize={10} fontStyle="bold"
                     fill={ACTION_COLORS[action.type]}
@@ -697,7 +848,7 @@ export default function EditorPage() {
         </div>
       </div>
 
-      <PlaybackControls />
+      <PlaybackControls onExport={() => setShowExport(true)} />
 
       {showExport && (
         <ExportModal
