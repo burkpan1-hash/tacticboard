@@ -3,7 +3,7 @@ import type Konva from 'konva'
 import type { CourtType } from '../../models/types'
 import HalfCourt from './HalfCourt'
 import FullCourt from './FullCourt'
-import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_PADDING_X } from '../../utils/courtCoords'
+import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_PADDING_X, COURT_PADDING_Y } from '../../utils/courtCoords'
 
 interface Props {
   courtType: CourtType
@@ -32,26 +32,26 @@ export default function CourtCanvas({
   if (!landscape) {
     const height = courtType === 'half' ? HALF_COURT_H : FULL_COURT_H
     return (
-      <Stage ref={stageRef} width={STAGE_W * scale} height={height * scale} scaleX={scale} scaleY={scale} {...events}>
+      <Stage ref={stageRef} width={STAGE_W * scale} height={(height + 2 * COURT_PADDING_Y) * scale} scaleX={scale} scaleY={scale} {...events}>
         <Layer>
-          <Group x={COURT_PADDING_X}>
+          <Group x={COURT_PADDING_X} y={COURT_PADDING_Y}>
             {courtType === 'half' ? <HalfCourt /> : <FullCourt attackBasket={attackBasket} />}
           </Group>
         </Layer>
         <Layer>
-          <Group x={COURT_PADDING_X}>{children}</Group>
+          <Group x={COURT_PADDING_X} y={COURT_PADDING_Y}>{children}</Group>
         </Layer>
       </Stage>
     )
   }
 
-  // Landscape: Stage is FULL_COURT_H × STAGE_W (rotated dimensions).
-  // A Konva Group with y=STAGE_W, rotation=-90 rotates portrait content into landscape.
-  // This keeps the DOM element unrotated so getPointerPosition() works correctly.
+  // Landscape: Stage is (FULL_COURT_H + 2*COURT_PADDING_Y) × STAGE_W (rotated dimensions).
+  // y={COURT_PADDING_Y} on inner Groups: after -90° rotation, local y → landscape x,
+  // shifting baselines inward by COURT_PADDING_Y to make room for OOB zone on both sides.
   return (
     <Stage
       ref={stageRef}
-      width={FULL_COURT_H * scale}
+      width={(FULL_COURT_H + 2 * COURT_PADDING_Y) * scale}
       height={STAGE_W * scale}
       scaleX={scale}
       scaleY={scale}
@@ -59,14 +59,14 @@ export default function CourtCanvas({
     >
       <Layer>
         <Group y={STAGE_W} rotation={-90}>
-          <Group x={COURT_PADDING_X}>
+          <Group x={COURT_PADDING_X} y={COURT_PADDING_Y}>
             <FullCourt />
           </Group>
         </Group>
       </Layer>
       <Layer>
         <Group y={STAGE_W} rotation={-90}>
-          <Group x={COURT_PADDING_X}>
+          <Group x={COURT_PADDING_X} y={COURT_PADDING_Y}>
             {children}
           </Group>
         </Group>

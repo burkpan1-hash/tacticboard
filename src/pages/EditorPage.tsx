@@ -15,7 +15,7 @@ import { usePlayStore } from '../store/usePlayStore'
 import { computeStateAtStep } from '../utils/stateEngine'
 import { denormalize } from '../utils/courtCoords'
 import type { Action, NormalizedPosition, Player, PositionMap } from '../models/types'
-import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_PADDING_X, HALF_COURT } from '../utils/courtCoords'
+import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_PADDING_X, COURT_PADDING_Y, HALF_COURT } from '../utils/courtCoords'
 import { ACTION_COLORS, ACTION_LABELS } from '../utils/actionColors'
 
 // Returns the start/end pixel coords of the arrow's direction vector (for label placement)
@@ -30,7 +30,13 @@ function arrowLine(action: Action, positions: PositionMap, cH: number): { x1: nu
     case 'handoff':     { const f = px(action.fromId), t = pp(action.meetPosition); if (!f) return null; return { x1: f.x, y1: f.y, x2: t.x, y2: t.y } }
     case 'defense-move':{ const f = px(action.playerId), t = pp(action.toPosition); if (!f) return null; return { x1: f.x, y1: f.y, x2: t.x, y2: t.y } }
     case 'double-team': { const f = px(action.defender1Id), t = px(action.targetId); if (!f || !t) return null; return { x1: f.x, y1: f.y, x2: t.x, y2: t.y } }
-    case 'ball-force':  { const f = px(action.defenderId), t = pp(action.forcePosition); if (!f) return null; return { x1: f.x, y1: f.y, x2: t.x, y2: t.y } }
+    case 'ball-force': {
+      const f = px(action.defenderId); const target = positions[action.targetId]
+      if (!f || !target) return null
+      const DEFENDER_DIST = 0.11
+      const t = pp({ x: Math.max(0, Math.min(1, target.x + Math.cos(action.angle) * DEFENDER_DIST)), y: Math.max(0, Math.min(1, target.y + Math.sin(action.angle) * DEFENDER_DIST)) })
+      return { x1: f.x, y1: f.y, x2: t.x, y2: t.y }
+    }
     case 'dribble': {
       const f = px(action.playerId); if (!f) return null
       if (action.waypoints && action.waypoints.length > 0) {
@@ -163,7 +169,7 @@ export default function EditorPage() {
       if (!el) return
       const aw = el.clientWidth - 32
       const ah = el.clientHeight - 16
-      if (aw > 0 && ah > 0) setCourtScale(Math.min(aw / FULL_COURT_H, ah / STAGE_W))
+      if (aw > 0 && ah > 0) setCourtScale(Math.min(aw / (FULL_COURT_H + 2 * COURT_PADDING_Y), ah / STAGE_W))
     }
     updateScale()
     const ro = new ResizeObserver(updateScale)
@@ -314,12 +320,12 @@ export default function EditorPage() {
       const kx = (e.clientX - rect.left) / courtScale
       const ky = (e.clientY - rect.top) / courtScale
       const x = Math.max(0.02, Math.min(0.98, (STAGE_W - ky - COURT_PADDING_X) / HALF_COURT_W))
-      const y = Math.max(0.02, Math.min(0.98, kx / FULL_COURT_H))
+      const y = Math.max(-0.05, Math.min(1.05, (kx - COURT_PADDING_Y) / FULL_COURT_H))
       addPlayerToCourt(pid, { x, y })
       return
     }
     const x = Math.max(0.02, Math.min(0.98, (e.clientX - rect.left - COURT_PADDING_X) / HALF_COURT_W))
-    const y = Math.max(0.02, Math.min(0.98, (e.clientY - rect.top) / cH))
+    const y = Math.max(-0.05, Math.min(1.05, (e.clientY - rect.top - COURT_PADDING_Y) / cH))
     addPlayerToCourt(pid, { x, y })
   }
 
@@ -330,10 +336,10 @@ export default function EditorPage() {
       const STAGE_W = HALF_COURT_W + 2 * COURT_PADDING_X
       // pos is in CSS pixels; divide by courtScale to get Stage logical coords
       const sx = STAGE_W - pos.y / courtScale
-      const sy = pos.x / courtScale
+      const sy = (pos.x / courtScale) - COURT_PADDING_Y
       return { x: (sx - COURT_PADDING_X) / HALF_COURT_W, y: sy / FULL_COURT_H }
     }
-    return { x: (pos.x - COURT_PADDING_X) / HALF_COURT_W, y: pos.y / cH }
+    return { x: (pos.x - COURT_PADDING_X) / HALF_COURT_W, y: (pos.y - COURT_PADDING_Y) / cH }
   }
 
   function handleMouseDown(e: Konva.KonvaEventObject<MouseEvent>) {
@@ -447,7 +453,11 @@ export default function EditorPage() {
     }
 
     if (type === 'ball-force' && pendingSourceId) {
-      addAction({ id: nanoid(), type: 'ball-force', defenderId: pendingSourceId, forcePosition: normPos })
+      const targetId = currentState.ball.holderId
+      const target = currentState.positions[targetId]
+      if (!target) return
+      const angle = Math.atan2(normPos.y - target.y, normPos.x - target.x)
+      addAction({ id: nanoid(), type: 'ball-force', defenderId: pendingSourceId, targetId, angle })
       return
     }
   }
@@ -494,6 +504,13 @@ export default function EditorPage() {
       return
     }
 
+    if (type === 'ball-force' && !pendingSourceId) {
+      const mover = activeSet.players.find(p => p.id === playerId)
+      if (!mover || mover.team !== 'defense') return
+      setPendingSource(playerId)
+      return
+    }
+
     if (type === 'double-team' && !pendingSourceId) {
       const mover = activeSet.players.find(p => p.id === playerId)
       if (!mover || mover.team !== 'defense') return
@@ -525,7 +542,7 @@ export default function EditorPage() {
     if (type === 'handoff') return pendingSourceId ? 'Click the meet position' : 'Click the player to receive the handoff'
     if (type === 'defense-move') return pendingSourceId ? 'Click destination on court' : 'Click defender to move'
     if (type === 'double-team') return pendingSourceId ? 'Click second defender to trap' : 'Click first defender for double team'
-    if (type === 'ball-force') return pendingSourceId ? 'Click force direction on court' : 'Click defender to apply force'
+    if (type === 'ball-force') return pendingSourceId ? 'Click a side of the ball handler to force' : 'Click defender to apply ball force'
     return null
   })()
 

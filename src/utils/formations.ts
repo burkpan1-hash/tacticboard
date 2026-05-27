@@ -3,12 +3,15 @@ import type { PositionMap } from '../models/types'
 export interface FormationPreset {
   id: string
   name: string
-  positions: PositionMap   // keys: 'o1'–'o5' or 'd1'–'d5'
+  positions: PositionMap   // keys: 'o1'–'o5' or 'd1'–'d5' or both
   courtOnly?: 'half' | 'full'
+  defaultBallHolder?: string         // auto-assign ball to this player when formation is selected
+  attackBasket?: 'top' | 'bottom'   // auto-set attack direction when formation is selected
 }
 
-// Positions are normalized (0–1) relative to half-court canvas (500×470)
-// y=0 is baseline (top), y=1 is mid-court (bottom)
+// Positions are normalized relative to court canvas (500×470 half-court, 500×940 full-court)
+// y=0 is top baseline, y=1 is bottom baseline (or mid-court for half)
+// y slightly outside 0–1 is allowed for out-of-bounds inbound positions
 
 export const OFFENSE_FORMATIONS: FormationPreset[] = [
   {
@@ -162,11 +165,30 @@ export const DEFENSE_FORMATIONS: FormationPreset[] = [
     name: '1-3-1 Press',
     courtOnly: 'full',
     positions: {
-      d1: { x: 0.50, y: 0.50 },
-      d2: { x: 0.50, y: 0.22 },
-      d3: { x: 0.72, y: 0.50 },
-      d4: { x: 0.28, y: 0.50 },
-      d5: { x: 0.50, y: 0.78 },
+      d1: { x: 0.50, y: 0.78 },
+      d2: { x: 0.50, y: 0.50 },
+      d3: { x: 0.86, y: 0.50 },
+      d4: { x: 0.14, y: 0.50 },
+      d5: { x: 0.50, y: 0.22 },
+    },
+  },
+  {
+    id: 'one-two-one-one-press',
+    name: '1-2-1-1 Press',
+    courtOnly: 'full',
+    attackBasket: 'bottom',
+    defaultBallHolder: 'o4',
+    positions: {
+      d1: { x: 0.50, y: 0.12 },
+      d2: { x: 0.20, y: 0.28 },
+      d3: { x: 0.80, y: 0.28 },
+      d4: { x: 0.50, y: 0.42 },
+      d5: { x: 0.50, y: 0.75 },
+      o4: { x: 0.50, y: -0.03 },
+      o1: { x: 0.18, y: 0.20 },
+      o2: { x: 0.82, y: 0.20 },
+      o3: { x: 0.50, y: 0.38 },
+      o5: { x: 0.50, y: 0.60 },
     },
   },
 ]

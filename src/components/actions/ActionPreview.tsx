@@ -200,34 +200,40 @@ export default function ActionPreview({
 
     case 'ball-force': {
       if (!mousePos) return null
-      const to = pxN(mousePos)
       if (!pendingSourceId) {
+        // hint: small screen-tip bar at mouse position
+        const to = pxN(mousePos)
         return (
-          <Arrow
-            points={[to.x - 22, to.y, to.x, to.y]}
-            stroke={color} fill={color}
-            strokeWidth={2} pointerLength={8} pointerWidth={6}
+          <Line
+            points={[to.x - 14, to.y, to.x + 14, to.y]}
+            stroke={color} strokeWidth={5} strokeLinecap="round"
             opacity={OP * 0.7} listening={false}
           />
         )
       }
-      const from = pxId(pendingSourceId)
-      if (!from) return null
-      const mx = (from.x + to.x) / 2, my = (from.y + to.y) / 2
-      const dx = to.x - from.x, dy = to.y - from.y
-      const len = Math.sqrt(dx * dx + dy * dy) || 1
-      const cpOff = Math.min(len * 0.35, 40)
-      const cpx = mx + (-dy / len) * cpOff, cpy = my + (dx / len) * cpOff
-      const hdx = to.x - cpx, hdy = to.y - cpy
-      const hlen = Math.sqrt(hdx * hdx + hdy * hdy) || 1
-      const tipLen = 14
+      const from    = pxId(pendingSourceId)
+      const bhNorm  = positions[ballHolderId]
+      const bhPx    = pxId(ballHolderId)
+      if (!from || !bhNorm || !bhPx) return null
+      const TIP_DIST      = 0.06
+      const DEFENDER_DIST = 0.11
+      const angle = Math.atan2(mousePos.y - bhNorm.y, mousePos.x - bhNorm.x)
+      const cx = Math.cos(angle), cy = Math.sin(angle)
+      const tipNorm = {
+        x: Math.max(0, Math.min(1, bhNorm.x + cx * TIP_DIST)),
+        y: Math.max(0, Math.min(1, bhNorm.y + cy * TIP_DIST)),
+      }
+      const defNewNorm = {
+        x: Math.max(0, Math.min(1, bhNorm.x + cx * DEFENDER_DIST)),
+        y: Math.max(0, Math.min(1, bhNorm.y + cy * DEFENDER_DIST)),
+      }
+      const tipPx    = pxN(tipNorm)
+      const defNewPx = pxN(defNewNorm)
+      const [bx1, by1, bx2, by2] = perpendicularBar(tipPx.x, tipPx.y, bhPx.x, bhPx.y, 22)
       return (
         <Group opacity={OP} listening={false}>
-          <Line points={[from.x, from.y, cpx, cpy, to.x, to.y]} stroke={color} strokeWidth={2.5} tension={0.5} />
-          <Arrow
-            points={[to.x - (hdx / hlen) * tipLen, to.y - (hdy / hlen) * tipLen, to.x, to.y]}
-            stroke={color} fill={color} strokeWidth={2.5} pointerLength={10} pointerWidth={8}
-          />
+          <Line points={[from.x, from.y, defNewPx.x, defNewPx.y]} stroke={color} strokeWidth={2.5} />
+          <Line points={[bx1, by1, bx2, by2]} stroke={color} strokeWidth={6} strokeLinecap="round" />
         </Group>
       )
     }

@@ -1,5 +1,5 @@
 # SetPlay — Basketball Tactical Board
-## Design Spec (güncel: 2026-05-27)
+## Design Spec (güncel: 2026-05-27 — v2)
 
 **App name:** SetPlay  
 **Tagline:** Create. Animate. Share your plays.
@@ -47,10 +47,13 @@ Working directory: `/Users/burakbozkurt/Desktop/basketball board tactics`
 | `HALF_COURT_H` | `658` | 470 × 1.4 |
 | `FULL_COURT_H` | `1316` | 940 × 1.4 |
 | `COURT_PADDING_X` | `42` | 30 × 1.4 — Stage wider than court |
+| `COURT_PADDING_Y` | `70` | OOB zone above/below baselines (≈5ft at 1.4× scale) |
 
-- **Coordinate system**: normalized `{x: 0–1, y: 0–1}` — y=0 = basket end (top), y=1 = mid-court (bottom) for half court
+- **Coordinate system**: normalized `{x: 0–1, y: 0–1}` — y=0 = top baseline, y=1 = bottom baseline (or mid-court for half court)
+- **OOB positions**: y slightly outside 0–1 is valid (e.g. `y = -0.03`) — used for inbounders standing behind the baseline. `PlayerNode` clamps drag to `y ∈ [-COURT_PADDING_Y/cH, 1 + COURT_PADDING_Y/cH]`. OOB players render with a dashed yellow ring indicator.
 - **Full court**: landscape display (rotated −90°), uses `FULL_COURT_H` for y normalization
 - **`COURT_PADDING_X`**: Stage wider than court; court lines + players inside `Group x={42}`. Click normalization: `nx = (pos.x - COURT_PADDING_X) / HALF_COURT_W`
+- **`COURT_PADDING_Y`**: Stage taller/wider by `2×70px`; court inside `Group y={70}`. OOB players remain visible in this black zone. Scale: `courtScale = Math.min(aw / (FULL_COURT_H + 2×COURT_PADDING_Y), ah / STAGE_W)`.
 
 ### Court Lines
 
@@ -90,7 +93,7 @@ basket_y =  42 / 658 ≈ 0.0638
 | `high-post` | High Post |
 | `double-post` | Double Post |
 
-### Defense (8)
+### Defense (9)
 
 | ID | Name | Court restriction | Notes |
 |---|---|---|---|
@@ -100,10 +103,12 @@ basket_y =  42 / 658 ≈ 0.0638
 | `one-three-one` | 1-3-1 Zone | Half only | — |
 | `two-one-two-zone` | 2-1-2 Zone | Half only | — |
 | `one-two-two-zone` | 1-2-2 Zone | Half only | — |
-| `full-court-press` | Full Court Press | None | — |
-| `half-court-trap` | Half Court Trap | None | — |
+| `one-three-one-press` | 1-3-1 Press | Full only | — |
+| `one-two-one-one-press` | 1-2-1-1 Press | Full only | Inbounder o4 at `y = -0.03` (OOB), `attackBasket: 'bottom'`, `defaultBallHolder: 'o4'`. Positions both offense and defense. |
 
 > `FormationPreset.courtOnly?: 'half' | 'full'` — if set, only shown for that court type.
+> `FormationPreset.defaultBallHolder?: string` — auto-assigns ball to this player when formation is selected; also auto-skips the "Assign Ball" screen in setup.
+> `FormationPreset.attackBasket?: 'top' | 'bottom'` — auto-sets attack direction when formation is selected.
 
 ---
 
@@ -121,7 +126,7 @@ All action labels are in **English**. Source of truth: `src/utils/actionColors.t
 | `handoff` | Ball holder | Solid | Double bars at meet point | orange `#fb923c` |
 | `defense-move` | Any defense | Solid | Arrowhead | blue `#60a5fa` |
 | `double-team` | 2 defenders | Two arrows → trap positions | Arrowhead | purple `#7c3aed` |
-| `ball-force` | Defender | Curved line | Arrowhead | magenta `#d946ef` |
+| `ball-force` | Defender | Straight line → projected position | Thick perpendicular bar (force direction indicator) | magenta `#d946ef` |
 
 **Waypoints**: `dribble` and `cut` support an optional `waypoints: NormalizedPosition[]` array for drawn paths. Enabled both via drag on court (tool mode) and via player drag auto-action.
 
@@ -167,7 +172,8 @@ interface ShotAction        { id: string; type: 'shot';        shooterId: string
 interface HandoffAction     { id: string; type: 'handoff';     fromId: string; toId: string; meetPosition: NormalizedPosition; optionText?: string }
 interface DefenseMoveAction { id: string; type: 'defense-move'; playerId: string; toPosition: NormalizedPosition; optionText?: string }
 interface DoubleTeamAction  { id: string; type: 'double-team'; defender1Id: string; defender2Id: string; targetId: string; optionText?: string }
-interface BallForceAction   { id: string; type: 'ball-force';  defenderId: string; forcePosition: NormalizedPosition; optionText?: string }
+interface BallForceAction   { id: string; type: 'ball-force';  defenderId: string; targetId: string; angle: number; optionText?: string }
+// angle: radians from ball handler center → click point (force direction)
 
 type Action =
   | PassAction | CutAction | DribbleAction | ScreenAction | ShotAction
@@ -198,8 +204,9 @@ interface PlaySet {
 ### Phase 2 — Starting Formation ✅
 - Pick formation (filtered by court type) for offense and/or defense
 - **Full court**: Flip button sets `attackBasket` and mirrors all positions (y = 1−y)
-- Fine-tune with drag-and-drop
-- Assign ball to an offense player → "Ready ✓"
+- Formation with `defaultBallHolder` (e.g. 1-2-1-1 Press): auto-assigns ball and sets `attackBasket`; "Next →" becomes "Ready ✓" and skips the ball assignment screen
+- Fine-tune with drag-and-drop (OOB positions allowed for inbounders)
+- Assign ball to an offense player → "Ready ✓" (skipped if ball already assigned by formation)
 
 ### Phase 3 — Add Actions ✅
 - Select action type from toolbar (left side); ATK / DEF tabs
@@ -295,7 +302,7 @@ computeDoubleTeamPositions(d1Id, d2Id, targetId, positions, basketY?) → { p1, 
 | `handoff` | fromId overshoots meetPosition by 0.09; toId = meetPosition | holderId = toId |
 | `defense-move` | player → toPosition | — |
 | `double-team` | d1 → p1, d2 → p2 (via `computeDoubleTeamPositions`) | — |
-| `ball-force` | defender → forcePosition | — |
+| `ball-force` | defender → projected position (angle-based, 0.11 away from ball handler) | — |
 | (markings) | each defender moves to `OFFSET=0.12` toward basket from assigned player | — |
 
 ---
@@ -373,6 +380,9 @@ App: `http://localhost:5173`
 | Post-plan | Full-court attack direction (ATK bar, flip, basket-aware positioning) | ✅ |
 | Post-plan | Player drag auto-action (dribble/cut/defense-move with waypoints) | ✅ |
 | Post-plan | Bench drag-onto-court, positionOverrides for past-arrow immutability | ✅ |
+| Post-plan | OOB player support (COURT_PADDING_Y=70, dashed ring, inbounder positions) | ✅ |
+| Post-plan | 1-2-1-1 Press formation with OOB inbounder + auto ball assignment | ✅ |
+| Post-plan | Ball-force rework: angle+targetId model, bar visual instead of curved arrow | ✅ |
 
 ---
 

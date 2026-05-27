@@ -8,7 +8,7 @@ import FormationPicker from '../components/setup/FormationPicker'
 import { usePlayStore } from '../store/usePlayStore'
 import type { Player, PositionMap, NormalizedPosition, PlaySet } from '../models/types'
 import type { FormationPreset } from '../utils/formations'
-import { HALF_COURT_W, FULL_COURT_H, COURT_PADDING_X } from '../utils/courtCoords'
+import { HALF_COURT_W, FULL_COURT_H, COURT_PADDING_X, COURT_PADDING_Y } from '../utils/courtCoords'
 
 type Step = 'info' | 'positions' | 'ball'
 
@@ -59,7 +59,7 @@ export default function SetupPage() {
       if (!el) return
       const aw = el.clientWidth - 32
       const ah = el.clientHeight - 16
-      if (aw > 0 && ah > 0) setCourtScale(Math.min(aw / FULL_COURT_H, ah / STAGE_W))
+      if (aw > 0 && ah > 0) setCourtScale(Math.min(aw / (FULL_COURT_H + 2 * COURT_PADDING_Y), ah / STAGE_W))
     }
     updateScale()
     const ro = new ResizeObserver(updateScale)
@@ -106,6 +106,9 @@ export default function SetupPage() {
       merged[key] = pos
     })
     setDraftPositions(merged)
+
+    if (formation.attackBasket) setAttackBasket(formation.attackBasket)
+    if (formation.defaultBallHolder) setDraftBall({ holderId: formation.defaultBallHolder })
   }
 
   function handleReady() {
@@ -206,10 +209,10 @@ export default function SetupPage() {
             <FlipButton />
           </div>
           <button
-            onClick={() => setStep('ball')}
+            onClick={() => draftBall ? handleReady() : setStep('ball')}
             className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-4 py-1.5 rounded-lg text-sm transition-colors"
           >
-            Next →
+            {draftBall ? 'Ready ✓' : 'Next →'}
           </button>
         </div>
 

@@ -7,6 +7,7 @@ export const HALF_COURT_H = 658   // 470 * 1.4
 export const FULL_COURT_W = 700
 export const FULL_COURT_H = 1316  // 940 * 1.4
 export const COURT_PADDING_X = 42 // 30 * 1.4
+export const COURT_PADDING_Y = 70 // OOB zone above/below baselines (≈5ft at 1.4× scale)
 
 export function normalize(
   px: number, py: number,

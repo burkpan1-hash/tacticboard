@@ -30,7 +30,7 @@ export interface ShotAction         { id: string; type: 'shot';         shooterI
 export interface HandoffAction      { id: string; type: 'handoff';      fromId: string; toId: string; meetPosition: NormalizedPosition; optionText?: string }
 export interface DefenseMoveAction  { id: string; type: 'defense-move'; playerId: string; toPosition: NormalizedPosition;               optionText?: string }
 export interface DoubleTeamAction   { id: string; type: 'double-team';  defender1Id: string; defender2Id: string; targetId: string;  optionText?: string }
-export interface BallForceAction    { id: string; type: 'ball-force';   defenderId: string; forcePosition: NormalizedPosition;        optionText?: string }
+export interface BallForceAction    { id: string; type: 'ball-force';   defenderId: string; targetId: string; angle: number;          optionText?: string }
 
 export type Action =
   | PassAction | CutAction | DribbleAction

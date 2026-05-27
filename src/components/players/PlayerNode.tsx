@@ -1,7 +1,7 @@
 import { Circle, Text, Group } from 'react-konva'
 import type Konva from 'konva'
 import type { Player, NormalizedPosition } from '../../models/types'
-import { denormalize, HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_SCALE } from '../../utils/courtCoords'
+import { denormalize, HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_SCALE, COURT_PADDING_Y } from '../../utils/courtCoords'
 
 interface Props {
   player: Player
@@ -27,9 +27,10 @@ export default function PlayerNode({ player, position, courtType, landscape, has
   const fill = player.team === 'offense' ? OFFENSE_COLOR : DEFENSE_COLOR
 
   function norm(node: Konva.Node): NormalizedPosition {
+    const maxOobY = COURT_PADDING_Y / canvasH
     return {
       x: Math.max(0, Math.min(1, node.x() / HALF_COURT_W)),
-      y: Math.max(0, Math.min(1, node.y() / canvasH)),
+      y: Math.max(-maxOobY, Math.min(1 + maxOobY, node.y() / canvasH)),
     }
   }
 
@@ -42,6 +43,9 @@ export default function PlayerNode({ player, position, courtType, landscape, has
       onDragEnd={(e) => onDragEnd(player.id, norm(e.target))}
       onClick={() => onClick?.(player.id)}
     >
+      {(position.y < 0 || position.y > 1) && (
+        <Circle radius={RADIUS + 8} stroke="#facc15" strokeWidth={2} dash={[5, 4]} fill="transparent" />
+      )}
       {isSelected && (
         <Circle radius={RADIUS + 5} fill="transparent" stroke="#facc15" strokeWidth={2} />
       )}

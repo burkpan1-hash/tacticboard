@@ -176,26 +176,28 @@ export default function ActionArrow({ action, positions, courtType, basketY }: P
     }
 
     case 'ball-force': {
-      const from = px(action.defenderId)
-      const to   = pxPos(action.forcePosition)
-      const end  = shortenEnd(from.x, from.y, to.x, to.y, PLAYER_RADIUS + ARROW_GAP)
-      // Curved line: control point offset perpendicular to midpoint
-      const mx = (from.x + end.x) / 2, my = (from.y + end.y) / 2
-      const dx = end.x - from.x, dy = end.y - from.y
-      const len = Math.sqrt(dx * dx + dy * dy) || 1
-      const cpOff = Math.min(len * 0.35, 40)
-      const cpx = mx + (-dy / len) * cpOff, cpy = my + (dx / len) * cpOff
-      // Arrowhead direction: control point → end
-      const hdx = end.x - cpx, hdy = end.y - cpy
-      const hlen = Math.sqrt(hdx * hdx + hdy * hdy) || 1
-      const tipLen = 14
+      const defFrom = px(action.defenderId)
+      const target = positions[action.targetId]
+      if (!target) return null
+      const TIP_DIST      = 0.06
+      const DEFENDER_DIST = 0.11
+      const cx = Math.cos(action.angle), cy = Math.sin(action.angle)
+      const tipNorm = {
+        x: Math.max(0, Math.min(1, target.x + cx * TIP_DIST)),
+        y: Math.max(0, Math.min(1, target.y + cy * TIP_DIST)),
+      }
+      const defNewNorm = {
+        x: Math.max(0, Math.min(1, target.x + cx * DEFENDER_DIST)),
+        y: Math.max(0, Math.min(1, target.y + cy * DEFENDER_DIST)),
+      }
+      const tipPx    = pxPos(tipNorm)
+      const defNewPx = pxPos(defNewNorm)
+      const targetPx = pxPos(target)
+      const [bx1, by1, bx2, by2] = perpendicularBar(tipPx.x, tipPx.y, targetPx.x, targetPx.y, 22)
       return (
         <Group>
-          <Line points={[from.x, from.y, cpx, cpy, end.x, end.y]} stroke={color} strokeWidth={2.5} tension={0.5} />
-          <Arrow
-            points={[end.x - (hdx / hlen) * tipLen, end.y - (hdy / hlen) * tipLen, end.x, end.y]}
-            stroke={color} fill={color} strokeWidth={2.5} pointerLength={10} pointerWidth={8}
-          />
+          <Line points={[defFrom.x, defFrom.y, defNewPx.x, defNewPx.y]} stroke={color} strokeWidth={2.5} />
+          <Line points={[bx1, by1, bx2, by2]} stroke={color} strokeWidth={6} strokeLinecap="round" />
         </Group>
       )
     }

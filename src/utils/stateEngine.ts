@@ -121,9 +121,16 @@ export function applyAction(
       positions[action.defender2Id] = result.p2
       break
     }
-    case 'ball-force':
-      positions[action.defenderId] = action.forcePosition
+    case 'ball-force': {
+      const target = positions[action.targetId]
+      if (!target) break
+      const DEFENDER_DIST = 0.11
+      positions[action.defenderId] = {
+        x: Math.max(0, Math.min(1, target.x + Math.cos(action.angle) * DEFENDER_DIST)),
+        y: Math.max(0, Math.min(1, target.y + Math.sin(action.angle) * DEFENDER_DIST)),
+      }
       break
+    }
   }
 
   if (markings) {
