@@ -172,6 +172,66 @@ export default function ActionPreview({
       )
     }
 
+    case 'double-team': {
+      if (!mousePos) return null
+      const to = pxN(mousePos)
+      if (!pendingSourceId) {
+        return (
+          <Arrow
+            points={[to.x - 22, to.y, to.x, to.y]}
+            stroke={color} fill={color}
+            strokeWidth={2} pointerLength={8} pointerWidth={6}
+            opacity={OP * 0.7} listening={false}
+          />
+        )
+      }
+      const from = pxId(pendingSourceId)
+      if (!from) return null
+      // Show arrow from first defender to mouse (hovering over second defender)
+      return (
+        <Arrow
+          points={[from.x, from.y, to.x, to.y]}
+          stroke={color} fill={color}
+          strokeWidth={2.5} pointerLength={10} pointerWidth={8}
+          opacity={OP} listening={false}
+        />
+      )
+    }
+
+    case 'ball-force': {
+      if (!mousePos) return null
+      const to = pxN(mousePos)
+      if (!pendingSourceId) {
+        return (
+          <Arrow
+            points={[to.x - 22, to.y, to.x, to.y]}
+            stroke={color} fill={color}
+            strokeWidth={2} pointerLength={8} pointerWidth={6}
+            opacity={OP * 0.7} listening={false}
+          />
+        )
+      }
+      const from = pxId(pendingSourceId)
+      if (!from) return null
+      const mx = (from.x + to.x) / 2, my = (from.y + to.y) / 2
+      const dx = to.x - from.x, dy = to.y - from.y
+      const len = Math.sqrt(dx * dx + dy * dy) || 1
+      const cpOff = Math.min(len * 0.35, 40)
+      const cpx = mx + (-dy / len) * cpOff, cpy = my + (dx / len) * cpOff
+      const hdx = to.x - cpx, hdy = to.y - cpy
+      const hlen = Math.sqrt(hdx * hdx + hdy * hdy) || 1
+      const tipLen = 14
+      return (
+        <Group opacity={OP} listening={false}>
+          <Line points={[from.x, from.y, cpx, cpy, to.x, to.y]} stroke={color} strokeWidth={2.5} tension={0.5} />
+          <Arrow
+            points={[to.x - (hdx / hlen) * tipLen, to.y - (hdy / hlen) * tipLen, to.x, to.y]}
+            stroke={color} fill={color} strokeWidth={2.5} pointerLength={10} pointerWidth={8}
+          />
+        </Group>
+      )
+    }
+
     case 'shot': {
       const from = pxId(ballHolderId)
       if (!from) return null

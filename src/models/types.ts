@@ -1,6 +1,6 @@
 export type CourtType = 'half' | 'full'
 export type Team = 'offense' | 'defense'
-export type ActionType = 'pass' | 'cut' | 'dribble' | 'screen' | 'shot' | 'handoff' | 'defense-move'
+export type ActionType = 'pass' | 'cut' | 'dribble' | 'screen' | 'shot' | 'handoff' | 'defense-move' | 'double-team' | 'ball-force'
 
 export interface NormalizedPosition {
   x: number  // 0–1 relative to canvas width
@@ -29,15 +29,19 @@ export interface ScreenAction       { id: string; type: 'screen';       screener
 export interface ShotAction         { id: string; type: 'shot';         shooterId: string;                                              optionText?: string }
 export interface HandoffAction      { id: string; type: 'handoff';      fromId: string; toId: string; meetPosition: NormalizedPosition; optionText?: string }
 export interface DefenseMoveAction  { id: string; type: 'defense-move'; playerId: string; toPosition: NormalizedPosition;               optionText?: string }
+export interface DoubleTeamAction   { id: string; type: 'double-team';  defender1Id: string; defender2Id: string; targetId: string;  optionText?: string }
+export interface BallForceAction    { id: string; type: 'ball-force';   defenderId: string; forcePosition: NormalizedPosition;        optionText?: string }
 
 export type Action =
   | PassAction | CutAction | DribbleAction
   | ScreenAction | ShotAction | HandoffAction | DefenseMoveAction
+  | DoubleTeamAction | BallForceAction
 
 export interface PlaySet {
   id: string
   name: string
   courtType: CourtType
+  attackBasket?: 'top' | 'bottom'   // full court only — which end offense attacks (y=0=top, y=1=bottom)
   players: Player[]
   initialPositions: PositionMap
   initialBall: BallState

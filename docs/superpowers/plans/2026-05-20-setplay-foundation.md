@@ -2,7 +2,16 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Status:** All tasks complete. Plan 2 (action system) also complete. Next: Plan 3 (animation + export).
+**Status:** All tasks complete. Plans 2 and 3 also complete. See DESIGN.md for full current state.
+
+## Post-Plan Changes (after Plan 1 completion)
+
+- **`COURT_SCALE = 1.4`** applied globally — all pixel values scaled: `HALF_COURT_W=700`, `HALF_COURT_H=658`, `FULL_COURT_H=1316`, `COURT_PADDING_X=42`. The original plan used unscaled values (500×470).
+- **Defense formations expanded** 6→8: `two-one-two-zone` and `one-two-two-zone` added.
+- **`FormationPreset.courtOnly?: 'half' | 'full'`** added — all zone sets restricted to half court.
+- **Offense formations replaced**: Motion and 2-3 Low → High Post and Double Post; all set `courtOnly: 'half'`.
+- **Flip court** (full court only): added to both formation step and ball-assignment step in SetupPage. Toggles `attackBasket` and mirrors all draft positions.
+- **Attack basket selector removed** from info step — moved to in-editor ATK arrow bar (always visible).
 
 > **Plan 1 sonrası ek değişiklikler (commit `46d2ed2`):**
 > - Savunma dizilimleri 6→8 oldu: 2-1-2 Zone ve 1-2-2 Zone eklendi

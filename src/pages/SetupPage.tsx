@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { nanoid } from 'nanoid'
 import CourtCanvas from '../components/court/CourtCanvas'
@@ -8,6 +8,7 @@ import FormationPicker from '../components/setup/FormationPicker'
 import { usePlayStore } from '../store/usePlayStore'
 import type { Player, PositionMap, NormalizedPosition, PlaySet } from '../models/types'
 import type { FormationPreset } from '../utils/formations'
+import { HALF_COURT_W, FULL_COURT_H, COURT_PADDING_X } from '../utils/courtCoords'
 
 type Step = 'info' | 'positions' | 'ball'
 
@@ -45,8 +46,36 @@ export default function SetupPage() {
   const [step, setStep] = useState<Step>('info')
   const [selectedOffFormation, setSelectedOffFormation] = useState<string | undefined>()
   const [selectedDefFormation, setSelectedDefFormation] = useState<string | undefined>()
+  const [attackBasket, setAttackBasket] = useState<'top' | 'bottom'>('top')
+
+  const courtAreaRef = useRef<HTMLDivElement>(null)
+  const [courtScale, setCourtScale] = useState(1)
+
+  useEffect(() => {
+    const el = courtAreaRef.current
+    if (!el || setupDraft.courtType !== 'full') return
+    const STAGE_W = HALF_COURT_W + 2 * COURT_PADDING_X
+    function updateScale() {
+      if (!el) return
+      const aw = el.clientWidth - 32
+      const ah = el.clientHeight - 16
+      if (aw > 0 && ah > 0) setCourtScale(Math.min(aw / FULL_COURT_H, ah / STAGE_W))
+    }
+    updateScale()
+    const ro = new ResizeObserver(updateScale)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [setupDraft.courtType, step])
 
   const players = buildPlayers(setupDraft.offenseCount, setupDraft.defenseCount)
+  const isLandscape = setupDraft.courtType === 'full'
+
+  function flipCourt() {
+    setAttackBasket(prev => prev === 'top' ? 'bottom' : 'top')
+    setDraftPositions(Object.fromEntries(
+      Object.entries(draftPositions).map(([id, pos]) => [id, { x: pos.x, y: 1 - pos.y }])
+    ))
+  }
 
   function handleFormationSelect(team: 'offense' | 'defense', formation: FormationPreset) {
     if (team === 'offense') setSelectedOffFormation(formation.id)
@@ -88,6 +117,7 @@ export default function SetupPage() {
       id: nanoid(),
       name: setupDraft.name || 'Untitled Play',
       courtType: setupDraft.courtType,
+      attackBasket: setupDraft.courtType === 'full' ? attackBasket : undefined,
       players,
       initialPositions: draftPositions,
       initialBall: draftBall,
@@ -152,31 +182,115 @@ export default function SetupPage() {
     )
   }
 
+  const FlipButton = () => isLandscape ? (
+    <button
+      onClick={flipCourt}
+      title="Flip attack direction"
+      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white transition-colors text-xs"
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/>
+        <path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/>
+      </svg>
+      Flip
+    </button>
+  ) : null
+
   if (step === 'positions') {
     return (
-      <div className="min-h-screen flex flex-col items-center p-6 gap-6">
-        <h2 className="text-xl font-bold text-white">Starting Formation</h2>
-
-        <div className="w-full max-w-sm space-y-4">
-          {setupDraft.offenseCount > 0 && (
-            <FormationPicker
-              team="offense"
-              courtType={setupDraft.courtType}
-              selectedId={selectedOffFormation}
-              onSelect={(f) => handleFormationSelect('offense', f)}
-            />
-          )}
-          {setupDraft.defenseCount > 0 && (
-            <FormationPicker
-              team="defense"
-              courtType={setupDraft.courtType}
-              selectedId={selectedDefFormation}
-              onSelect={(f) => handleFormationSelect('defense', f)}
-            />
-          )}
+      <div className="h-screen flex flex-col bg-slate-900 overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
+          <button onClick={() => setStep('info')} className="text-slate-400 hover:text-white transition-colors text-sm">← Back</button>
+          <div className="flex items-center gap-3">
+            <span className="text-white font-semibold">Starting Formation</span>
+            <FlipButton />
+          </div>
+          <button
+            onClick={() => setStep('ball')}
+            className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-4 py-1.5 rounded-lg text-sm transition-colors"
+          >
+            Next →
+          </button>
         </div>
 
-        <CourtCanvas courtType={setupDraft.courtType}>
+        <div className="flex flex-1 overflow-hidden">
+          <div className="p-2 border-r border-slate-700 overflow-y-auto">
+            <div className="flex flex-col gap-4 w-52">
+              {setupDraft.offenseCount > 0 && (
+                <FormationPicker
+                  team="offense"
+                  courtType={setupDraft.courtType}
+                  selectedId={selectedOffFormation}
+                  onSelect={(f) => handleFormationSelect('offense', f)}
+                />
+              )}
+              {setupDraft.defenseCount > 0 && (
+                <FormationPicker
+                  team="defense"
+                  courtType={setupDraft.courtType}
+                  selectedId={selectedDefFormation}
+                  onSelect={(f) => handleFormationSelect('defense', f)}
+                />
+              )}
+            </div>
+          </div>
+
+          <div ref={courtAreaRef} className="flex-1 flex items-center justify-center overflow-hidden">
+            <CourtCanvas
+              courtType={setupDraft.courtType}
+              scale={isLandscape ? courtScale : 1}
+              landscape={isLandscape}
+              attackBasket={isLandscape ? attackBasket : undefined}
+            >
+              {players.map((p) => {
+                const pos: NormalizedPosition = draftPositions[p.id] ?? { x: 0.5, y: 0.5 }
+                return (
+                  <PlayerNode
+                    key={p.id}
+                    player={p}
+                    position={pos}
+                    courtType={setupDraft.courtType}
+                    landscape={isLandscape}
+                    onDragEnd={(id, newPos) => updateDraftPosition(id, newPos.x, newPos.y)}
+                  />
+                )
+              })}
+            </CourtCanvas>
+          </div>
+        </div>
+
+        <div className="px-4 py-2 bg-slate-800 border-t border-slate-700 text-center">
+          <p className="text-slate-400 text-sm">Drag players to adjust their positions</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="h-screen flex flex-col bg-slate-900 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
+        <button onClick={() => setStep('positions')} className="text-slate-400 hover:text-white transition-colors text-sm">← Back</button>
+        <div className="flex flex-col items-center gap-1">
+          <div className="flex items-center gap-3">
+            <div className="text-white font-semibold">Assign Ball</div>
+            <FlipButton />
+          </div>
+          <div className="text-slate-400 text-xs">Select who starts with the ball</div>
+        </div>
+        <button
+          onClick={handleReady}
+          className="bg-green-600 hover:bg-green-500 text-white font-semibold px-4 py-1.5 rounded-lg text-sm transition-colors"
+        >
+          Ready ✓
+        </button>
+      </div>
+
+      <div ref={courtAreaRef} className="flex-1 flex items-center justify-center overflow-hidden">
+        <CourtCanvas
+          courtType={setupDraft.courtType}
+          scale={isLandscape ? courtScale : 1}
+          landscape={isLandscape}
+        >
           {players.map((p) => {
             const pos: NormalizedPosition = draftPositions[p.id] ?? { x: 0.5, y: 0.5 }
             return (
@@ -185,62 +299,15 @@ export default function SetupPage() {
                 player={p}
                 position={pos}
                 courtType={setupDraft.courtType}
-                onDragEnd={(id, newPos) => updateDraftPosition(id, newPos.x, newPos.y)}
+                landscape={isLandscape}
+                hasBall={draftBall?.holderId === p.id}
+                isSelected={draftBall?.holderId === p.id}
+                onDragEnd={() => {}}
+                onClick={p.team === 'offense' ? (id) => setDraftBall({ holderId: id }) : undefined}
               />
             )
           })}
         </CourtCanvas>
-
-        <p className="text-slate-400 text-sm">Drag players to adjust their positions</p>
-
-        <div className="flex gap-4">
-          <button onClick={() => setStep('info')} className="text-slate-400 hover:text-white transition-colors">
-            ← Back
-          </button>
-          <button
-            onClick={() => setStep('ball')}
-            className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-8 py-2 rounded-xl transition-colors"
-          >
-            Next →
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="min-h-screen flex flex-col items-center p-6 gap-6">
-      <h2 className="text-xl font-bold text-white">Assign Ball</h2>
-      <p className="text-slate-400 text-sm">Select who starts with the ball</p>
-
-      <CourtCanvas courtType={setupDraft.courtType}>
-        {players.map((p) => {
-          const pos: NormalizedPosition = draftPositions[p.id] ?? { x: 0.5, y: 0.5 }
-          return (
-            <PlayerNode
-              key={p.id}
-              player={p}
-              position={pos}
-              courtType={setupDraft.courtType}
-              hasBall={draftBall?.holderId === p.id}
-              isSelected={draftBall?.holderId === p.id}
-              onDragEnd={() => {}}
-              onClick={p.team === 'offense' ? (id) => setDraftBall({ holderId: id }) : undefined}
-            />
-          )
-        })}
-      </CourtCanvas>
-
-      <div className="flex gap-4">
-        <button onClick={() => setStep('positions')} className="text-slate-400 hover:text-white transition-colors">
-          ← Back
-        </button>
-        <button
-          onClick={handleReady}
-          className="bg-green-600 hover:bg-green-500 text-white font-semibold px-8 py-3 rounded-xl transition-colors"
-        >
-          Ready ✓
-        </button>
       </div>
     </div>
   )

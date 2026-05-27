@@ -1,4 +1,15 @@
-# SetPlay Playback & Export — Implementation Plan [✅ PARTIALLY COMPLETE]
+# SetPlay Playback & Export — Implementation Plan [✅ COMPLETE]
+
+> Export is now fully implemented. See DESIGN.md for current state.
+
+## Post-Plan Changes (added after Plan 3 completion)
+
+- **Export implemented**: `ExportModal.tsx` supports PNG (Konva `toDataURL`), GIF (gif.js frame capture), and Video (MediaRecorder). Export button lives in `PlaybackControls`.
+- **`STEP_MS = 1600`** (was 800 in plan notes) — one action animates in 1.6s at 1× speed.
+- **Waypoint animation**: dribble/cut with waypoints uses arc-length parameterized interpolation for uniform speed along drawn path.
+- **Growing pass arrow**: during playback, a pass action shows the arrow tip advancing from sender toward receiver in real time.
+- **optionText badge**: rendered on canvas as `Rect + Text` Konva group above ball holder (was DOM-only badge in initial implementation).
+- **Full-court direction bar**: ATK arrow always visible above canvas; Flip button repositioned below the arrow (not in top-right header).
 
 ## Implementation Notes (actual vs. planned)
 

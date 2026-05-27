@@ -1,6 +1,19 @@
 # SetPlay Action System — Implementation Plan [✅ COMPLETE]
 
-> **Status:** All tasks complete. See implementation notes below for deviations from this plan.
+> **Status:** All tasks complete. See implementation notes below for deviations, and DESIGN.md for full current state.
+
+## Post-Plan Changes (added after Plan 2 completion)
+
+- **`defense-move` action** added (was not in original 6-type plan). Defense tab in toolbar.
+- **`double-team` action** (purple `#7c3aed`): two defenders → computed trap positions. `computeDoubleTeamPositions()` exported from stateEngine and shared with `ActionArrow`. `basketY` parameter ensures correct direction for full-court `attackBasket='bottom'`.
+- **`ball-force` action** (magenta `#d946ef`): defender → forcePosition via curved Konva line.
+- **Waypoints** added to `DribbleAction` and `CutAction`: `waypoints?: NormalizedPosition[]` for drawn paths. Captured at 15px intervals during mouse-drag on canvas.
+- **`ActionToolbar`**: ATK / DEF tab switcher; DEF tab shows `defense-move`, `double-team`, `ball-force`.
+- **`ActionArrow` double-team**: arrows go to computed trap positions (not to target) for clearer visual intent.
+- **Player drag auto-action**: dragging a player at step > 0 (with recorded actions) auto-inserts dribble/cut/defense-move with waypoints from drag path.
+- **`positionOverrides`**: local state in EditorPage; past arrow coordinates are immutable; overrides cleared on step change.
+- **`updateInitialPosition` / `addPlayerToCourt`** added to store.
+- **Bench drag-onto-court**: players not in `activeSet.players` shown as draggable dashed circles.
 
 ## Implementation Notes (actual vs planned)
 

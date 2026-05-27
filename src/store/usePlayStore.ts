@@ -50,6 +50,9 @@ interface PlayStoreState {
   // ── Option text ──────────────────────────────────────────────
   setOptionText: (actionId: string, text: string) => void
 
+  // ── Position edits ───────────────────────────────────────────
+  updateInitialPosition: (playerId: string, pos: NormalizedPosition) => void
+
   // ── Bench ────────────────────────────────────────────────────
   addPlayerToCourt: (playerId: string, position: NormalizedPosition) => void
 
@@ -61,6 +64,9 @@ interface PlayStoreState {
   startActionCreation: (type: ActionType) => void
   setPendingSource: (playerId: string) => void
   cancelActionCreation: () => void
+
+  // ── Court flip ───────────────────────────────────────────────
+  flipAttackBasket: () => void
 
   // ── Playback ─────────────────────────────────────────────────
   isPlaying: boolean
@@ -186,6 +192,15 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
     })
   },
 
+  updateInitialPosition: (playerId, pos) => {
+    set(s => {
+      if (!s.activeSet) return s
+      const updated = { ...s.activeSet, initialPositions: { ...s.activeSet.initialPositions, [playerId]: pos } }
+      get().saveSet(updated)
+      return { activeSet: updated }
+    })
+  },
+
   addPlayerToCourt: (playerId, position) => {
     set(s => {
       if (!s.activeSet) return s
@@ -218,6 +233,40 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
     set(s => {
       if (!s.activeSet) return s
       const updated: PlaySet = { ...s.activeSet, markings }
+      get().saveSet(updated)
+      return { activeSet: updated }
+    })
+  },
+
+  flipAttackBasket: () => {
+    set(s => {
+      if (!s.activeSet || s.activeSet.courtType !== 'full') return s
+      const mirror = (p: NormalizedPosition): NormalizedPosition => ({ x: p.x, y: 1 - p.y })
+      const mirrorAction = (action: Action): Action => {
+        switch (action.type) {
+          case 'cut':
+          case 'dribble':
+            return { ...action, toPosition: mirror(action.toPosition), waypoints: action.waypoints?.map(mirror) }
+          case 'defense-move':
+            return { ...action, toPosition: mirror(action.toPosition) }
+          case 'screen':
+            return { ...action, screenPosition: mirror(action.screenPosition) }
+          case 'handoff':
+            return { ...action, meetPosition: mirror(action.meetPosition) }
+          case 'ball-force':
+            return { ...action, forcePosition: mirror(action.forcePosition) }
+          default:
+            return action
+        }
+      }
+      const updated: PlaySet = {
+        ...s.activeSet,
+        attackBasket: (s.activeSet.attackBasket ?? 'top') === 'top' ? 'bottom' : 'top',
+        initialPositions: Object.fromEntries(
+          Object.entries(s.activeSet.initialPositions).map(([id, pos]) => [id, mirror(pos)])
+        ),
+        actions: s.activeSet.actions.map(mirrorAction),
+      }
       get().saveSet(updated)
       return { activeSet: updated }
     })

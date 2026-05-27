@@ -1,6 +1,10 @@
 import { usePlayStore } from '../../store/usePlayStore'
 
-export default function PlaybackControls() {
+interface Props {
+  onExport?: () => void
+}
+
+export default function PlaybackControls({ onExport }: Props) {
   const {
     activeSet, activeStep, setActiveStep, undoLastAction,
     isPlaying, playbackSpeed, setIsPlaying, setPlaybackSpeed,
@@ -73,6 +77,15 @@ export default function PlaybackControls() {
           >{s}×</button>
         ))}
       </div>
+
+      {onExport && (
+        <button
+          onClick={onExport}
+          disabled={isPlaying || total === 0}
+          className="px-3 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm disabled:opacity-30 transition-colors"
+          title="Export video"
+        >⬇ Export</button>
+      )}
 
       <div className="flex-1" />
 

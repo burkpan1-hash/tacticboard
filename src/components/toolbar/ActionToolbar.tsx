@@ -24,7 +24,19 @@ const HINTS: Record<ActionType, string> = {
   shot:           '1 click',
   handoff:        'receiver → spot',
   'defense-move': 'player → spot',
+  'double-team':  '1.def → 2.def',
+  'ball-force':   'def → yön',
 }
+
+interface DefTool {
+  type: ActionType
+  label: string
+}
+const DEF_TOOLS: DefTool[] = [
+  { type: 'defense-move', label: 'Move'   },
+  { type: 'double-team',  label: 'Double' },
+  { type: 'ball-force',   label: 'Force'  },
+]
 
 const BASE = { viewBox: '0 0 32 14', width: 32, height: 14, fill: 'none', strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
 
@@ -50,6 +62,12 @@ const ICONS: Record<ActionType, React.ReactNode> = {
   'defense-move': (() => { const c = ACTION_COLORS['defense-move']; return (
     <svg {...BASE}><line x1="2" y1="7" x2="20" y2="7" stroke={c} strokeWidth="1.5"/><polyline points="16,3 24,7 16,11" stroke={c} strokeWidth="1.5"/></svg>
   )})(),
+  'double-team': (() => { const c = ACTION_COLORS['double-team']; return (
+    <svg {...BASE}><line x1="2" y1="3" x2="18" y2="7" stroke={c} strokeWidth="1.5"/><line x1="2" y1="11" x2="18" y2="7" stroke={c} strokeWidth="1.5"/><polyline points="14,3 24,7 14,11" stroke={c} strokeWidth="1.5"/></svg>
+  )})(),
+  'ball-force': (() => { const c = ACTION_COLORS['ball-force']; return (
+    <svg {...BASE}><path d="M2,10 Q12,1 20,7" stroke={c} strokeWidth="1.5" fill="none"/><polyline points="16,3 24,7 16,11" stroke={c} strokeWidth="1.5"/></svg>
+  )})(),
 }
 
 interface Props {
@@ -65,8 +83,8 @@ export default function ActionToolbar({ activeType, ballHolderId, onSelect, onCa
   return (
     <div className="flex flex-col gap-2 p-2 bg-slate-800 rounded-xl border border-slate-700">
 
-      {/* ATK + DEF yan yana */}
-      <div className="flex flex-row gap-2">
+      {/* ATK üstte, DEF altta */}
+      <div className="flex flex-col gap-2">
 
         {/* ATK kolonu */}
         <div className="flex flex-col gap-2">
@@ -99,21 +117,22 @@ export default function ActionToolbar({ activeType, ballHolderId, onSelect, onCa
         <div className="flex flex-col gap-2">
           <div className="text-[10px] text-blue-400 font-semibold px-1 tracking-wide">DEF</div>
 
-          {(() => {
-            const active = activeType === 'defense-move'
-            const c = ACTION_COLORS['defense-move']
+          {DEF_TOOLS.map(t => {
+            const active = activeType === t.type
             return (
               <button
-                onClick={() => active ? onCancel() : onSelect('defense-move')}
+                key={t.type}
+                title={t.label}
+                onClick={() => active ? onCancel() : onSelect(t.type)}
                 className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors
                   ${active ? 'bg-slate-600 ring-1 ring-white/30' : 'bg-slate-700 text-slate-200 hover:bg-slate-600'}`}
               >
-                {ICONS['defense-move']}
-                <span style={{ color: c }}>Move</span>
-                <span className="text-slate-500 text-[9px] leading-tight text-center">player → spot</span>
+                {ICONS[t.type]}
+                <span style={{ color: ACTION_COLORS[t.type] }}>{t.label}</span>
+                <span className="text-slate-500 text-[9px] leading-tight text-center">{HINTS[t.type]}</span>
               </button>
             )
-          })()}
+          })}
 
           <div className="flex flex-col items-center gap-1.5 px-2 py-2 bg-slate-700 rounded-lg">
             <svg viewBox="0 0 32 14" width={32} height={14} fill="none" strokeLinecap="round">

@@ -158,25 +158,15 @@ export const DEFENSE_FORMATIONS: FormationPreset[] = [
     },
   },
   {
-    id: 'full-court-press',
-    name: 'Full Court Press',
+    id: 'one-three-one-press',
+    name: '1-3-1 Press',
+    courtOnly: 'full',
     positions: {
-      d1: { x: 0.50, y: 0.92 },
-      d2: { x: 0.22, y: 0.84 },
-      d3: { x: 0.78, y: 0.84 },
-      d4: { x: 0.34, y: 0.66 },
-      d5: { x: 0.66, y: 0.66 },
-    },
-  },
-  {
-    id: 'half-court-trap',
-    name: 'Half Court Trap',
-    positions: {
-      d1: { x: 0.50, y: 0.80 },
-      d2: { x: 0.26, y: 0.62 },
-      d3: { x: 0.74, y: 0.62 },
-      d4: { x: 0.34, y: 0.30 },
-      d5: { x: 0.66, y: 0.30 },
+      d1: { x: 0.50, y: 0.50 },
+      d2: { x: 0.50, y: 0.22 },
+      d3: { x: 0.72, y: 0.50 },
+      d4: { x: 0.28, y: 0.50 },
+      d5: { x: 0.50, y: 0.78 },
     },
   },
 ]

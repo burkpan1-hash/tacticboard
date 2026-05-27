@@ -1,4 +1,4 @@
-import { Line, Arc, Circle, Rect } from 'react-konva'
+import { Line, Arc, Circle, Rect, Group, Text } from 'react-konva'
 import { HALF_COURT, HALF_COURT_W, FULL_COURT_H, COURT_SCALE } from '../../utils/courtCoords'
 
 const STROKE = '#4ade80'
@@ -7,7 +7,18 @@ const { basket, keyLeft, keyRight, keyBottom, ftCircle, restricted, threeCornerX
 const H = FULL_COURT_H
 const S = COURT_SCALE
 
-export default function FullCourt() {
+interface Props {
+  attackBasket?: 'top' | 'bottom'
+}
+
+export default function FullCourt({ attackBasket }: Props) {
+  const ATK = '#f97316'
+  const DEF = '#60a5fa'
+  const topColor    = attackBasket === 'top' ? ATK : attackBasket === 'bottom' ? DEF : ATK
+  const bottomColor = attackBasket === 'bottom' ? ATK : attackBasket === 'top' ? DEF : ATK
+  const topLabel    = attackBasket === 'top' ? 'ATK' : attackBasket === 'bottom' ? 'DEF' : null
+  const bottomLabel = attackBasket === 'bottom' ? 'ATK' : attackBasket === 'top' ? 'DEF' : null
+
   return (
     <>
       <Rect x={0} y={0} width={HALF_COURT_W} height={H} stroke={STROKE} strokeWidth={STROKE_W} fill="#1a3a1a" />
@@ -30,8 +41,14 @@ export default function FullCourt() {
       <Line points={[keyRight, S*135, keyRight + S*15, S*135]} stroke={STROKE} strokeWidth={STROKE_W} />
       <Rect x={keyLeft - S*15} y={S*50} width={S*15} height={S*20} stroke={STROKE} strokeWidth={STROKE_W} fill="transparent" />
       <Rect x={keyRight} y={S*50} width={S*15} height={S*20} stroke={STROKE} strokeWidth={STROKE_W} fill="transparent" />
-      <Line points={[basket.x - S*30, 0, basket.x + S*30, 0]} stroke="#f97316" strokeWidth={3} />
-      <Circle x={basket.x} y={basket.y} radius={S*15} stroke="#f97316" strokeWidth={2} fill="transparent" />
+      <Line points={[basket.x - S*30, 0, basket.x + S*30, 0]} stroke={topColor} strokeWidth={3} />
+      <Circle x={basket.x} y={basket.y} radius={S*15} stroke={topColor} strokeWidth={2} fill="transparent" />
+      {topLabel && (
+        <Group x={basket.x} y={basket.y + 72} rotation={90} listening={false}>
+          <Text text={topLabel} fill={topColor} fontSize={11} fontStyle="bold"
+            offsetX={12} offsetY={7} width={24} height={14} align="center" />
+        </Group>
+      )}
 
       {/* Bottom half (mirrored) */}
       <Rect x={keyLeft} y={H - keyBottom} width={keyRight - keyLeft} height={keyBottom} stroke={STROKE} strokeWidth={STROKE_W} fill="transparent" />
@@ -48,8 +65,14 @@ export default function FullCourt() {
       <Line points={[keyRight, H - S*135, keyRight + S*15, H - S*135]} stroke={STROKE} strokeWidth={STROKE_W} />
       <Rect x={keyLeft - S*15} y={H - S*70} width={S*15} height={S*20} stroke={STROKE} strokeWidth={STROKE_W} fill="transparent" />
       <Rect x={keyRight} y={H - S*70} width={S*15} height={S*20} stroke={STROKE} strokeWidth={STROKE_W} fill="transparent" />
-      <Line points={[basket.x - S*30, H, basket.x + S*30, H]} stroke="#f97316" strokeWidth={3} />
-      <Circle x={basket.x} y={H - basket.y} radius={S*15} stroke="#f97316" strokeWidth={2} fill="transparent" />
+      <Line points={[basket.x - S*30, H, basket.x + S*30, H]} stroke={bottomColor} strokeWidth={3} />
+      <Circle x={basket.x} y={H - basket.y} radius={S*15} stroke={bottomColor} strokeWidth={2} fill="transparent" />
+      {bottomLabel && (
+        <Group x={basket.x} y={H - basket.y - 72} rotation={90} listening={false}>
+          <Text text={bottomLabel} fill={bottomColor} fontSize={11} fontStyle="bold"
+            offsetX={12} offsetY={7} width={24} height={14} align="center" />
+        </Group>
+      )}
     </>
   )
 }
