@@ -23,11 +23,15 @@ export default function LoginPage() {
   }
 
   async function handleGoogle() {
-    await authClient.signIn.social({ provider: 'google', callbackURL: '/' })
+    setError('')
+    const { error } = await authClient.signIn.social({ provider: 'google', callbackURL: '/' })
+    if (error) setError(error.message ?? 'Google ile giriş başarısız')
   }
 
   async function handleApple() {
-    await authClient.signIn.social({ provider: 'apple', callbackURL: '/' })
+    setError('')
+    const { error } = await authClient.signIn.social({ provider: 'apple', callbackURL: '/' })
+    if (error) setError(error.message ?? 'Apple ile giriş başarısız')
   }
 
   return (
