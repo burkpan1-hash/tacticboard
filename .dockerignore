@@ -1,3 +1,8 @@
 node_modules
 dist
-.git
+dist-server
+drizzle
+.env
+*.log
+ballforce-test.png
+test-*.png
