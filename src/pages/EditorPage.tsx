@@ -19,6 +19,7 @@ import { denormalize } from '../utils/courtCoords'
 import type { Action, NormalizedPosition, Player, PlaySet, PositionMap } from '../models/types'
 import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_PADDING_X, COURT_PADDING_Y, HALF_COURT_PADDING_TOP, HALF_COURT } from '../utils/courtCoords'
 import { ACTION_COLORS, ACTION_LABEL_KEYS } from '../utils/actionColors'
+import { authClient } from '../lib/authClient'
 
 // Returns the start/end pixel coords of the arrow's direction vector (for label placement)
 function arrowLine(action: Action, positions: PositionMap, cH: number, basketPxY: number): { x1: number; y1: number; x2: number; y2: number } | null {
@@ -105,6 +106,10 @@ export default function EditorPage() {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   const [saveDialogName, setSaveDialogName] = useState('')
   const savedSnapshotRef = useRef<PlaySet | null>(null)
+  const { data: session } = authClient.useSession()
+  const [cloudSaving, setCloudSaving] = useState(false)
+  const [cloudSaved, setCloudSaved] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
 
   function startNameEdit() {
     setNameInput(activeSet!.name)
@@ -118,6 +123,39 @@ export default function EditorPage() {
     saveSet(activeSet!)
     savedSnapshotRef.current = activeSet!
     setSavedActionCount(activeSet!.actions.length)
+  }
+
+  async function handleCloudSave() {
+    if (!session) { navigate('/login'); return }
+    if (!activeSet) return
+    setCloudSaving(true)
+    try {
+      await fetch('/api/plays', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: activeSet.name, data: activeSet }),
+      })
+      setCloudSaved(true)
+      setTimeout(() => setCloudSaved(false), 2000)
+    } finally {
+      setCloudSaving(false)
+    }
+  }
+
+  async function handleCloudShare() {
+    if (!session) { navigate('/login'); return }
+    if (!activeSet) return
+    const res = await fetch('/api/plays', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: activeSet.name, data: activeSet }),
+    })
+    const play = await res.json()
+    const shareRes = await fetch(`/api/plays/${play.id}/share`, { method: 'POST' })
+    const { shareToken } = await shareRes.json()
+    await navigator.clipboard.writeText(`${window.location.origin}/share/${shareToken}`)
+    setShareCopied(true)
+    setTimeout(() => setShareCopied(false), 2000)
   }
 
   function handleNavigateHome() {
@@ -683,6 +721,19 @@ export default function EditorPage() {
           <span className="text-slate-400 text-sm">
             {activeSet.courtType === 'half' ? t('common.halfCourt') : t('common.fullCourt')}
           </span>
+          <button
+            onClick={handleCloudSave}
+            disabled={cloudSaving}
+            className="bg-orange-500 hover:bg-orange-400 disabled:opacity-50 text-white font-semibold px-4 py-1.5 rounded-lg text-sm transition-colors"
+          >
+            {cloudSaved ? 'Kaydedildi!' : cloudSaving ? 'Kaydediliyor...' : 'Kaydet'}
+          </button>
+          <button
+            onClick={handleCloudShare}
+            className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-1.5 rounded-lg text-sm transition-colors"
+          >
+            {shareCopied ? 'Link Kopyalandı!' : 'Paylaş'}
+          </button>
           <LanguageSwitcher />
         </div>
       </div>
