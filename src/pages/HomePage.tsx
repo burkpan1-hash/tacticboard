@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { usePlayStore } from '../store/usePlayStore'
+import LanguageSwitcher from '../components/ui/LanguageSwitcher'
 
 export default function HomePage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { savedSets, deleteSet, saveSet, loadSetsFromStorage } = usePlayStore()
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -31,20 +34,23 @@ export default function HomePage() {
     <div className="min-h-screen p-8 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-white">
-          SetPlay <span className="text-orange-400">🏀</span>
+          {t('home.appName')} <span className="text-orange-400">🏀</span>
         </h1>
-        <button
-          onClick={() => navigate('/setup')}
-          className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-6 py-2 rounded-lg transition-colors"
-        >
-          + New Play
-        </button>
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher />
+          <button
+            onClick={() => navigate('/setup')}
+            className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-6 py-2 rounded-lg transition-colors"
+          >
+            {t('home.newPlayButton')}
+          </button>
+        </div>
       </div>
 
       {savedSets.length === 0 ? (
         <div className="text-center py-24 text-slate-400">
           <div className="text-5xl mb-4">🏀</div>
-          <p className="text-lg">No plays yet. Create your first!</p>
+          <p className="text-lg">{t('home.emptyState')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -66,14 +72,14 @@ export default function HomePage() {
                 ) : (
                   <p
                     className="font-semibold text-white truncate cursor-text hover:text-orange-300 transition-colors"
-                    title="Click to rename"
+                    title={t('home.renameTooltip')}
                     onClick={() => startEdit(s.id, s.name)}
                   >
                     {s.name}
                   </p>
                 )}
                 <p className="text-sm text-slate-400 mt-1">
-                  {s.courtType === 'half' ? 'Half Court' : 'Full Court'} · {s.actions.length} {s.actions.length === 1 ? 'action' : 'actions'}
+                  {s.courtType === 'half' ? t('common.halfCourt') : t('common.fullCourt')} · {s.actions.length} {s.actions.length === 1 ? t('common.actionSingular') : t('common.actionPlural')}
                 </p>
               </div>
               <div className="flex gap-2 shrink-0">
@@ -81,7 +87,7 @@ export default function HomePage() {
                   onClick={() => navigate(`/editor/${s.id}`)}
                   className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
                 >
-                  Open
+                  {t('home.openButton')}
                 </button>
                 {confirmDeleteId === s.id ? (
                   <button
@@ -90,7 +96,7 @@ export default function HomePage() {
                     autoFocus
                     className="text-red-400 hover:text-red-300 bg-red-400/10 px-3 py-2 rounded-lg text-xs font-semibold transition-colors"
                   >
-                    Sure?
+                    {t('home.deleteConfirmation')}
                   </button>
                 ) : (
                   <button

@@ -1,41 +1,40 @@
+import { useTranslation } from 'react-i18next'
 import type { ActionType } from '../../models/types'
-import { ACTION_COLORS } from '../../utils/actionColors'
+import { ACTION_COLORS, ACTION_LABEL_KEYS } from '../../utils/actionColors'
 
 interface OffenseTool {
   type: ActionType
-  label: string
   requiresBall: boolean
 }
 
 const OFFENSE_TOOLS: OffenseTool[] = [
-  { type: 'pass',    label: 'Pass',    requiresBall: true  },
-  { type: 'dribble', label: 'Dribble', requiresBall: true  },
-  { type: 'cut',     label: 'Cut',     requiresBall: false },
-  { type: 'screen',  label: 'Screen',  requiresBall: false },
-  { type: 'shot',    label: 'Shot',    requiresBall: true  },
-  { type: 'handoff', label: 'Handoff', requiresBall: true  },
+  { type: 'pass',    requiresBall: true  },
+  { type: 'dribble', requiresBall: true  },
+  { type: 'cut',     requiresBall: false },
+  { type: 'screen',  requiresBall: false },
+  { type: 'shot',    requiresBall: true  },
+  { type: 'handoff', requiresBall: true  },
 ]
 
-const HINTS: Record<ActionType, string> = {
-  pass:           'click receiver',
-  dribble:        'click target',
-  cut:            'player → spot',
-  screen:         'player → spot',
-  shot:           '1 click',
-  handoff:        'receiver → spot',
-  'defense-move': 'player → spot',
-  'double-team':  '1.def → 2.def',
-  'ball-force':   'def → yön',
+const HINT_KEYS: Record<ActionType, string> = {
+  pass:           'toolbar.hints.pass',
+  dribble:        'toolbar.hints.dribble',
+  cut:            'toolbar.hints.cutScreen',
+  screen:         'toolbar.hints.cutScreen',
+  shot:           'toolbar.hints.shot',
+  handoff:        'toolbar.hints.handoff',
+  'defense-move': 'toolbar.hints.defenseMove',
+  'double-team':  'toolbar.hints.doubleTeam',
+  'ball-force':   'toolbar.hints.ballForce',
 }
 
 interface DefTool {
   type: ActionType
-  label: string
 }
 const DEF_TOOLS: DefTool[] = [
-  { type: 'defense-move', label: 'Move'   },
-  { type: 'double-team',  label: 'Double' },
-  { type: 'ball-force',   label: 'Force'  },
+  { type: 'defense-move' },
+  { type: 'double-team'  },
+  { type: 'ball-force'   },
 ]
 
 const BASE = { viewBox: '0 0 32 14', width: 32, height: 14, fill: 'none', strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
@@ -82,31 +81,32 @@ interface Props {
 }
 
 export default function ActionToolbar({ activeType, ballHolderId, hasDefenders, onSelect, onCancel, markingsEnabled, onToggleMarkings, gameOver }: Props) {
+  const { t } = useTranslation()
+
   return (
     <div className="flex flex-col gap-2 p-2 bg-slate-800 rounded-xl border border-slate-700">
 
       {gameOver && (
         <div className="flex flex-col items-center gap-1 px-2 py-2 bg-slate-700/60 rounded-lg border border-slate-600">
-          <span className="text-[9px] text-orange-400 font-bold tracking-wide text-center leading-tight">SHOT TAKEN</span>
-          <span className="text-[8px] text-slate-500 text-center leading-tight">Play ended</span>
+          <span className="text-[9px] text-orange-400 font-bold tracking-wide text-center leading-tight">{t('toolbar.shotTaken')}</span>
+          <span className="text-[8px] text-slate-500 text-center leading-tight">{t('toolbar.playEnded')}</span>
         </div>
       )}
 
-      {/* ATK üstte, DEF altta */}
       <div className="flex flex-col gap-2">
 
-        {/* ATK kolonu */}
+        {/* ATK column */}
         <div className="flex flex-col gap-2">
-          <div className="text-[10px] text-orange-400 font-semibold px-1 tracking-wide">ATK</div>
-          {OFFENSE_TOOLS.map(t => {
-            const disabled = gameOver || (t.requiresBall && !ballHolderId)
-            const active = activeType === t.type
+          <div className="text-[10px] text-orange-400 font-semibold px-1 tracking-wide">{t('toolbar.offenseHeader')}</div>
+          {OFFENSE_TOOLS.map(tool => {
+            const disabled = gameOver || (tool.requiresBall && !ballHolderId)
+            const active = activeType === tool.type
             return (
               <button
-                key={t.type}
-                title={t.label}
+                key={tool.type}
+                title={t(ACTION_LABEL_KEYS[tool.type])}
                 disabled={disabled}
-                onClick={() => active ? onCancel() : onSelect(t.type)}
+                onClick={() => active ? onCancel() : onSelect(tool.type)}
                 className={`
                   flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors
                   ${active ? 'bg-slate-600 ring-1 ring-white/30' : ''}
@@ -114,35 +114,35 @@ export default function ActionToolbar({ activeType, ballHolderId, hasDefenders, 
                   ${disabled ? 'opacity-30 cursor-not-allowed bg-slate-800 text-slate-500' : ''}
                 `}
               >
-                {ICONS[t.type]}
-                <span style={{ color: disabled ? undefined : ACTION_COLORS[t.type] }}>{t.label}</span>
-                <span className="text-slate-500 text-[9px] leading-tight text-center">{HINTS[t.type]}</span>
+                {ICONS[tool.type]}
+                <span style={{ color: disabled ? undefined : ACTION_COLORS[tool.type] }}>{t(ACTION_LABEL_KEYS[tool.type])}</span>
+                <span className="text-slate-500 text-[9px] leading-tight text-center">{t(HINT_KEYS[tool.type])}</span>
               </button>
             )
           })}
         </div>
 
-        {/* DEF kolonu */}
+        {/* DEF column */}
         <div className="flex flex-col gap-2">
-          <div className="text-[10px] text-blue-400 font-semibold px-1 tracking-wide">DEF</div>
+          <div className="text-[10px] text-blue-400 font-semibold px-1 tracking-wide">{t('toolbar.defenseHeader')}</div>
 
-          {DEF_TOOLS.map(t => {
+          {DEF_TOOLS.map(tool => {
             const disabled = !!gameOver || !hasDefenders
-            const active = activeType === t.type
+            const active = activeType === tool.type
             return (
               <button
-                key={t.type}
-                title={t.label}
+                key={tool.type}
+                title={t(ACTION_LABEL_KEYS[tool.type])}
                 disabled={disabled}
-                onClick={() => active ? onCancel() : onSelect(t.type)}
+                onClick={() => active ? onCancel() : onSelect(tool.type)}
                 className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors
                   ${active ? 'bg-slate-600 ring-1 ring-white/30' : ''}
                   ${!active && !disabled ? 'bg-slate-700 text-slate-200 hover:bg-slate-600' : ''}
                   ${disabled ? 'opacity-30 cursor-not-allowed bg-slate-800 text-slate-500' : ''}`}
               >
-                {ICONS[t.type]}
-                <span style={{ color: ACTION_COLORS[t.type] }}>{t.label}</span>
-                <span className="text-slate-500 text-[9px] leading-tight text-center">{HINTS[t.type]}</span>
+                {ICONS[tool.type]}
+                <span style={{ color: ACTION_COLORS[tool.type] }}>{t(ACTION_LABEL_KEYS[tool.type])}</span>
+                <span className="text-slate-500 text-[9px] leading-tight text-center">{t(HINT_KEYS[tool.type])}</span>
               </button>
             )
           })}
@@ -153,7 +153,7 @@ export default function ActionToolbar({ activeType, ballHolderId, hasDefenders, 
               <circle cx="24" cy="7" r="5" stroke="#f97316" strokeWidth="1.5"/>
               <line x1="13" y1="7" x2="19" y2="7" stroke="#60a5fa" strokeWidth="1.5" strokeDasharray="2 2"/>
             </svg>
-            <span style={{ color: '#60a5fa' }} className="text-xs font-medium">Markaj</span>
+            <span style={{ color: '#60a5fa' }} className="text-xs font-medium">{t('toolbar.markingLabel')}</span>
             <button
               onClick={onToggleMarkings}
               className={`relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none ${markingsEnabled ? 'bg-blue-500' : 'bg-slate-600'}`}
@@ -163,7 +163,7 @@ export default function ActionToolbar({ activeType, ballHolderId, hasDefenders, 
               />
             </button>
             <span className={`text-[9px] font-semibold ${markingsEnabled ? 'text-blue-400' : 'text-slate-500'}`}>
-              {markingsEnabled ? 'ON' : 'OFF'}
+              {markingsEnabled ? t('toolbar.markingStateOn') : t('toolbar.markingStateOff')}
             </span>
           </div>
         </div>
@@ -175,7 +175,7 @@ export default function ActionToolbar({ activeType, ballHolderId, hasDefenders, 
           onClick={onCancel}
           className="w-full py-1.5 rounded-lg bg-red-700 hover:bg-red-600 text-white text-xs font-semibold transition-colors"
         >
-          ✕ Cancel
+          {t('toolbar.cancelButton')}
         </button>
       )}
     </div>

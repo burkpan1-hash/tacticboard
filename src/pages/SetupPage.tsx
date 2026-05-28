@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { nanoid } from 'nanoid'
+import { useTranslation } from 'react-i18next'
 import CourtCanvas from '../components/court/CourtCanvas'
 import PlayerNode from '../components/players/PlayerNode'
 import PlayerSetup from '../components/setup/PlayerSetup'
 import FormationPicker from '../components/setup/FormationPicker'
+import LanguageSwitcher from '../components/ui/LanguageSwitcher'
 import { usePlayStore } from '../store/usePlayStore'
 import type { Player, PositionMap, NormalizedPosition, PlaySet } from '../models/types'
 import type { FormationPreset } from '../utils/formations'
@@ -35,6 +37,7 @@ function defaultPositions(players: Player[]): PositionMap {
 }
 
 export default function SetupPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const {
     setupDraft, setSetupDraft,
@@ -114,7 +117,7 @@ export default function SetupPage() {
   function handleReady(noBall = false) {
     const set: PlaySet = {
       id: nanoid(),
-      name: setupDraft.name || 'Untitled Play',
+      name: setupDraft.name || t('common.untitledPlay'),
       courtType: setupDraft.courtType,
       attackBasket: setupDraft.courtType === 'full' ? attackBasket : undefined,
       players,
@@ -130,23 +133,26 @@ export default function SetupPage() {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="w-full max-w-md bg-slate-800 rounded-2xl p-8 space-y-6">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/')} className="text-slate-400 hover:text-white transition-colors text-sm">← Back</button>
-            <h2 className="text-2xl font-bold text-white">New Play</h2>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button onClick={() => navigate('/')} className="text-slate-400 hover:text-white transition-colors text-sm">{t('common.backButton')}</button>
+              <h2 className="text-2xl font-bold text-white">{t('setup.newPlayTitle')}</h2>
+            </div>
+            <LanguageSwitcher />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm text-slate-400">Play Name</label>
+            <label className="text-sm text-slate-400">{t('setup.playNameLabel')}</label>
             <input
               value={setupDraft.name}
               onChange={(e) => setSetupDraft({ name: e.target.value })}
-              placeholder="e.g. Horns, Blob, 5-Out Motion"
+              placeholder={t('setup.playNamePlaceholder')}
               className="w-full bg-slate-700 text-white rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-orange-500 placeholder-slate-500"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm text-slate-400">Court Type</label>
+            <label className="text-sm text-slate-400">{t('setup.courtTypeLabel')}</label>
             <div className="flex gap-3">
               {(['half', 'full'] as const).map((ct) => (
                 <button
@@ -158,7 +164,7 @@ export default function SetupPage() {
                       : 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600'
                   }`}
                 >
-                  {ct === 'half' ? 'Half Court' : 'Full Court'}
+                  {ct === 'half' ? t('common.halfCourt') : t('common.fullCourt')}
                 </button>
               ))}
             </div>
@@ -177,7 +183,7 @@ export default function SetupPage() {
             }}
             className="w-full bg-orange-500 hover:bg-orange-400 text-white font-semibold py-3 rounded-xl transition-colors"
           >
-            Next →
+            {t('common.nextButton')}
           </button>
         </div>
       </div>
@@ -187,14 +193,14 @@ export default function SetupPage() {
   const FlipButton = () => isLandscape ? (
     <button
       onClick={flipCourt}
-      title="Flip attack direction"
+      title={t('setup.flipTooltip')}
       className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white transition-colors text-xs"
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/>
         <path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/>
       </svg>
-      Flip
+      {t('common.flipButton')}
     </button>
   ) : null
 
@@ -202,20 +208,23 @@ export default function SetupPage() {
     return (
       <div className="h-screen flex flex-col bg-slate-900 overflow-hidden">
         <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
-          <button onClick={() => setStep('info')} className="text-slate-400 hover:text-white transition-colors text-sm">← Back</button>
+          <button onClick={() => setStep('info')} className="text-slate-400 hover:text-white transition-colors text-sm">{t('common.backButton')}</button>
           <div className="flex items-center gap-3">
-            <span className="text-white font-semibold">Starting Formation</span>
+            <span className="text-white font-semibold">{t('setup.startingFormationTitle')}</span>
             <FlipButton />
           </div>
-          <button
-            onClick={() => {
-              if (!draftBall) setDraftBall({ holderId: 'o1' })
-              setStep('ball')
-            }}
-            className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-4 py-1.5 rounded-lg text-sm transition-colors"
-          >
-            Next →
-          </button>
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <button
+              onClick={() => {
+                if (!draftBall) setDraftBall({ holderId: 'o1' })
+                setStep('ball')
+              }}
+              className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-4 py-1.5 rounded-lg text-sm transition-colors"
+            >
+              {t('common.nextButton')}
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-1 overflow-hidden">
@@ -265,7 +274,7 @@ export default function SetupPage() {
         </div>
 
         <div className="px-4 py-2 bg-slate-800 border-t border-slate-700 text-center">
-          <p className="text-slate-400 text-sm">Drag players to adjust their positions</p>
+          <p className="text-slate-400 text-sm">{t('setup.positionDragInstruction')}</p>
         </div>
       </div>
     )
@@ -274,26 +283,27 @@ export default function SetupPage() {
   return (
     <div className="h-screen flex flex-col bg-slate-900 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
-        <button onClick={() => setStep('positions')} className="text-slate-400 hover:text-white transition-colors text-sm">← Back</button>
+        <button onClick={() => setStep('positions')} className="text-slate-400 hover:text-white transition-colors text-sm">{t('common.backButton')}</button>
         <div className="flex flex-col items-center gap-1">
           <div className="flex items-center gap-3">
-            <div className="text-white font-semibold">Assign Ball</div>
+            <div className="text-white font-semibold">{t('setup.assignBallTitle')}</div>
             <FlipButton />
           </div>
-          <div className="text-amber-400 text-sm font-medium">Select who starts with the ball</div>
+          <div className="text-amber-400 text-sm font-medium">{t('setup.assignBallSubtitle')}</div>
         </div>
         <div className="flex items-center gap-2">
+          <LanguageSwitcher />
           <button
             onClick={() => handleReady(true)}
             className="bg-slate-600 hover:bg-slate-500 text-white font-semibold px-4 py-1.5 rounded-lg text-sm transition-colors"
           >
-            🏀 No Ball
+            {t('setup.noballButton')}
           </button>
           <button
             onClick={() => handleReady(false)}
             className="bg-green-600 hover:bg-green-500 text-white font-bold px-5 py-2 rounded-lg transition-colors"
           >
-            Ready ✓
+            {t('setup.readyButton')}
           </button>
         </div>
       </div>

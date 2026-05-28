@@ -23,3 +23,15 @@ export const ACTION_LABELS: Record<ActionType, string> = {
   'double-team':  'Double',
   'ball-force':   'Force',
 }
+
+export const ACTION_LABEL_KEYS: Record<ActionType, string> = {
+  pass:           'action.pass',
+  dribble:        'action.dribble',
+  cut:            'action.cut',
+  screen:         'action.screen',
+  shot:           'action.shot',
+  handoff:        'action.handoff',
+  'defense-move': 'action.defenseMove',
+  'double-team':  'action.doubleTeam',
+  'ball-force':   'action.ballForce',
+}

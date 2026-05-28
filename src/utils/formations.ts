@@ -3,6 +3,7 @@ import type { PositionMap } from '../models/types'
 export interface FormationPreset {
   id: string
   name: string
+  nameKey: string
   positions: PositionMap   // keys: 'o1'–'o5' or 'd1'–'d5' or both
   courtOnly?: 'half' | 'full'
   defaultBallHolder?: string         // auto-assign ball to this player when formation is selected
@@ -17,6 +18,7 @@ export const OFFENSE_FORMATIONS: FormationPreset[] = [
   {
     id: 'five-out',
     name: '5-Out',
+    nameKey: 'formation.fiveOut',
     courtOnly: 'half',
     positions: {
       o1: { x: 0.50, y: 0.72 },
@@ -29,6 +31,7 @@ export const OFFENSE_FORMATIONS: FormationPreset[] = [
   {
     id: 'four-out-one-in',
     name: '4-Out 1-In',
+    nameKey: 'formation.fourOutOneIn',
     courtOnly: 'half',
     positions: {
       o1: { x: 0.35, y: 0.69 },
@@ -41,6 +44,7 @@ export const OFFENSE_FORMATIONS: FormationPreset[] = [
   {
     id: 'one-four-high',
     name: '1-4 High',
+    nameKey: 'formation.oneFourHigh',
     courtOnly: 'half',
     positions: {
       o1: { x: 0.50, y: 0.76 },
@@ -53,6 +57,7 @@ export const OFFENSE_FORMATIONS: FormationPreset[] = [
   {
     id: 'horns',
     name: 'Horns',
+    nameKey: 'formation.horns',
     courtOnly: 'half',
     positions: {
       o1: { x: 0.50, y: 0.72 },
@@ -65,6 +70,7 @@ export const OFFENSE_FORMATIONS: FormationPreset[] = [
   {
     id: 'high-post',
     name: 'High Post',
+    nameKey: 'formation.highPost',
     courtOnly: 'half',
     positions: {
       o1: { x: 0.32, y: 0.76 },
@@ -77,6 +83,7 @@ export const OFFENSE_FORMATIONS: FormationPreset[] = [
   {
     id: 'double-post',
     name: 'Double Post',
+    nameKey: 'formation.doublePost',
     courtOnly: 'half',
     positions: {
       o1: { x: 0.50, y: 0.73 },
@@ -92,6 +99,7 @@ export const DEFENSE_FORMATIONS: FormationPreset[] = [
   {
     id: 'man-to-man',
     name: 'Man-to-Man',
+    nameKey: 'formation.manToMan',
     positions: {
       d1: { x: 0.50, y: 0.68 },
       d2: { x: 0.78, y: 0.52 },
@@ -103,6 +111,7 @@ export const DEFENSE_FORMATIONS: FormationPreset[] = [
   {
     id: 'two-three-zone',
     name: '2-3 Zone',
+    nameKey: 'formation.twoThreeZone',
     courtOnly: 'half',
     positions: {
       d1: { x: 0.35, y: 0.40 },
@@ -115,6 +124,7 @@ export const DEFENSE_FORMATIONS: FormationPreset[] = [
   {
     id: 'three-two-zone',
     name: '3-2 Zone',
+    nameKey: 'formation.threeZoneTwo',
     courtOnly: 'half',
     positions: {
       d1: { x: 0.50, y: 0.40 },
@@ -127,6 +137,7 @@ export const DEFENSE_FORMATIONS: FormationPreset[] = [
   {
     id: 'one-three-one',
     name: '1-3-1 Zone',
+    nameKey: 'formation.oneThreeOneZone',
     courtOnly: 'half',
     positions: {
       d1: { x: 0.50, y: 0.55 },
@@ -139,6 +150,7 @@ export const DEFENSE_FORMATIONS: FormationPreset[] = [
   {
     id: 'two-one-two-zone',
     name: '2-1-2 Zone',
+    nameKey: 'formation.twoOneTwoZone',
     courtOnly: 'half',
     positions: {
       d1: { x: 0.34, y: 0.46 },
@@ -151,6 +163,7 @@ export const DEFENSE_FORMATIONS: FormationPreset[] = [
   {
     id: 'one-two-two-zone',
     name: '1-2-2 Zone',
+    nameKey: 'formation.oneTwoTwoZone',
     courtOnly: 'half',
     positions: {
       d1: { x: 0.50, y: 0.52 },
@@ -163,6 +176,7 @@ export const DEFENSE_FORMATIONS: FormationPreset[] = [
   {
     id: 'one-three-one-press',
     name: '1-3-1 Press',
+    nameKey: 'formation.oneThreeOnePress',
     courtOnly: 'full',
     attackBasket: 'bottom',
     defaultBallHolder: 'o3',
@@ -182,6 +196,7 @@ export const DEFENSE_FORMATIONS: FormationPreset[] = [
   {
     id: 'one-two-one-one-press',
     name: '1-2-1-1 Press',
+    nameKey: 'formation.oneTwoOneOnePress',
     courtOnly: 'full',
     attackBasket: 'bottom',
     defaultBallHolder: 'o4',

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { FormationPreset } from '../../utils/formations'
 import { OFFENSE_FORMATIONS, DEFENSE_FORMATIONS } from '../../utils/formations'
 
@@ -9,13 +10,14 @@ interface Props {
 }
 
 export default function FormationPicker({ team, onSelect, selectedId, courtType }: Props) {
+  const { t } = useTranslation()
   const all = team === 'offense' ? OFFENSE_FORMATIONS : DEFENSE_FORMATIONS
   const formations = all.filter(f => !f.courtOnly || f.courtOnly === courtType)
 
   return (
     <div>
       <p className="text-sm text-slate-400 mb-3">
-        {team === 'offense' ? 'Offense Formation' : 'Defense Formation'} — or place manually
+        {team === 'offense' ? t('formation.offenseHeader') : t('formation.defenseHeader')}
       </p>
       <div className="grid grid-cols-3 gap-2">
         {formations.map((f) => (
@@ -30,11 +32,11 @@ export default function FormationPicker({ team, onSelect, selectedId, courtType 
               }
             `}
           >
-            {f.name}
+            {t(f.nameKey)}
           </button>
         ))}
         <button
-          onClick={() => onSelect({ id: 'custom', name: 'Custom', positions: {} })}
+          onClick={() => onSelect({ id: 'custom', name: 'Custom', nameKey: 'formation.custom', positions: {} })}
           className={`
             px-3 py-2 rounded-lg text-sm font-medium transition-colors border
             ${selectedId === 'custom'
@@ -43,7 +45,7 @@ export default function FormationPicker({ team, onSelect, selectedId, courtType 
             }
           `}
         >
-          Custom
+          {t('formation.custom')}
         </button>
       </div>
     </div>

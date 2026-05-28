@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type Konva from 'konva'
+import { useTranslation } from 'react-i18next'
 import { exportVideo, downloadBlob } from '../../utils/exportAnimation'
 import { usePlayStore } from '../../store/usePlayStore'
 
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default function ExportModal({ stageRef, stepMs, onClose }: Props) {
+  const { t } = useTranslation()
   const { activeSet, activeStep, setActiveStep, setIsPlaying, playbackSpeed, setPlaybackSpeed } = usePlayStore()
 
   const scale = 1
@@ -70,7 +72,6 @@ export default function ExportModal({ stageRef, stepMs, onClose }: Props) {
     onClose()
   }
 
-  // Stop animation capture if user closes or component unmounts
   useEffect(() => () => { cancelRef.current?.() }, [])
 
   const busy = phase === 'playing' || phase === 'encoding'
@@ -94,7 +95,7 @@ export default function ExportModal({ stageRef, stepMs, onClose }: Props) {
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
       <div className="bg-slate-800 border border-slate-600 rounded-xl shadow-2xl w-80 p-5 flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-white font-semibold text-sm">Export Video</h2>
+          <h2 className="text-white font-semibold text-sm">{t('export.title')}</h2>
           {!busy && (
             <button onClick={onClose} className="text-slate-400 hover:text-white text-lg leading-none">×</button>
           )}
@@ -103,11 +104,11 @@ export default function ExportModal({ stageRef, stepMs, onClose }: Props) {
         {phase === 'idle' && (
           <>
             <p className="text-slate-400 text-xs leading-relaxed">
-              WebM video at 30 fps. Animation plays once at 1× speed during capture.
+              {t('export.description')}
             </p>
 
             {total === 0 && (
-              <p className="text-red-400 text-xs">No actions to export.</p>
+              <p className="text-red-400 text-xs">{t('export.noActionsError')}</p>
             )}
 
             <div className="flex gap-2 mt-1">
@@ -116,13 +117,13 @@ export default function ExportModal({ stageRef, stepMs, onClose }: Props) {
                 disabled={total === 0}
                 className="flex-1 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 text-white text-sm font-medium disabled:opacity-30 transition-colors"
               >
-                Export
+                {t('export.exportButton')}
               </button>
               <button
                 onClick={onClose}
                 className="flex-1 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm transition-colors"
               >
-                Cancel
+                {t('common.cancelButton')}
               </button>
             </div>
           </>
@@ -130,32 +131,32 @@ export default function ExportModal({ stageRef, stepMs, onClose }: Props) {
 
         {phase === 'playing' && (
           <div className="flex flex-col gap-3">
-            <p className="text-slate-300 text-xs">Playing animation and capturing frames…</p>
-            {progressBar(captureProgress, 'Capture')}
+            <p className="text-slate-300 text-xs">{t('export.capturingStatus')}</p>
+            {progressBar(captureProgress, t('export.captureProgressLabel'))}
             <button
               onClick={handleCancel}
               className="py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm transition-colors"
             >
-              Cancel
+              {t('common.cancelButton')}
             </button>
           </div>
         )}
 
         {phase === 'encoding' && (
           <div className="flex flex-col gap-3">
-            <p className="text-slate-300 text-xs">Finalizing video…</p>
-            <div className="text-slate-400 text-xs">Processing…</div>
+            <p className="text-slate-300 text-xs">{t('export.encodingStatus')}</p>
+            <div className="text-slate-400 text-xs">{t('export.processingStatus')}</div>
           </div>
         )}
 
         {phase === 'done' && (
           <div className="flex flex-col gap-3">
-            <p className="text-green-400 text-sm font-medium">Download started!</p>
+            <p className="text-green-400 text-sm font-medium">{t('export.downloadSuccess')}</p>
             <button
               onClick={onClose}
               className="py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm transition-colors"
             >
-              Close
+              {t('common.closeButton')}
             </button>
           </div>
         )}

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { usePlayStore } from '../../store/usePlayStore'
 
 interface Props {
@@ -7,6 +8,7 @@ interface Props {
 }
 
 export default function PlaybackControls({ onExport, onSave, canSave }: Props) {
+  const { t } = useTranslation()
   const {
     activeSet, activeStep, setActiveStep, undoLastAction,
     isPlaying, playbackSpeed, setIsPlaying, setPlaybackSpeed,
@@ -33,7 +35,7 @@ export default function PlaybackControls({ onExport, onSave, canSave }: Props) {
         onClick={() => stepTo(0)}
         disabled={activeStep === 0 || isPlaying}
         className="px-3 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white disabled:opacity-30 transition-colors"
-        title="Go to start"
+        title={t('playback.goToStartTooltip')}
       >⏮</button>
 
       <button
@@ -46,7 +48,7 @@ export default function PlaybackControls({ onExport, onSave, canSave }: Props) {
         onClick={togglePlay}
         disabled={total === 0}
         className="px-3 py-1 rounded bg-orange-600 hover:bg-orange-500 text-white disabled:opacity-30 transition-colors text-base leading-none"
-        title={isPlaying ? 'Pause' : 'Play'}
+        title={isPlaying ? t('playback.pauseTooltip') : t('playback.playTooltip')}
       >{isPlaying ? '⏸' : '▶'}</button>
 
       <button
@@ -59,7 +61,7 @@ export default function PlaybackControls({ onExport, onSave, canSave }: Props) {
         onClick={() => stepTo(total)}
         disabled={activeStep === total || isPlaying}
         className="px-3 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white disabled:opacity-30 transition-colors"
-        title="Go to end"
+        title={t('playback.goToEndTooltip')}
       >⏭</button>
 
       <span className="text-sm text-slate-400 min-w-[72px] text-center">
@@ -85,7 +87,7 @@ export default function PlaybackControls({ onExport, onSave, canSave }: Props) {
           onClick={onSave}
           disabled={!canSave}
           className="px-3 py-1 rounded text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed enabled:bg-orange-500 enabled:hover:bg-orange-400 enabled:text-white"
-        >{canSave ? 'Save' : 'Saved'}</button>
+        >{canSave ? t('playback.saveButton') : t('playback.savedButton')}</button>
       )}
 
       {onExport && (
@@ -93,8 +95,8 @@ export default function PlaybackControls({ onExport, onSave, canSave }: Props) {
           onClick={onExport}
           disabled={isPlaying || total === 0}
           className="px-3 py-1 rounded bg-orange-500 hover:bg-orange-400 text-white text-sm disabled:opacity-30 transition-colors"
-          title="Export video"
-        >⬇ Export</button>
+          title={t('playback.exportTooltip')}
+        >{t('playback.exportButton')}</button>
       )}
 
       <div className="flex-1" />
@@ -103,8 +105,8 @@ export default function PlaybackControls({ onExport, onSave, canSave }: Props) {
         onClick={undoLastAction}
         disabled={total === 0 || isPlaying}
         className="px-3 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white text-sm disabled:opacity-30 transition-colors"
-        title="Undo (Ctrl+Z)"
-      >↩ Undo</button>
+        title={t('playback.undoTooltip')}
+      >{t('playback.undoButton')}</button>
     </div>
   )
 }

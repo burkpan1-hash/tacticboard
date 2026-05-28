@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type Konva from 'konva'
 import { useParams, useNavigate } from 'react-router-dom'
 import { nanoid } from 'nanoid'
+import { useTranslation } from 'react-i18next'
 import { Line, Group, Rect, Text, Arrow } from 'react-konva'
 import CourtCanvas from '../components/court/CourtCanvas'
 import PlayerNode from '../components/players/PlayerNode'
@@ -11,12 +12,13 @@ import ActionToolbar from '../components/toolbar/ActionToolbar'
 import ActionPanel from '../components/actions/ActionPanel'
 import PlaybackControls from '../components/playback/PlaybackControls'
 import ExportModal from '../components/export/ExportModal'
+import LanguageSwitcher from '../components/ui/LanguageSwitcher'
 import { usePlayStore } from '../store/usePlayStore'
 import { computeStateAtStep } from '../utils/stateEngine'
 import { denormalize } from '../utils/courtCoords'
 import type { Action, NormalizedPosition, Player, PlaySet, PositionMap } from '../models/types'
 import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_PADDING_X, COURT_PADDING_Y, HALF_COURT_PADDING_TOP, HALF_COURT } from '../utils/courtCoords'
-import { ACTION_COLORS, ACTION_LABELS } from '../utils/actionColors'
+import { ACTION_COLORS, ACTION_LABEL_KEYS } from '../utils/actionColors'
 
 // Returns the start/end pixel coords of the arrow's direction vector (for label placement)
 function arrowLine(action: Action, positions: PositionMap, cH: number, basketPxY: number): { x1: number; y1: number; x2: number; y2: number } | null {
@@ -76,6 +78,7 @@ function smartLabelCenter(
 }
 
 export default function EditorPage() {
+  const { t } = useTranslation()
   const { setId } = useParams<{ setId: string }>()
   const navigate = useNavigate()
   const {
@@ -268,7 +271,7 @@ export default function EditorPage() {
   if (!activeSet) {
     return (
       <div className="min-h-screen flex items-center justify-center text-slate-400">
-        <p>Loading...</p>
+        <p>{t('common.loading')}</p>
       </div>
     )
   }
@@ -637,15 +640,15 @@ export default function EditorPage() {
   const instructionText = (() => {
     const { type, pendingSourceId } = actionCreation
     if (!type) return null
-    if (type === 'pass') return 'Click the player to receive the pass'
-    if (type === 'dribble') return 'Click the target position on court'
-    if (type === 'shot') return 'Click anywhere to shoot'
-    if (type === 'cut') return pendingSourceId ? 'Click the destination on court' : 'Click the player who will cut'
-    if (type === 'screen') return pendingSourceId ? 'Click the screen position' : 'Click the player setting the screen'
-    if (type === 'handoff') return pendingSourceId ? 'Click the meet position' : 'Click the player to receive the handoff'
-    if (type === 'defense-move') return pendingSourceId ? 'Click destination on court' : 'Click defender to move'
-    if (type === 'double-team') return pendingSourceId ? 'Click second defender to trap' : 'Click first defender for double team'
-    if (type === 'ball-force') return pendingSourceId ? 'Click a side of the ball handler to force' : 'Click defender to apply ball force'
+    if (type === 'pass') return t('editor.instructions.pass')
+    if (type === 'dribble') return t('editor.instructions.dribble')
+    if (type === 'shot') return t('editor.instructions.shot')
+    if (type === 'cut') return pendingSourceId ? t('editor.instructions.cutPosition') : t('editor.instructions.cutPlayer')
+    if (type === 'screen') return pendingSourceId ? t('editor.instructions.screenPosition') : t('editor.instructions.screenPlayer')
+    if (type === 'handoff') return pendingSourceId ? t('editor.instructions.handoffPosition') : t('editor.instructions.handoffPlayer')
+    if (type === 'defense-move') return pendingSourceId ? t('editor.instructions.defenseMovePosition') : t('editor.instructions.defenseMovePlayer')
+    if (type === 'double-team') return pendingSourceId ? t('editor.instructions.doubleTeamSecond') : t('editor.instructions.doubleTeamFirst')
+    if (type === 'ball-force') return pendingSourceId ? t('editor.instructions.ballForceDirection') : t('editor.instructions.ballForcePlayer')
     return null
   })()
 
@@ -655,7 +658,7 @@ export default function EditorPage() {
     <div className="h-screen flex flex-col bg-slate-900 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
         <div className="flex items-center gap-3">
-          <button onClick={handleNavigateHome} className="text-slate-400 hover:text-white transition-colors text-sm">← Home</button>
+          <button onClick={handleNavigateHome} className="text-slate-400 hover:text-white transition-colors text-sm">{t('common.backButton')}</button>
           {editingName ? (
             <input
               ref={nameInputRef}
@@ -671,14 +674,17 @@ export default function EditorPage() {
           ) : (
             <span
               className="text-white font-semibold cursor-text hover:text-orange-300 transition-colors"
-              title="Click to rename"
+              title={t('editor.renamePlayTooltip')}
               onClick={startNameEdit}
             >{activeSet.name}</span>
           )}
         </div>
-        <span className="text-slate-400 text-sm">
-          {activeSet.courtType === 'half' ? 'Half Court' : 'Full Court'}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-slate-400 text-sm">
+            {activeSet.courtType === 'half' ? t('common.halfCourt') : t('common.fullCourt')}
+          </span>
+          <LanguageSwitcher />
+        </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
@@ -702,7 +708,7 @@ export default function EditorPage() {
               {showInstruction && (
                 <div className="text-sm text-orange-300 font-medium flex items-center gap-2">
                   {instructionText}
-                  <button onClick={cancelAll} className="ml-3 text-slate-400 hover:text-white text-xs underline">Cancel</button>
+                  <button onClick={cancelAll} className="ml-3 text-slate-400 hover:text-white text-xs underline">{t('common.cancelButton')}</button>
                 </div>
               )}
             </div>
@@ -712,7 +718,7 @@ export default function EditorPage() {
               <div className="flex flex-col items-center w-full px-5 pb-2 gap-1">
                 {atkLeft ? (
                   <div className="flex items-center w-full text-orange-500">
-                    <span className="text-[11px] font-bold mr-1 whitespace-nowrap">ATK</span>
+                    <span className="text-[11px] font-bold mr-1 whitespace-nowrap">{t('editor.attackDirection')}</span>
                     <svg width="7" height="9" viewBox="0 0 7 9" fill="currentColor"><path d="M7 0L0 4.5L7 9z"/></svg>
                     <div className="flex-1 h-0.5 bg-orange-500 opacity-60"/>
                   </div>
@@ -720,7 +726,7 @@ export default function EditorPage() {
                   <div className="flex items-center w-full text-orange-500">
                     <div className="flex-1 h-0.5 bg-orange-500 opacity-60"/>
                     <svg width="7" height="9" viewBox="0 0 7 9" fill="currentColor"><path d="M0 0L7 4.5L0 9z"/></svg>
-                    <span className="text-[11px] font-bold ml-1 whitespace-nowrap">ATK</span>
+                    <span className="text-[11px] font-bold ml-1 whitespace-nowrap">{t('editor.attackDirection')}</span>
                   </div>
                 )}
                 {/* Flip below the arrows */}
@@ -732,7 +738,7 @@ export default function EditorPage() {
                     <path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/>
                     <path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/>
                   </svg>
-                  Flip
+                  {t('common.flipButton')}
                 </button>
               </div>
             )}
@@ -954,7 +960,7 @@ export default function EditorPage() {
                     offsetX={25} offsetY={5}
                     width={50}
                     rotation={isLandscape ? 90 : 0}
-                    text={ACTION_LABELS[action.type]}
+                    text={t(ACTION_LABEL_KEYS[action.type])}
                     fontSize={10} fontStyle="bold"
                     fill={ACTION_COLORS[action.type]}
                     align="center"
@@ -988,7 +994,7 @@ export default function EditorPage() {
 
           {activeSet.courtType !== 'full' && (
             <div ref={benchRef} className="flex flex-col items-center gap-2 px-2 py-3 bg-slate-800/60 rounded-xl border border-slate-700 overflow-y-auto self-center max-h-[80vh]">
-              <span className="text-slate-500 text-xs">Bench</span>
+              <span className="text-slate-500 text-xs">{t('editor.benchLabel')}</span>
               {!activeSet.players.some(p => p.id === currentState.ball.holderId) && (
                 <div
                   draggable
@@ -1005,7 +1011,7 @@ export default function EditorPage() {
                   onDragEnd={() => { setIsDraggingBall(false); setBallDragHoverId(null) }}
                   className="w-9 h-9 rounded-full flex items-center justify-center cursor-grab select-none bg-amber-500/20 border-2 border-amber-400"
                   style={{ fontSize: 20 }}
-                  title="Ball — drag onto a player"
+                  title={t('editor.ballDragTooltip')}
                 >
                   🏀
                 </div>
@@ -1027,7 +1033,7 @@ export default function EditorPage() {
                     onDragStart={(e) => e.dataTransfer.setData('benchPlayerId', p.id)}
                     className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold cursor-grab select-none"
                     style={{ backgroundColor: p.team === 'offense' ? '#f97316' : '#1d4ed8', border: '2px dashed rgba(255,255,255,0.4)', opacity: 0.8 }}
-                    title={`${p.team === 'offense' ? 'Offense' : 'Defense'} #${p.number} — drag onto court`}
+                    title={p.team === 'offense' ? t('editor.offensePlayerDragTooltip', { num: p.number }) : t('editor.defensePlayerDragTooltip', { num: p.number })}
                   >
                     {p.number}
                   </div>
@@ -1038,7 +1044,7 @@ export default function EditorPage() {
           </div>
           {activeSet.courtType === 'full' && (
             <div ref={benchRef} className={`absolute ${atkLeft ? 'left-2' : 'right-2'} top-1/2 -translate-y-1/2 z-10 flex flex-col items-center gap-2 px-2 py-3 bg-slate-800/90 rounded-xl border border-slate-700 overflow-y-auto max-h-[80vh]`}>
-              <span className="text-slate-500 text-xs">Bench</span>
+              <span className="text-slate-500 text-xs">{t('editor.benchLabel')}</span>
               {!activeSet.players.some(p => p.id === currentState.ball.holderId) && (
                 <div
                   draggable
@@ -1055,7 +1061,7 @@ export default function EditorPage() {
                   onDragEnd={() => { setIsDraggingBall(false); setBallDragHoverId(null) }}
                   className="w-9 h-9 rounded-full flex items-center justify-center cursor-grab select-none bg-amber-500/20 border-2 border-amber-400"
                   style={{ fontSize: 20 }}
-                  title="Ball — drag onto a player"
+                  title={t('editor.ballDragTooltip')}
                 >
                   🏀
                 </div>
@@ -1077,7 +1083,7 @@ export default function EditorPage() {
                     onDragStart={(e) => e.dataTransfer.setData('benchPlayerId', p.id)}
                     className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold cursor-grab select-none"
                     style={{ backgroundColor: p.team === 'offense' ? '#f97316' : '#1d4ed8', border: '2px dashed rgba(255,255,255,0.4)', opacity: 0.8 }}
-                    title={`${p.team === 'offense' ? 'Offense' : 'Defense'} #${p.number} — drag onto court`}
+                    title={p.team === 'offense' ? t('editor.offensePlayerDragTooltip', { num: p.number }) : t('editor.defensePlayerDragTooltip', { num: p.number })}
                   >
                     {p.number}
                   </div>
@@ -1103,11 +1109,11 @@ export default function EditorPage() {
       {saveDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="bg-slate-800 border border-slate-600 rounded-xl p-6 w-80 flex flex-col gap-4 shadow-2xl">
-            <p className="text-white font-semibold text-center">Save before leaving?</p>
+            <p className="text-white font-semibold text-center">{t('editor.saveBeforeLeaving')}</p>
             <div className="flex flex-col gap-1.5">
               <label className="text-slate-500 text-xs font-medium px-0.5 flex items-center gap-1">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                Play name
+                {t('editor.saveDialogPlayNameLabel')}
               </label>
               <input
                 value={saveDialogName}
@@ -1129,7 +1135,7 @@ export default function EditorPage() {
                   navigate('/')
                 }}
                 className="w-full py-2 bg-orange-500 hover:bg-orange-400 text-white rounded-lg font-medium transition-colors"
-              >Save & Exit</button>
+              >{t('editor.saveAndExitButton')}</button>
               <button
                 onClick={() => {
                   if (savedSnapshotRef.current) {
@@ -1142,11 +1148,11 @@ export default function EditorPage() {
                   navigate('/')
                 }}
                 className="w-full py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg font-medium transition-colors"
-              >Don't Save</button>
+              >{t('editor.dontSaveButton')}</button>
               <button
                 onClick={() => setSaveDialogOpen(false)}
                 className="w-full py-2 text-slate-400 hover:text-white transition-colors text-sm"
-              >Cancel</button>
+              >{t('common.cancelButton')}</button>
             </div>
           </div>
         </div>
