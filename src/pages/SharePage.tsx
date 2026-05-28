@@ -8,7 +8,7 @@ import type { PlaySet } from '../models/types'
 export default function SharePage() {
   const { token } = useParams<{ token: string }>()
   const navigate = useNavigate()
-  const { setActiveSet } = usePlayStore()
+  const { setActiveSet, activeSet } = usePlayStore()
   const [title, setTitle] = useState('')
   const [notFound, setNotFound] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -48,8 +48,6 @@ export default function SharePage() {
       </div>
     )
   }
-
-  const activeSet = usePlayStore((s) => s.activeSet)
 
   return (
     <div className="min-h-screen flex flex-col items-center p-4 gap-4">
