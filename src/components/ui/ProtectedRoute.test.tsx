@@ -63,4 +63,32 @@ describe('ProtectedRoute', () => {
 
     expect(screen.getByText('Protected Content')).toBeInTheDocument()
   })
+
+  it('shows loading state while session is pending', () => {
+    vi.mocked(authClient.useSession).mockReturnValue({
+      data: null,
+      isPending: true,
+      error: null,
+    } as any)
+
+    render(
+      <MemoryRouter initialEntries={['/my-plays']}>
+        <Routes>
+          <Route
+            path="/my-plays"
+            element={
+              <ProtectedRoute>
+                <div>Protected Content</div>
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/login" element={<div>Login Page</div>} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText('Loading...')).toBeInTheDocument()
+    expect(screen.queryByText('Protected Content')).not.toBeInTheDocument()
+    expect(screen.queryByText('Login Page')).not.toBeInTheDocument()
+  })
 })
