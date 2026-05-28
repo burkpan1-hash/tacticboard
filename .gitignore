@@ -3,3 +3,10 @@ dist/
 .playwright-mcp/
 .superpowers/
 test-*.png
+
+# Runtime secrets and environment variables
+.env
+.env.local
+
+# Compiled TypeScript server output
+dist-server/
