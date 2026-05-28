@@ -111,11 +111,7 @@ export default function SetupPage() {
     if (formation.defaultBallHolder) setDraftBall({ holderId: formation.defaultBallHolder })
   }
 
-  function handleReady() {
-    if (!draftBall) {
-      alert('Select a player to hold the ball!')
-      return
-    }
+  function handleReady(noBall = false) {
     const set: PlaySet = {
       id: nanoid(),
       name: setupDraft.name || 'Untitled Play',
@@ -123,7 +119,7 @@ export default function SetupPage() {
       attackBasket: setupDraft.courtType === 'full' ? attackBasket : undefined,
       players,
       initialPositions: draftPositions,
-      initialBall: draftBall,
+      initialBall: noBall ? { holderId: '' } : (draftBall ?? { holderId: '' }),
       actions: [],
     }
     saveSet(set)
@@ -134,7 +130,10 @@ export default function SetupPage() {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="w-full max-w-md bg-slate-800 rounded-2xl p-8 space-y-6">
-          <h2 className="text-2xl font-bold text-white">New Play</h2>
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate('/')} className="text-slate-400 hover:text-white transition-colors text-sm">← Back</button>
+            <h2 className="text-2xl font-bold text-white">New Play</h2>
+          </div>
 
           <div className="space-y-2">
             <label className="text-sm text-slate-400">Play Name</label>
@@ -209,10 +208,13 @@ export default function SetupPage() {
             <FlipButton />
           </div>
           <button
-            onClick={() => draftBall ? handleReady() : setStep('ball')}
+            onClick={() => {
+              if (!draftBall) setDraftBall({ holderId: 'o1' })
+              setStep('ball')
+            }}
             className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-4 py-1.5 rounded-lg text-sm transition-colors"
           >
-            {draftBall ? 'Ready ✓' : 'Next →'}
+            Next →
           </button>
         </div>
 
@@ -278,14 +280,22 @@ export default function SetupPage() {
             <div className="text-white font-semibold">Assign Ball</div>
             <FlipButton />
           </div>
-          <div className="text-slate-400 text-xs">Select who starts with the ball</div>
+          <div className="text-amber-400 text-sm font-medium">Select who starts with the ball</div>
         </div>
-        <button
-          onClick={handleReady}
-          className="bg-green-600 hover:bg-green-500 text-white font-semibold px-4 py-1.5 rounded-lg text-sm transition-colors"
-        >
-          Ready ✓
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleReady(true)}
+            className="bg-slate-600 hover:bg-slate-500 text-white font-semibold px-4 py-1.5 rounded-lg text-sm transition-colors"
+          >
+            🏀 No Ball
+          </button>
+          <button
+            onClick={() => handleReady(false)}
+            className="bg-green-600 hover:bg-green-500 text-white font-bold px-5 py-2 rounded-lg transition-colors"
+          >
+            Ready ✓
+          </button>
+        </div>
       </div>
 
       <div ref={courtAreaRef} className="flex-1 flex items-center justify-center overflow-hidden">

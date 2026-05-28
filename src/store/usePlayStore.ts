@@ -55,6 +55,8 @@ interface PlayStoreState {
 
   // ── Bench ────────────────────────────────────────────────────
   addPlayerToCourt: (playerId: string, position: NormalizedPosition) => void
+  removePlayerFromCourt: (playerId: string) => void
+  setInitialBall: (playerId: string) => void
 
   // ── Markings ─────────────────────────────────────────────────
   updateMarkings: (markings: Record<string, string>) => void
@@ -122,7 +124,7 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   activeSet: null,
   setActiveSet: (newSet) => set(s => ({
     activeSet: newSet,
-    activeStep: s.activeSet?.id !== newSet.id ? 0 : s.activeStep,
+    activeStep: s.activeSet?.id !== newSet.id ? newSet.actions.length : s.activeStep,
   })),
 
   activeStep: 0,
@@ -217,6 +219,45 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
     })
   },
 
+  removePlayerFromCourt: (playerId) => {
+    set(s => {
+      if (!s.activeSet) return s
+      const positions = { ...s.activeSet.initialPositions }
+      delete positions[playerId]
+      const updated: PlaySet = {
+        ...s.activeSet,
+        players: s.activeSet.players.filter(p => p.id !== playerId),
+        initialPositions: positions,
+        initialBall: s.activeSet.initialBall.holderId === playerId ? { holderId: '' } : s.activeSet.initialBall,
+        actions: s.activeSet.actions.filter(a => {
+          switch (a.type) {
+            case 'pass':     return a.fromId !== playerId && a.toId !== playerId
+            case 'dribble':  return a.playerId !== playerId
+            case 'cut':      return a.playerId !== playerId
+            case 'screen':   return a.screenerId !== playerId
+            case 'defense-move': return a.playerId !== playerId
+            case 'double-team':  return a.defender1Id !== playerId && a.defender2Id !== playerId && a.targetId !== playerId
+            case 'ball-force':   return a.defenderId !== playerId && a.targetId !== playerId
+            case 'shot':     return a.shooterId !== playerId
+            case 'handoff':  return a.fromId !== playerId
+            default: return true
+          }
+        }),
+      }
+      get().saveSet(updated)
+      return { activeSet: updated }
+    })
+  },
+
+  setInitialBall: (playerId) => {
+    set(s => {
+      if (!s.activeSet) return s
+      const updated: PlaySet = { ...s.activeSet, initialBall: { holderId: playerId } }
+      get().saveSet(updated)
+      return { activeSet: updated }
+    })
+  },
+
   actionCreation: EMPTY_CREATION,
   startActionCreation: (type) => set({ actionCreation: { type, pendingSourceId: null, editingActionId: null } }),
   setPendingSource: (playerId) => set(s => ({
@@ -248,13 +289,13 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
           case 'dribble':
             return { ...action, toPosition: mirror(action.toPosition), waypoints: action.waypoints?.map(mirror) }
           case 'defense-move':
-            return { ...action, toPosition: mirror(action.toPosition) }
+            return { ...action, toPosition: mirror(action.toPosition), waypoints: action.waypoints?.map(mirror) }
           case 'screen':
             return { ...action, screenPosition: mirror(action.screenPosition) }
           case 'handoff':
             return { ...action, meetPosition: mirror(action.meetPosition) }
           case 'ball-force':
-            return { ...action, forcePosition: mirror(action.forcePosition) }
+            return { ...action, angle: -action.angle }
           default:
             return action
         }

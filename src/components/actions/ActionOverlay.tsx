@@ -2,7 +2,7 @@ import { Group } from 'react-konva'
 import ActionArrow from './ActionArrow'
 import { computeStateAtStep } from '../../utils/stateEngine'
 import type { Action, PositionMap, BallState, CourtType } from '../../models/types'
-import { HALF_COURT_H, FULL_COURT_H } from '../../utils/courtCoords'
+import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H } from '../../utils/courtCoords'
 
 const BASKET_PX = 42
 
@@ -23,10 +23,11 @@ interface Props {
 
 export default function ActionOverlay({ actions, initialPositions, initialBall, activeStep, courtType, markings, attackBasket }: Props) {
   const basketY = getBasketY(courtType, attackBasket)
+  const courtH = courtType === 'half' ? HALF_COURT_H : FULL_COURT_H
   return (
     <Group>
       {actions.slice(0, activeStep).map((action, i) => {
-        const stateBefore = computeStateAtStep(actions, i, initialPositions, initialBall, markings, basketY)
+        const stateBefore = computeStateAtStep(actions, i, initialPositions, initialBall, markings, basketY, HALF_COURT_W, courtH)
         const isLatest = i === activeStep - 1
         return (
           <Group key={action.id} opacity={isLatest ? 1 : 0.45}>

@@ -73,15 +73,24 @@ const ICONS: Record<ActionType, React.ReactNode> = {
 interface Props {
   activeType: ActionType | null
   ballHolderId: string
+  hasDefenders: boolean
   onSelect: (type: ActionType) => void
   onCancel: () => void
   markingsEnabled: boolean
   onToggleMarkings: () => void
+  gameOver?: boolean
 }
 
-export default function ActionToolbar({ activeType, ballHolderId, onSelect, onCancel, markingsEnabled, onToggleMarkings }: Props) {
+export default function ActionToolbar({ activeType, ballHolderId, hasDefenders, onSelect, onCancel, markingsEnabled, onToggleMarkings, gameOver }: Props) {
   return (
     <div className="flex flex-col gap-2 p-2 bg-slate-800 rounded-xl border border-slate-700">
+
+      {gameOver && (
+        <div className="flex flex-col items-center gap-1 px-2 py-2 bg-slate-700/60 rounded-lg border border-slate-600">
+          <span className="text-[9px] text-orange-400 font-bold tracking-wide text-center leading-tight">SHOT TAKEN</span>
+          <span className="text-[8px] text-slate-500 text-center leading-tight">Play ended</span>
+        </div>
+      )}
 
       {/* ATK üstte, DEF altta */}
       <div className="flex flex-col gap-2">
@@ -90,7 +99,7 @@ export default function ActionToolbar({ activeType, ballHolderId, onSelect, onCa
         <div className="flex flex-col gap-2">
           <div className="text-[10px] text-orange-400 font-semibold px-1 tracking-wide">ATK</div>
           {OFFENSE_TOOLS.map(t => {
-            const disabled = t.requiresBall && !ballHolderId
+            const disabled = gameOver || (t.requiresBall && !ballHolderId)
             const active = activeType === t.type
             return (
               <button
@@ -118,14 +127,18 @@ export default function ActionToolbar({ activeType, ballHolderId, onSelect, onCa
           <div className="text-[10px] text-blue-400 font-semibold px-1 tracking-wide">DEF</div>
 
           {DEF_TOOLS.map(t => {
+            const disabled = !!gameOver || !hasDefenders
             const active = activeType === t.type
             return (
               <button
                 key={t.type}
                 title={t.label}
+                disabled={disabled}
                 onClick={() => active ? onCancel() : onSelect(t.type)}
                 className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors
-                  ${active ? 'bg-slate-600 ring-1 ring-white/30' : 'bg-slate-700 text-slate-200 hover:bg-slate-600'}`}
+                  ${active ? 'bg-slate-600 ring-1 ring-white/30' : ''}
+                  ${!active && !disabled ? 'bg-slate-700 text-slate-200 hover:bg-slate-600' : ''}
+                  ${disabled ? 'opacity-30 cursor-not-allowed bg-slate-800 text-slate-500' : ''}`}
               >
                 {ICONS[t.type]}
                 <span style={{ color: ACTION_COLORS[t.type] }}>{t.label}</span>

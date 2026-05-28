@@ -3,7 +3,7 @@ import type Konva from 'konva'
 import type { CourtType } from '../../models/types'
 import HalfCourt from './HalfCourt'
 import FullCourt from './FullCourt'
-import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_PADDING_X, COURT_PADDING_Y } from '../../utils/courtCoords'
+import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_PADDING_X, COURT_PADDING_Y, HALF_COURT_PADDING_TOP } from '../../utils/courtCoords'
 
 interface Props {
   courtType: CourtType
@@ -31,15 +31,16 @@ export default function CourtCanvas({
   // Portrait (half court or non-landscape full court)
   if (!landscape) {
     const height = courtType === 'half' ? HALF_COURT_H : FULL_COURT_H
+    const topPad = courtType === 'half' ? HALF_COURT_PADDING_TOP : COURT_PADDING_Y
     return (
-      <Stage ref={stageRef} width={STAGE_W * scale} height={(height + 2 * COURT_PADDING_Y) * scale} scaleX={scale} scaleY={scale} {...events}>
+      <Stage ref={stageRef} width={STAGE_W * scale} height={(height + topPad + COURT_PADDING_Y) * scale} scaleX={scale} scaleY={scale} {...events}>
         <Layer>
-          <Group x={COURT_PADDING_X} y={COURT_PADDING_Y}>
+          <Group x={COURT_PADDING_X} y={topPad}>
             {courtType === 'half' ? <HalfCourt /> : <FullCourt attackBasket={attackBasket} />}
           </Group>
         </Layer>
         <Layer>
-          <Group x={COURT_PADDING_X} y={COURT_PADDING_Y}>{children}</Group>
+          <Group x={COURT_PADDING_X} y={topPad}>{children}</Group>
         </Layer>
       </Stage>
     )

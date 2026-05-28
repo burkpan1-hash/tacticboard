@@ -14,28 +14,28 @@ import ExportModal from '../components/export/ExportModal'
 import { usePlayStore } from '../store/usePlayStore'
 import { computeStateAtStep } from '../utils/stateEngine'
 import { denormalize } from '../utils/courtCoords'
-import type { Action, NormalizedPosition, Player, PositionMap } from '../models/types'
-import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_PADDING_X, COURT_PADDING_Y, HALF_COURT } from '../utils/courtCoords'
+import type { Action, NormalizedPosition, Player, PlaySet, PositionMap } from '../models/types'
+import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_PADDING_X, COURT_PADDING_Y, HALF_COURT_PADDING_TOP, HALF_COURT } from '../utils/courtCoords'
 import { ACTION_COLORS, ACTION_LABELS } from '../utils/actionColors'
 
 // Returns the start/end pixel coords of the arrow's direction vector (for label placement)
-function arrowLine(action: Action, positions: PositionMap, cH: number): { x1: number; y1: number; x2: number; y2: number } | null {
+function arrowLine(action: Action, positions: PositionMap, cH: number, basketPxY: number): { x1: number; y1: number; x2: number; y2: number } | null {
   const px = (id: string) => { const p = positions[id]; return p ? denormalize(p.x, p.y, HALF_COURT_W, cH) : null }
   const pp = (p: NormalizedPosition) => denormalize(p.x, p.y, HALF_COURT_W, cH)
   switch (action.type) {
     case 'pass':        { const f = px(action.fromId), t = px(action.toId); if (!f || !t) return null; return { x1: f.x, y1: f.y, x2: t.x, y2: t.y } }
     case 'cut':         { const f = px(action.playerId), t = pp(action.toPosition); if (!f) return null; return { x1: f.x, y1: f.y, x2: t.x, y2: t.y } }
     case 'screen':      { const f = px(action.screenerId), t = pp(action.screenPosition); if (!f) return null; return { x1: f.x, y1: f.y, x2: t.x, y2: t.y } }
-    case 'shot':        { const f = px(action.shooterId); if (!f) return null; return { x1: f.x, y1: f.y, x2: HALF_COURT.basket.x, y2: HALF_COURT.basket.y } }
+    case 'shot':        { const f = px(action.shooterId); if (!f) return null; return { x1: f.x, y1: f.y, x2: HALF_COURT.basket.x, y2: basketPxY } }
     case 'handoff':     { const f = px(action.fromId), t = pp(action.meetPosition); if (!f) return null; return { x1: f.x, y1: f.y, x2: t.x, y2: t.y } }
     case 'defense-move':{ const f = px(action.playerId), t = pp(action.toPosition); if (!f) return null; return { x1: f.x, y1: f.y, x2: t.x, y2: t.y } }
     case 'double-team': { const f = px(action.defender1Id), t = px(action.targetId); if (!f || !t) return null; return { x1: f.x, y1: f.y, x2: t.x, y2: t.y } }
     case 'ball-force': {
       const f = px(action.defenderId); const target = positions[action.targetId]
       if (!f || !target) return null
-      const DEFENDER_DIST = 0.11
-      const t = pp({ x: Math.max(0, Math.min(1, target.x + Math.cos(action.angle) * DEFENDER_DIST)), y: Math.max(0, Math.min(1, target.y + Math.sin(action.angle) * DEFENDER_DIST)) })
-      return { x1: f.x, y1: f.y, x2: t.x, y2: t.y }
+      const DEFENDER_PX = 77
+      const tPx = pp(target)
+      return { x1: f.x, y1: f.y, x2: tPx.x + Math.cos(action.angle) * DEFENDER_PX, y2: tPx.y + Math.sin(action.angle) * DEFENDER_PX }
     }
     case 'dribble': {
       const f = px(action.playerId); if (!f) return null
@@ -82,12 +82,14 @@ export default function EditorPage() {
     savedSets, activeSet, setActiveSet,
     activeStep,
     actionCreation, startActionCreation, setPendingSource, cancelActionCreation,
-    addAction, addPlayerToCourt, updateInitialPosition, updateMarkings, saveSet,
+    addAction, addPlayerToCourt, removePlayerFromCourt, setInitialBall, updateInitialPosition, updateMarkings, saveSet, deleteSet,
     flipAttackBasket,
     isPlaying, setIsPlaying,
   } = usePlayStore()
 
   const courtAreaRef = useRef<HTMLDivElement>(null)
+  const benchRef = useRef<HTMLDivElement>(null)
+  const lastMousePos = useRef({ x: 0, y: 0 })
   const [courtScale, setCourtScale] = useState(1)
   const [markingsEnabled, setMarkingsEnabled] = useState(false)
   const [mousePos, setMousePos] = useState<NormalizedPosition | null>(null)
@@ -96,16 +98,48 @@ export default function EditorPage() {
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState('')
   const nameInputRef = useRef<HTMLInputElement>(null)
+  const [savedActionCount, setSavedActionCount] = useState(activeSet?.actions.length ?? 0)
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false)
+  const [saveDialogName, setSaveDialogName] = useState('')
+  const savedSnapshotRef = useRef<PlaySet | null>(null)
 
   function startNameEdit() {
-    setNameInput(activeSet.name)
+    setNameInput(activeSet!.name)
     setEditingName(true)
     setTimeout(() => nameInputRef.current?.select(), 0)
   }
 
+  const isDirty = !!activeSet && activeSet.actions.length !== savedActionCount
+
+  function handleSave() {
+    saveSet(activeSet!)
+    savedSnapshotRef.current = activeSet!
+    setSavedActionCount(activeSet!.actions.length)
+  }
+
+  function handleNavigateHome() {
+    cancelActionCreation()
+    if (!activeSet) { navigate('/'); return }
+    if (activeSet.actions.length === 0) {
+      deleteSet(activeSet.id)
+      navigate('/')
+      return
+    }
+    if (!isDirty) {
+      navigate('/')
+      return
+    }
+    setSaveDialogName(activeSet.name)
+    setSaveDialogOpen(true)
+  }
+
   function commitNameEdit() {
     const trimmed = nameInput.trim()
-    if (trimmed) saveSet({ ...activeSet, name: trimmed })
+    if (trimmed) {
+      const updated = { ...activeSet!, name: trimmed }
+      saveSet(updated)
+      setActiveSet(updated)
+    }
     setEditingName(false)
   }
   const stageRef = useRef<Konva.Stage | null>(null)
@@ -123,8 +157,14 @@ export default function EditorPage() {
   const [cutWaypoints, setCutWaypoints] = useState<NormalizedPosition[]>([])
   const isDraggingCut = useRef(false)
   const cutDragWasUsed = useRef(false)
+  const [defenseMoveWaypoints, setDefenseMoveWaypoints] = useState<NormalizedPosition[]>([])
+  const isDraggingDefenseMove = useRef(false)
+  const defenseMoveWasUsed = useRef(false)
   const lastWaypoint = useRef<NormalizedPosition | null>(null)
   const SAMPLE_DIST = 15
+  const [benchHoverPlayer, setBenchHoverPlayer] = useState<Player | null>(null)
+  const [isDraggingBall, setIsDraggingBall] = useState(false)
+  const [ballDragHoverId, setBallDragHoverId] = useState<string | null>(null)
 
   const cH = activeSet?.courtType === 'half' ? HALF_COURT_H : FULL_COURT_H
   const atkLeft = activeSet?.courtType === 'full' ? (activeSet.attackBasket ?? 'top') === 'top' : false
@@ -140,6 +180,12 @@ export default function EditorPage() {
     if (found) setActiveSet(found)
     else usePlayStore.getState().loadSetsFromStorage()
   }, [setId, savedSets, setActiveSet, activeSet])
+
+  useEffect(() => {
+    if (activeSet && savedSnapshotRef.current?.id !== activeSet.id) {
+      savedSnapshotRef.current = activeSet
+    }
+  }, [activeSet?.id])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -160,6 +206,12 @@ export default function EditorPage() {
   useEffect(() => {
     setPositionOverrides({})
   }, [activeStep])
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => { lastMousePos.current = { x: e.clientX, y: e.clientY } }
+    window.addEventListener('mousemove', handler)
+    return () => window.removeEventListener('mousemove', handler)
+  }, [])
 
   useEffect(() => {
     const el = courtAreaRef.current
@@ -223,16 +275,17 @@ export default function EditorPage() {
 
   const activeMarkings = markingsEnabled ? (activeSet.markings ?? {}) : undefined
   const currentState = computeStateAtStep(
-    activeSet.actions, activeStep, activeSet.initialPositions, activeSet.initialBall, activeMarkings, basketY
+    activeSet.actions, activeStep, activeSet.initialPositions, activeSet.initialBall, activeMarkings, basketY, HALF_COURT_W, cH
   )
   const total = activeSet.actions.length
+  const hasShotAction = activeSet.actions.some(a => a.type === 'shot')
 
   const effectivePositions: PositionMap = { ...currentState.positions, ...positionOverrides }
 
   const displayPositions = (() => {
     if (!isPlaying || activeStep >= total) return effectivePositions
     const toState = computeStateAtStep(
-      activeSet.actions, activeStep + 1, activeSet.initialPositions, activeSet.initialBall, activeMarkings, basketY
+      activeSet.actions, activeStep + 1, activeSet.initialPositions, activeSet.initialBall, activeMarkings, basketY, HALF_COURT_W, cH
     )
     const t = animFraction
     const currentAction = activeSet.actions[activeStep]
@@ -242,9 +295,9 @@ export default function EditorPage() {
         const from = currentState.positions[id] ?? { x: 0.5, y: 0.5 }
         const to = toState.positions[id] ?? from
 
-        // Follow drawn waypoint path for dribble or cut
+        // Follow drawn waypoint path for dribble, cut, or defense-move
         if (
-          (currentAction?.type === 'dribble' || currentAction?.type === 'cut') &&
+          (currentAction?.type === 'dribble' || currentAction?.type === 'cut' || currentAction?.type === 'defense-move') &&
           currentAction.playerId === id &&
           currentAction.waypoints && currentAction.waypoints.length > 1
         ) {
@@ -281,10 +334,10 @@ export default function EditorPage() {
   })()
 
   const inPlayIds = new Set(activeSet.players.map(p => p.id))
-  const benchPlayers: Player[] = []
+  const allBenchPlayers: Player[] = []
   for (let n = 1; n <= 5; n++) {
-    if (!inPlayIds.has(`o${n}`)) benchPlayers.push({ id: `o${n}`, number: n as Player['number'], team: 'offense' })
-    if (!inPlayIds.has(`d${n}`)) benchPlayers.push({ id: `d${n}`, number: n as Player['number'], team: 'defense' })
+    allBenchPlayers.push({ id: `o${n}`, number: n as Player['number'], team: 'offense' })
+    allBenchPlayers.push({ id: `d${n}`, number: n as Player['number'], team: 'defense' })
   }
 
   function cancelAll() {
@@ -311,22 +364,38 @@ export default function EditorPage() {
   }
 
   function handleCourtDrop(e: React.DragEvent<HTMLDivElement>) {
-    const pid = e.dataTransfer.getData('benchPlayerId')
-    if (!pid) return
     e.preventDefault()
+    const pid = e.dataTransfer.getData('benchPlayerId')
+    const isBall = e.dataTransfer.getData('benchBall') === 'true'
     const rect = e.currentTarget.getBoundingClientRect()
+
+    let dropNorm: { x: number; y: number }
     if (activeSet.courtType === 'full') {
       const STAGE_W = HALF_COURT_W + 2 * COURT_PADDING_X
       const kx = (e.clientX - rect.left) / courtScale
       const ky = (e.clientY - rect.top) / courtScale
-      const x = Math.max(0.02, Math.min(0.98, (STAGE_W - ky - COURT_PADDING_X) / HALF_COURT_W))
-      const y = Math.max(-0.05, Math.min(1.05, (kx - COURT_PADDING_Y) / FULL_COURT_H))
-      addPlayerToCourt(pid, { x, y })
+      dropNorm = { x: Math.max(0.02, Math.min(0.98, (STAGE_W - ky - COURT_PADDING_X) / HALF_COURT_W)), y: Math.max(-0.05, Math.min(1.05, (kx - COURT_PADDING_Y) / FULL_COURT_H)) }
+    } else {
+      dropNorm = { x: Math.max(0.02, Math.min(0.98, (e.clientX - rect.left - COURT_PADDING_X) / HALF_COURT_W)), y: Math.max(-0.05, Math.min(1.05, (e.clientY - rect.top - HALF_COURT_PADDING_TOP) / cH)) }
+    }
+
+    if (isBall) {
+      let closestId: string | null = null, minDist = Infinity
+      for (const player of (activeSet?.players ?? [])) {
+        if (player.team !== 'offense') continue
+        const pos = currentState.positions[player.id]
+        if (!pos) continue
+        const dx = (pos.x - dropNorm.x) * HALF_COURT_W
+        const dy = (pos.y - dropNorm.y) * cH
+        const d = dx * dx + dy * dy
+        if (d < minDist) { minDist = d; closestId = player.id }
+      }
+      if (closestId) setInitialBall(closestId)
       return
     }
-    const x = Math.max(0.02, Math.min(0.98, (e.clientX - rect.left - COURT_PADDING_X) / HALF_COURT_W))
-    const y = Math.max(-0.05, Math.min(1.05, (e.clientY - rect.top - COURT_PADDING_Y) / cH))
-    addPlayerToCourt(pid, { x, y })
+
+    if (!pid) return
+    addPlayerToCourt(pid, dropNorm)
   }
 
   function normFromEvent(e: Konva.KonvaEventObject<MouseEvent>): NormalizedPosition | null {
@@ -339,7 +408,7 @@ export default function EditorPage() {
       const sy = (pos.x / courtScale) - COURT_PADDING_Y
       return { x: (sx - COURT_PADDING_X) / HALF_COURT_W, y: sy / FULL_COURT_H }
     }
-    return { x: (pos.x - COURT_PADDING_X) / HALF_COURT_W, y: (pos.y - COURT_PADDING_Y) / cH }
+    return { x: (pos.x - COURT_PADDING_X) / HALF_COURT_W, y: (pos.y - HALF_COURT_PADDING_TOP) / cH }
   }
 
   function handleMouseDown(e: Konva.KonvaEventObject<MouseEvent>) {
@@ -355,10 +424,15 @@ export default function EditorPage() {
       cutDragWasUsed.current = false
       lastWaypoint.current = norm
       setCutWaypoints([])
+    } else if (actionCreation.type === 'defense-move' && actionCreation.pendingSourceId) {
+      isDraggingDefenseMove.current = true
+      defenseMoveWasUsed.current = false
+      lastWaypoint.current = norm
+      setDefenseMoveWaypoints([])
     }
   }
 
-  function handleMouseUp(e: Konva.KonvaEventObject<MouseEvent>) {
+  function handleMouseUp(_e: Konva.KonvaEventObject<MouseEvent>) {
     if (isDraggingDribble.current && actionCreation.type === 'dribble') {
       isDraggingDribble.current = false
       if (dragWasUsed.current && dribbleWaypoints.length > 2) {
@@ -375,6 +449,15 @@ export default function EditorPage() {
         addAction({ id: nanoid(), type: 'cut', playerId: actionCreation.pendingSourceId, toPosition: last, waypoints: cutWaypoints })
       }
       setCutWaypoints([])
+      lastWaypoint.current = null
+    }
+    if (isDraggingDefenseMove.current && actionCreation.type === 'defense-move' && actionCreation.pendingSourceId) {
+      isDraggingDefenseMove.current = false
+      if (defenseMoveWasUsed.current && defenseMoveWaypoints.length > 2) {
+        const last = defenseMoveWaypoints[defenseMoveWaypoints.length - 1]
+        addAction({ id: nanoid(), type: 'defense-move', playerId: actionCreation.pendingSourceId, toPosition: last, waypoints: defenseMoveWaypoints })
+      }
+      setDefenseMoveWaypoints([])
       lastWaypoint.current = null
     }
   }
@@ -402,6 +485,16 @@ export default function EditorPage() {
       if (Math.sqrt(dx * dx + dy * dy) >= SAMPLE_DIST) {
         cutDragWasUsed.current = true
         setCutWaypoints(prev => [...prev, norm])
+        lastWaypoint.current = norm
+      }
+    }
+    if (isDraggingDefenseMove.current && actionCreation.type === 'defense-move' && lastWaypoint.current) {
+      const last = lastWaypoint.current
+      const dx = (norm.x - last.x) * HALF_COURT_W
+      const dy = (norm.y - last.y) * cH
+      if (Math.sqrt(dx * dx + dy * dy) >= SAMPLE_DIST) {
+        defenseMoveWasUsed.current = true
+        setDefenseMoveWaypoints(prev => [...prev, norm])
         lastWaypoint.current = norm
       }
     }
@@ -448,6 +541,7 @@ export default function EditorPage() {
     }
 
     if (type === 'defense-move' && pendingSourceId) {
+      if (defenseMoveWasUsed.current) { defenseMoveWasUsed.current = false; return }
       addAction({ id: nanoid(), type: 'defense-move', playerId: pendingSourceId, toPosition: normPos })
       return
     }
@@ -456,7 +550,9 @@ export default function EditorPage() {
       const targetId = currentState.ball.holderId
       const target = currentState.positions[targetId]
       if (!target) return
-      const angle = Math.atan2(normPos.y - target.y, normPos.x - target.x)
+      const targetPxCoords = denormalize(target.x, target.y, HALF_COURT_W, cH)
+      const clickPxCoords  = denormalize(normPos.x, normPos.y, HALF_COURT_W, cH)
+      const angle = Math.atan2(clickPxCoords.y - targetPxCoords.y, clickPxCoords.x - targetPxCoords.x)
       addAction({ id: nanoid(), type: 'ball-force', defenderId: pendingSourceId, targetId, angle })
       return
     }
@@ -464,7 +560,14 @@ export default function EditorPage() {
 
   function handlePlayerClick(playerId: string) {
     const { type, pendingSourceId } = actionCreation
-    if (!type) return
+    if (!type) {
+      const ballOnCourt = activeSet?.players.some(p => p.id === currentState.ball.holderId)
+      if (!ballOnCourt) {
+        const p = activeSet?.players.find(p => p.id === playerId)
+        if (p && p.team === 'offense') setInitialBall(playerId)
+      }
+      return
+    }
 
     if (type === 'pass') {
       if (playerId === currentState.ball.holderId) return
@@ -552,7 +655,7 @@ export default function EditorPage() {
     <div className="h-screen flex flex-col bg-slate-900 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/')} className="text-slate-400 hover:text-white transition-colors text-sm">← Home</button>
+          <button onClick={handleNavigateHome} className="text-slate-400 hover:text-white transition-colors text-sm">← Home</button>
           {editingName ? (
             <input
               ref={nameInputRef}
@@ -583,10 +686,12 @@ export default function EditorPage() {
           <ActionToolbar
             activeType={actionCreation.type}
             ballHolderId={currentState.ball.holderId}
+            hasDefenders={(activeSet?.players ?? []).some(p => p.team === 'defense')}
             onSelect={startActionCreation}
             onCancel={cancelAll}
             markingsEnabled={markingsEnabled}
             onToggleMarkings={handleToggleMarkings}
+            gameOver={hasShotAction}
           />
         </div>
 
@@ -632,11 +737,37 @@ export default function EditorPage() {
               </div>
             )}
           </div>
-          <div ref={courtAreaRef} className="flex-1 flex items-center justify-center px-4 overflow-hidden">
+          <div ref={courtAreaRef} className="relative flex-1 flex items-center justify-center px-4 overflow-hidden">
           <div className={`flex flex-row gap-3 ${activeSet.courtType === 'full' ? 'items-center' : 'items-end'}`}>
           <div
             className="relative"
-            onDragOver={(e) => e.preventDefault()}
+            onDragOver={(e) => {
+              e.preventDefault()
+              if (!isDraggingBall) return
+              const rect = e.currentTarget.getBoundingClientRect()
+              let nx: number, ny: number
+              if (activeSet.courtType === 'full') {
+                const STAGE_W = HALF_COURT_W + 2 * COURT_PADDING_X
+                const kx = (e.clientX - rect.left) / courtScale
+                const ky = (e.clientY - rect.top) / courtScale
+                nx = (STAGE_W - ky - COURT_PADDING_X) / HALF_COURT_W
+                ny = (kx - COURT_PADDING_Y) / FULL_COURT_H
+              } else {
+                nx = (e.clientX - rect.left - COURT_PADDING_X) / HALF_COURT_W
+                ny = (e.clientY - rect.top - HALF_COURT_PADDING_TOP) / cH
+              }
+              let closest: string | null = null, minD = Infinity
+              for (const p of (activeSet?.players ?? [])) {
+                if (p.team !== 'offense') continue
+                const pos = currentState.positions[p.id]
+                if (!pos) continue
+                const dx = (pos.x - nx) * HALF_COURT_W, dy = (pos.y - ny) * cH
+                const d = dx * dx + dy * dy
+                if (d < minD) { minD = d; closest = p.id }
+              }
+              setBallDragHoverId(minD < 35 * 35 ? closest : null)
+            }}
+            onDragLeave={() => setBallDragHoverId(null)}
             onDrop={handleCourtDrop}
           >
             <CourtCanvas
@@ -649,7 +780,7 @@ export default function EditorPage() {
               onMouseMove={handleMouseMove}
               onMouseDown={handleMouseDown}
               onMouseUp={handleMouseUp}
-              onMouseLeave={() => { setMousePos(null); isDraggingDribble.current = false }}
+              onMouseLeave={() => { setMousePos(null); isDraggingDribble.current = false; isDraggingCut.current = false; isDraggingDefenseMove.current = false }}
             >
               <ActionOverlay
                 actions={activeSet.actions}
@@ -667,8 +798,10 @@ export default function EditorPage() {
                 positions={effectivePositions}
                 mousePos={mousePos}
                 courtType={activeSet.courtType}
+                basketY={basketY}
                 dribbleWaypoints={dribbleWaypoints}
                 cutWaypoints={cutWaypoints}
+                defenseMoveWaypoints={defenseMoveWaypoints}
               />
               {/* Marking lines — only when enabled */}
               {markingsEnabled && Object.entries(activeSet.markings ?? {}).map(([defId, offId]) => {
@@ -731,14 +864,16 @@ export default function EditorPage() {
                     courtType={activeSet.courtType}
                     landscape={activeSet.courtType === 'full'}
                     hasBall={currentState.ball.holderId === player.id}
+                    showBallDrop={ballDragHoverId === player.id}
                     isSelected={actionCreation.pendingSourceId === player.id}
                     draggable={!(actionCreation.type && player.team === 'defense')}
                     onDragStart={() => {
                       playerDragWaypoints.current = []
                       lastPlayerDragPt.current = null
                       playerDragHadPath.current = false
+                      setBenchHoverPlayer(null)
                     }}
-                    onDragMove={(_id, pos) => {
+                    onDragMove={(id, pos) => {
                       const last = lastPlayerDragPt.current
                       if (!last) { lastPlayerDragPt.current = pos; return }
                       const dx = (pos.x - last.x) * HALF_COURT_W
@@ -748,21 +883,26 @@ export default function EditorPage() {
                         playerDragWaypoints.current.push(pos)
                         lastPlayerDragPt.current = pos
                       }
+                      const bench = benchRef.current
+                      if (bench) {
+                        const rect = bench.getBoundingClientRect()
+                        const { x, y } = lastMousePos.current
+                        const over = x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom
+                        setBenchHoverPlayer(over ? (activeSet.players.find(p => p.id === id) ?? null) : null)
+                      }
                     }}
                     onDragEnd={(id, newPos) => {
-                      const hasActions = activeSet.actions.some(a => {
-                        switch (a.type) {
-                          case 'pass': return a.fromId === id || a.toId === id
-                          case 'cut': case 'dribble': case 'defense-move': return a.playerId === id
-                          case 'screen': return a.screenerId === id
-                          case 'shot': return a.shooterId === id
-                          case 'handoff': return a.fromId === id || a.toId === id
-                          case 'double-team': return a.defender1Id === id || a.defender2Id === id || a.targetId === id
-                          case 'ball-force': return a.defenderId === id
-                          default: return false
+                      setBenchHoverPlayer(null)
+                      const bench = benchRef.current
+                      if (bench) {
+                        const rect = bench.getBoundingClientRect()
+                        const { x, y } = lastMousePos.current
+                        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+                          removePlayerFromCourt(id)
+                          return
                         }
-                      })
-                      if (activeStep === 0 || !hasActions) {
+                      }
+                      if (activeStep === 0 || activeSet.actions.length === 0) {
                         updateInitialPosition(id, newPos)
                         return
                       }
@@ -772,11 +912,17 @@ export default function EditorPage() {
                       }
                       const player = activeSet.players.find(p => p.id === id)
                       if (!player) return
+                      const startPos = currentState.positions[id]
+                      if (startPos) {
+                        const dx = (newPos.x - startPos.x) * HALF_COURT_W
+                        const dy = (newPos.y - startPos.y) * cH
+                        if (Math.sqrt(dx * dx + dy * dy) < 50) return
+                      }
                       const waypoints = playerDragHadPath.current && playerDragWaypoints.current.length > 2
                         ? [...playerDragWaypoints.current]
                         : undefined
                       if (player.team === 'defense') {
-                        addAction({ id: nanoid(), type: 'defense-move', playerId: id, toPosition: newPos })
+                        addAction({ id: nanoid(), type: 'defense-move', playerId: id, toPosition: newPos, waypoints })
                       } else if (currentState.ball.holderId === id) {
                         addAction({ id: nanoid(), type: 'dribble', playerId: id, toPosition: newPos, waypoints })
                       } else {
@@ -791,9 +937,9 @@ export default function EditorPage() {
               {/* Action type labels — rendered last (above players) with smart placement */}
               {activeSet.actions.slice(0, isPlaying ? activeStep + 1 : activeStep).map((action, i) => {
                 const stateBefore = computeStateAtStep(
-                  activeSet.actions, i, activeSet.initialPositions, activeSet.initialBall, activeMarkings, basketY
+                  activeSet.actions, i, activeSet.initialPositions, activeSet.initialBall, activeMarkings, basketY, HALF_COURT_W, cH
                 )
-                const line = arrowLine(action, stateBefore.positions, cH)
+                const line = arrowLine(action, stateBefore.positions, cH, basketY * cH)
                 if (!line) return null
                 const playersPx = Object.values(stateBefore.positions).map(p =>
                   denormalize(p.x, p.y, HALF_COURT_W, cH)
@@ -840,28 +986,105 @@ export default function EditorPage() {
             </CourtCanvas>
           </div>
 
-          {benchPlayers.length > 0 && (
-            <div className="flex flex-col items-center gap-2 px-2 py-3 bg-slate-800/60 rounded-xl border border-slate-700">
+          {activeSet.courtType !== 'full' && (
+            <div ref={benchRef} className="flex flex-col items-center gap-2 px-2 py-3 bg-slate-800/60 rounded-xl border border-slate-700 overflow-y-auto self-center max-h-[80vh]">
               <span className="text-slate-500 text-xs">Bench</span>
-              {benchPlayers.map(p => (
+              {!activeSet.players.some(p => p.id === currentState.ball.holderId) && (
                 <div
-                  key={p.id}
                   draggable
-                  onDragStart={(e) => e.dataTransfer.setData('benchPlayerId', p.id)}
-                  className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold cursor-grab select-none"
-                  style={{
-                    backgroundColor: p.team === 'offense' ? '#f97316' : '#1d4ed8',
-                    border: '2px dashed rgba(255,255,255,0.4)',
-                    opacity: 0.8,
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('benchBall', 'true')
+                    setIsDraggingBall(true)
+                    const ghost = document.createElement('div')
+                    ghost.style.cssText = 'position:fixed;top:-200px;left:-200px;font-size:28px;line-height:1;'
+                    ghost.textContent = '🏀'
+                    document.body.appendChild(ghost)
+                    e.dataTransfer.setDragImage(ghost, 14, 14)
+                    requestAnimationFrame(() => document.body.removeChild(ghost))
                   }}
-                  title={`${p.team === 'offense' ? 'Offense' : 'Defense'} #${p.number} — drag onto court`}
+                  onDragEnd={() => { setIsDraggingBall(false); setBallDragHoverId(null) }}
+                  className="w-9 h-9 rounded-full flex items-center justify-center cursor-grab select-none bg-amber-500/20 border-2 border-amber-400"
+                  style={{ fontSize: 20 }}
+                  title="Ball — drag onto a player"
                 >
-                  {p.number}
+                  🏀
                 </div>
-              ))}
+              )}
+              {allBenchPlayers.filter(p => !inPlayIds.has(p.id) || p.id === benchHoverPlayer?.id).map(p => {
+                const isHover = p.id === benchHoverPlayer?.id
+                return isHover ? (
+                  <div key={p.id} className="relative">
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold select-none"
+                      style={{ backgroundColor: p.team === 'offense' ? '#f97316' : '#1d4ed8', border: '2px dashed rgba(255,255,255,0.6)', opacity: 0.9 }}>
+                      {p.number}
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-green-500 text-white flex items-center justify-center font-bold leading-none" style={{ fontSize: 12 }}>+</div>
+                  </div>
+                ) : (
+                  <div
+                    key={p.id}
+                    draggable
+                    onDragStart={(e) => e.dataTransfer.setData('benchPlayerId', p.id)}
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold cursor-grab select-none"
+                    style={{ backgroundColor: p.team === 'offense' ? '#f97316' : '#1d4ed8', border: '2px dashed rgba(255,255,255,0.4)', opacity: 0.8 }}
+                    title={`${p.team === 'offense' ? 'Offense' : 'Defense'} #${p.number} — drag onto court`}
+                  >
+                    {p.number}
+                  </div>
+                )
+              })}
             </div>
           )}
           </div>
+          {activeSet.courtType === 'full' && (
+            <div ref={benchRef} className={`absolute ${atkLeft ? 'left-2' : 'right-2'} top-1/2 -translate-y-1/2 z-10 flex flex-col items-center gap-2 px-2 py-3 bg-slate-800/90 rounded-xl border border-slate-700 overflow-y-auto max-h-[80vh]`}>
+              <span className="text-slate-500 text-xs">Bench</span>
+              {!activeSet.players.some(p => p.id === currentState.ball.holderId) && (
+                <div
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('benchBall', 'true')
+                    setIsDraggingBall(true)
+                    const ghost = document.createElement('div')
+                    ghost.style.cssText = 'position:fixed;top:-200px;left:-200px;font-size:28px;line-height:1;'
+                    ghost.textContent = '🏀'
+                    document.body.appendChild(ghost)
+                    e.dataTransfer.setDragImage(ghost, 14, 14)
+                    requestAnimationFrame(() => document.body.removeChild(ghost))
+                  }}
+                  onDragEnd={() => { setIsDraggingBall(false); setBallDragHoverId(null) }}
+                  className="w-9 h-9 rounded-full flex items-center justify-center cursor-grab select-none bg-amber-500/20 border-2 border-amber-400"
+                  style={{ fontSize: 20 }}
+                  title="Ball — drag onto a player"
+                >
+                  🏀
+                </div>
+              )}
+              {allBenchPlayers.filter(p => !inPlayIds.has(p.id) || p.id === benchHoverPlayer?.id).map(p => {
+                const isHover = p.id === benchHoverPlayer?.id
+                return isHover ? (
+                  <div key={p.id} className="relative">
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold select-none"
+                      style={{ backgroundColor: p.team === 'offense' ? '#f97316' : '#1d4ed8', border: '2px dashed rgba(255,255,255,0.6)', opacity: 0.9 }}>
+                      {p.number}
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-green-500 text-white flex items-center justify-center font-bold leading-none" style={{ fontSize: 12 }}>+</div>
+                  </div>
+                ) : (
+                  <div
+                    key={p.id}
+                    draggable
+                    onDragStart={(e) => e.dataTransfer.setData('benchPlayerId', p.id)}
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold cursor-grab select-none"
+                    style={{ backgroundColor: p.team === 'offense' ? '#f97316' : '#1d4ed8', border: '2px dashed rgba(255,255,255,0.4)', opacity: 0.8 }}
+                    title={`${p.team === 'offense' ? 'Offense' : 'Defense'} #${p.number} — drag onto court`}
+                  >
+                    {p.number}
+                  </div>
+                )
+              })}
+            </div>
+          )}
           </div>
         </div>
 
@@ -870,7 +1093,64 @@ export default function EditorPage() {
         </div>
       </div>
 
-      <PlaybackControls onExport={() => setShowExport(true)} />
+
+      <PlaybackControls
+        onExport={() => setShowExport(true)}
+        onSave={handleSave}
+        canSave={isDirty && activeSet.actions.length > 0}
+      />
+
+      {saveDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-slate-800 border border-slate-600 rounded-xl p-6 w-80 flex flex-col gap-4 shadow-2xl">
+            <p className="text-white font-semibold text-center">Save before leaving?</p>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-slate-500 text-xs font-medium px-0.5 flex items-center gap-1">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Play name
+              </label>
+              <input
+                value={saveDialogName}
+                onChange={(e) => setSaveDialogName(e.target.value)}
+                placeholder="Untitled Play"
+                className="w-full bg-slate-700/80 text-white font-semibold rounded-lg px-3 py-2.5 outline-none focus:ring-2 focus:ring-orange-500 placeholder-slate-500 border border-slate-600 focus:border-orange-500"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => {
+                  const trimmed = saveDialogName.trim() || activeSet.name
+                  const updated = { ...activeSet, name: trimmed }
+                  saveSet(updated)
+                  setActiveSet(updated)
+                  savedSnapshotRef.current = updated
+                  setSavedActionCount(updated.actions.length)
+                  setSaveDialogOpen(false)
+                  navigate('/')
+                }}
+                className="w-full py-2 bg-orange-500 hover:bg-orange-400 text-white rounded-lg font-medium transition-colors"
+              >Save & Exit</button>
+              <button
+                onClick={() => {
+                  if (savedSnapshotRef.current) {
+                    saveSet(savedSnapshotRef.current)
+                    setActiveSet(savedSnapshotRef.current)
+                  } else {
+                    deleteSet(activeSet.id)
+                  }
+                  setSaveDialogOpen(false)
+                  navigate('/')
+                }}
+                className="w-full py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg font-medium transition-colors"
+              >Don't Save</button>
+              <button
+                onClick={() => setSaveDialogOpen(false)}
+                className="w-full py-2 text-slate-400 hover:text-white transition-colors text-sm"
+              >Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showExport && (
         <ExportModal

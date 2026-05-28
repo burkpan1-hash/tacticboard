@@ -8,6 +8,8 @@ export const FULL_COURT_W = 700
 export const FULL_COURT_H = 1316  // 940 * 1.4
 export const COURT_PADDING_X = 42 // 30 * 1.4
 export const COURT_PADDING_Y = 70 // OOB zone above/below baselines (≈5ft at 1.4× scale)
+// Half-court gets extra top padding so OOB players near y=0 aren't clipped by the stage edge
+export const HALF_COURT_PADDING_TOP = 110
 
 export function normalize(
   px: number, py: number,

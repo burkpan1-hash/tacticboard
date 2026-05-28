@@ -7,6 +7,7 @@ export default function HomePage() {
   const { savedSets, deleteSet, saveSet, loadSetsFromStorage } = usePlayStore()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { loadSetsFromStorage() }, [loadSetsFromStorage])
@@ -82,12 +83,23 @@ export default function HomePage() {
                 >
                   Open
                 </button>
-                <button
-                  onClick={() => { if (confirm('Are you sure you want to delete this play?')) deleteSet(s.id) }}
-                  className="text-slate-400 hover:text-red-400 px-2 py-2 rounded-lg transition-colors"
-                >
-                  ✕
-                </button>
+                {confirmDeleteId === s.id ? (
+                  <button
+                    onClick={() => { deleteSet(s.id); setConfirmDeleteId(null) }}
+                    onBlur={() => setConfirmDeleteId(null)}
+                    autoFocus
+                    className="text-red-400 hover:text-red-300 bg-red-400/10 px-3 py-2 rounded-lg text-xs font-semibold transition-colors"
+                  >
+                    Sure?
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setConfirmDeleteId(s.id)}
+                    className="text-slate-400 hover:text-red-400 px-2 py-2 rounded-lg transition-colors"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
             </div>
           ))}

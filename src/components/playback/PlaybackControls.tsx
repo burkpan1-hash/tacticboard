@@ -2,9 +2,11 @@ import { usePlayStore } from '../../store/usePlayStore'
 
 interface Props {
   onExport?: () => void
+  onSave?: () => void
+  canSave?: boolean
 }
 
-export default function PlaybackControls({ onExport }: Props) {
+export default function PlaybackControls({ onExport, onSave, canSave }: Props) {
   const {
     activeSet, activeStep, setActiveStep, undoLastAction,
     isPlaying, playbackSpeed, setIsPlaying, setPlaybackSpeed,
@@ -78,11 +80,19 @@ export default function PlaybackControls({ onExport }: Props) {
         ))}
       </div>
 
+      {onSave && (
+        <button
+          onClick={onSave}
+          disabled={!canSave}
+          className="px-3 py-1 rounded text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed enabled:bg-orange-500 enabled:hover:bg-orange-400 enabled:text-white"
+        >{canSave ? 'Save' : 'Saved'}</button>
+      )}
+
       {onExport && (
         <button
           onClick={onExport}
           disabled={isPlaying || total === 0}
-          className="px-3 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm disabled:opacity-30 transition-colors"
+          className="px-3 py-1 rounded bg-orange-500 hover:bg-orange-400 text-white text-sm disabled:opacity-30 transition-colors"
           title="Export video"
         >⬇ Export</button>
       )}

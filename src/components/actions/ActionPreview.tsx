@@ -11,14 +11,16 @@ interface Props {
   positions: PositionMap
   mousePos: NormalizedPosition | null
   courtType: CourtType
+  basketY?: number
   dribbleWaypoints?: NormalizedPosition[]
   cutWaypoints?: NormalizedPosition[]
+  defenseMoveWaypoints?: NormalizedPosition[]
 }
 
 const OP = 0.5
 
 export default function ActionPreview({
-  actionType, pendingSourceId, ballHolderId, positions, mousePos, courtType, dribbleWaypoints, cutWaypoints,
+  actionType, pendingSourceId, ballHolderId, positions, mousePos, courtType, basketY, dribbleWaypoints, cutWaypoints, defenseMoveWaypoints,
 }: Props) {
   if (!actionType) return null
 
@@ -162,6 +164,22 @@ export default function ActionPreview({
       }
       const from = pxId(pendingSourceId)
       if (!from) return null
+
+      if (defenseMoveWaypoints && defenseMoveWaypoints.length > 1) {
+        const allPx = [from, ...defenseMoveWaypoints.map(pxN), to]
+        const pts = allPx.flatMap(p => [p.x, p.y])
+        return (
+          <Group opacity={OP} listening={false}>
+            <Line points={pts} stroke={color} strokeWidth={2.5} lineJoin="round" />
+            <Arrow
+              points={[pts[pts.length - 4], pts[pts.length - 3], to.x, to.y]}
+              stroke={color} fill={color}
+              strokeWidth={2.5} pointerLength={10} pointerWidth={8}
+            />
+          </Group>
+        )
+      }
+
       return (
         <Arrow
           points={[from.x, from.y, to.x, to.y]}
@@ -201,7 +219,6 @@ export default function ActionPreview({
     case 'ball-force': {
       if (!mousePos) return null
       if (!pendingSourceId) {
-        // hint: small screen-tip bar at mouse position
         const to = pxN(mousePos)
         return (
           <Line
@@ -211,28 +228,26 @@ export default function ActionPreview({
           />
         )
       }
-      const from    = pxId(pendingSourceId)
-      const bhNorm  = positions[ballHolderId]
-      const bhPx    = pxId(ballHolderId)
-      if (!from || !bhNorm || !bhPx) return null
-      const TIP_DIST      = 0.06
-      const DEFENDER_DIST = 0.11
-      const angle = Math.atan2(mousePos.y - bhNorm.y, mousePos.x - bhNorm.x)
+      const from = pxId(pendingSourceId)
+      const bhPx = pxId(ballHolderId)
+      const mousePx = pxN(mousePos)
+      if (!from || !bhPx) return null
+      const TIP_PX      = 42
+      const DEFENDER_PX = 77
+      const angle = Math.atan2(mousePx.y - bhPx.y, mousePx.x - bhPx.x)
       const cx = Math.cos(angle), cy = Math.sin(angle)
-      const tipNorm = {
-        x: Math.max(0, Math.min(1, bhNorm.x + cx * TIP_DIST)),
-        y: Math.max(0, Math.min(1, bhNorm.y + cy * TIP_DIST)),
-      }
-      const defNewNorm = {
-        x: Math.max(0, Math.min(1, bhNorm.x + cx * DEFENDER_DIST)),
-        y: Math.max(0, Math.min(1, bhNorm.y + cy * DEFENDER_DIST)),
-      }
-      const tipPx    = pxN(tipNorm)
-      const defNewPx = pxN(defNewNorm)
-      const [bx1, by1, bx2, by2] = perpendicularBar(tipPx.x, tipPx.y, bhPx.x, bhPx.y, 22)
+      const tipPx    = { x: bhPx.x + cx * TIP_PX,      y: bhPx.y + cy * TIP_PX }
+      const defNewPx = { x: bhPx.x + cx * DEFENDER_PX, y: bhPx.y + cy * DEFENDER_PX }
+      const ldx = defNewPx.x - from.x, ldy = defNewPx.y - from.y
+      const llen = Math.sqrt(ldx * ldx + ldy * ldy) || 1
+      const bow = Math.min(llen * 0.16, 16)
+      const midX = (from.x + defNewPx.x) / 2 - (ldy / llen) * bow
+      const midY = (from.y + defNewPx.y) / 2 + (ldx / llen) * bow
+      const barHalf = Math.max(12, Math.min(28, llen * 0.28))
+      const [bx1, by1, bx2, by2] = perpendicularBar(tipPx.x, tipPx.y, bhPx.x, bhPx.y, barHalf)
       return (
         <Group opacity={OP} listening={false}>
-          <Line points={[from.x, from.y, defNewPx.x, defNewPx.y]} stroke={color} strokeWidth={2.5} />
+          <Line points={[from.x, from.y, midX, midY, defNewPx.x, defNewPx.y]} tension={0.5} stroke={color} strokeWidth={2.5} />
           <Line points={[bx1, by1, bx2, by2]} stroke={color} strokeWidth={6} strokeLinecap="round" />
         </Group>
       )
@@ -241,18 +256,19 @@ export default function ActionPreview({
     case 'shot': {
       const from = pxId(ballHolderId)
       if (!from) return null
-      const basket = pxN({ x: 0.5, y: 0.113 })
+      const bx = HALF_COURT_W / 2
+      const by = basketY !== undefined ? basketY * cH : 42
       return (
         <Group opacity={OP} listening={false}>
           <Arrow
-            points={[from.x, from.y, basket.x, basket.y]}
+            points={[from.x, from.y, bx, by]}
             stroke={color} fill={color}
             strokeWidth={2.5} dash={[10, 6]}
             pointerLength={0} pointerWidth={0}
           />
-          <Circle x={basket.x} y={basket.y} radius={9} stroke={color} strokeWidth={2} fill="transparent" />
-          <Line points={[basket.x - 13, basket.y, basket.x + 13, basket.y]} stroke={color} strokeWidth={2} />
-          <Line points={[basket.x, basket.y - 13, basket.x, basket.y + 13]} stroke={color} strokeWidth={2} />
+          <Circle x={bx} y={by} radius={9} stroke={color} strokeWidth={2} fill="transparent" />
+          <Line points={[bx - 13, by, bx + 13, by]} stroke={color} strokeWidth={2} />
+          <Line points={[bx, by - 13, bx, by + 13]} stroke={color} strokeWidth={2} />
         </Group>
       )
     }

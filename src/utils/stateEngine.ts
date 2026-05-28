@@ -74,6 +74,8 @@ export function applyAction(
   state: GameState,
   markings?: Record<string, string>,
   basketY: number = DEFAULT_BASKET_Y,
+  courtW = 700,
+  courtH = 658,
 ): GameState {
   const positions = { ...state.positions }
   let ball = { ...state.ball }
@@ -124,10 +126,10 @@ export function applyAction(
     case 'ball-force': {
       const target = positions[action.targetId]
       if (!target) break
-      const DEFENDER_DIST = 0.11
+      const DEFENDER_PX = 77
       positions[action.defenderId] = {
-        x: Math.max(0, Math.min(1, target.x + Math.cos(action.angle) * DEFENDER_DIST)),
-        y: Math.max(0, Math.min(1, target.y + Math.sin(action.angle) * DEFENDER_DIST)),
+        x: Math.max(0, Math.min(1, target.x + Math.cos(action.angle) * DEFENDER_PX / courtW)),
+        y: Math.max(0, Math.min(1, target.y + Math.sin(action.angle) * DEFENDER_PX / courtH)),
       }
       break
     }
@@ -161,6 +163,8 @@ export function computeStateAtStep(
   initialBall: BallState,
   markings?: Record<string, string>,
   basketY: number = DEFAULT_BASKET_Y,
+  courtW = 700,
+  courtH = 658,
 ): GameState {
   let state: GameState = {
     positions: { ...initialPositions },
@@ -168,7 +172,7 @@ export function computeStateAtStep(
   }
   const limit = Math.min(step, actions.length)
   for (let i = 0; i < limit; i++) {
-    state = applyAction(actions[i], state, markings, basketY)
+    state = applyAction(actions[i], state, markings, basketY, courtW, courtH)
   }
   return state
 }

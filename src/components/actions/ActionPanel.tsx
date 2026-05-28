@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import ActionCard from './ActionCard'
 import { usePlayStore } from '../../store/usePlayStore'
 
@@ -8,6 +8,13 @@ export default function ActionPanel() {
     setActiveStep, clearAllActions, setOptionText,
   } = usePlayStore()
   const [confirmClear, setConfirmClear] = useState(false)
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    }
+  }, [activeSet?.actions.length])
 
   if (!activeSet) return null
 
@@ -40,7 +47,7 @@ export default function ActionPanel() {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-2">
         {activeSet.actions.length === 0 && (
           <p className="text-slate-500 text-sm text-center py-8">
             Select an action type from the left toolbar

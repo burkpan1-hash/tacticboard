@@ -1,5 +1,5 @@
 # SetPlay — Basketball Tactical Board
-## Design Spec (güncel: 2026-05-27 — v2)
+## Design Spec (güncel: 2026-05-28 — v4)
 
 **App name:** SetPlay  
 **Tagline:** Create. Animate. Share your plays.
@@ -51,6 +51,7 @@ Working directory: `/Users/burakbozkurt/Desktop/basketball board tactics`
 
 - **Coordinate system**: normalized `{x: 0–1, y: 0–1}` — y=0 = top baseline, y=1 = bottom baseline (or mid-court for half court)
 - **OOB positions**: y slightly outside 0–1 is valid (e.g. `y = -0.03`) — used for inbounders standing behind the baseline. `PlayerNode` clamps drag to `y ∈ [-COURT_PADDING_Y/cH, 1 + COURT_PADDING_Y/cH]`. OOB players render with a dashed yellow ring indicator.
+- **OOB drag bounds**: `PlayerNode` has a `dragBoundFunc` that constrains absolute stage position to `[RADIUS, sw-RADIUS] × [RADIUS, sh-RADIUS]` using `stage.width()/stage.scaleX()` and `stage.height()/stage.scaleY()` (logical coords, scale-aware). `onDragEnd` explicitly resets Konva node to `e.target.x(clamped.x)` / `e.target.y(clamped.y)` to prevent stale-state disappearing bug (second drag to same OOB edge).
 - **Full court**: landscape display (rotated −90°), uses `FULL_COURT_H` for y normalization
 - **`COURT_PADDING_X`**: Stage wider than court; court lines + players inside `Group x={42}`. Click normalization: `nx = (pos.x - COURT_PADDING_X) / HALF_COURT_W`
 - **`COURT_PADDING_Y`**: Stage taller/wider by `2×70px`; court inside `Group y={70}`. OOB players remain visible in this black zone. Scale: `courtScale = Math.min(aw / (FULL_COURT_H + 2×COURT_PADDING_Y), ah / STAGE_W)`.
@@ -103,7 +104,7 @@ basket_y =  42 / 658 ≈ 0.0638
 | `one-three-one` | 1-3-1 Zone | Half only | — |
 | `two-one-two-zone` | 2-1-2 Zone | Half only | — |
 | `one-two-two-zone` | 1-2-2 Zone | Half only | — |
-| `one-three-one-press` | 1-3-1 Press | Full only | — |
+| `one-three-one-press` | 1-3-1 Press | Full only | Inbounder o3 at `x=0.20, y=-0.03` (OOB), `attackBasket: 'bottom'`, `defaultBallHolder: 'o3'`. o1 receives inbound, o2 at mid-court, o4/o5 in offensive half. Positions both offense and defense. |
 | `one-two-one-one-press` | 1-2-1-1 Press | Full only | Inbounder o4 at `y = -0.03` (OOB), `attackBasket: 'bottom'`, `defaultBallHolder: 'o4'`. Positions both offense and defense. |
 
 > `FormationPreset.courtOnly?: 'half' | 'full'` — if set, only shown for that court type.
@@ -200,6 +201,7 @@ interface PlaySet {
 - Name the play
 - Choose court type: Half / Full
 - Choose offense (1–5) + defense (0–5) count
+- **"← Back" button** on the info step navigates to home (`/`)
 
 ### Phase 2 — Starting Formation ✅
 - Pick formation (filtered by court type) for offense and/or defense
@@ -226,11 +228,12 @@ interface PlaySet {
 - **Step label** (`optionText`): optional badge text per action; inline edit on card
 
 ### Phase 5 — Player Drag in Editor ✅
-- **Step 0 or player has no actions**: drag updates `initialPositions`
-- **Step > 0, player has recorded actions, no action in progress**: drag auto-inserts:
+- **Step 0 or no actions on court yet**: drag updates `initialPositions`
+- **Step > 0 and at least 1 action exists on court, no action in progress**: drag auto-inserts:
   - Ball holder → `dribble` (with waypoints if path was drawn)
   - Other offense → `cut` (with waypoints)
   - Defense → `defense-move`
+- **Minimum drag distance**: 50px — drags shorter than 50px are ignored (no action created, player snaps back)
 - **Action creation in progress**: drag sets a `positionOverride` (visual only, not saved)
 - `positionOverrides` cleared on every `activeStep` change
 - Past arrows are immutable — only future actions use the dragged position
@@ -249,10 +252,21 @@ interface PlaySet {
 - Auto-stops at last action
 
 ### Phase 8 — Export ✅
-- Export button in PlaybackControls → opens `ExportModal`
+- Export button in PlaybackControls (orange, next to Save) → opens `ExportModal`
 - PNG: `stage.toDataURL()` snapshot of current view
 - GIF: frame capture via gif.js, renders all steps
 - Video: MediaRecorder captures canvas during RAF playback
+
+### Phase 10 — Save System ✅
+- **Explicit Save**: play is only committed to `savedSets` when user clicks Save (requires ≥ 1 action)
+- **Save button**: in PlaybackControls bar, orange when unsaved changes exist, grey "Saved" when up to date
+- **Unsaved state tracking**: `savedActionCount` tracks action count at last explicit save; `isDirty = actions.length !== savedActionCount`
+- **Snapshot ref**: `savedSnapshotRef` stores the last explicitly saved version of the set; initialized on set load via `useEffect`, updated on every Save
+- **Confirmation dialog** on "← Home" when `isDirty && actions.length > 0`:
+  - "Save & Exit" → saves + navigates
+  - "Don't Save" → restores `savedSets` AND `activeSet` to snapshot, then navigates
+  - "Cancel" → stays in editor
+- **Empty set cleanup**: navigating home with 0 actions deletes the set from `savedSets`
 
 ### Phase 9 — Bench & Markings ✅
 - **Bench column**: players not on court appear as draggable dashed circles; drag onto canvas to add
@@ -328,27 +342,27 @@ src/
       HalfCourt.tsx           ✅  1.4× scaled court lines
       FullCourt.tsx           ✅  two half-courts stacked, attackBasket rotation
     players/
-      PlayerNode.tsx          ✅  onDragStart/onDragMove/onDragEnd + landscape rotation fix
+      PlayerNode.tsx          ✅  onDragStart/onDragMove/onDragEnd + landscape rotation fix; dragBoundFunc (scale-aware logical bounds); explicit position reset in onDragEnd to prevent stale-state OOB disappear
     actions/
       ActionArrow.tsx         ✅  9 visual styles; double-team arrows go to trap positions; basketY prop
       ActionOverlay.tsx       ✅  renders arrows up to activeStep; passes attackBasket → basketY
       ActionPreview.tsx       ✅  ghost cursor preview; dribble/cut waypoint paths
-      ActionPanel.tsx         ✅  right panel: action list + Clear All
+      ActionPanel.tsx         ✅  right panel: action list + Clear All; auto-scrolls to bottom on new action
       ActionCard.tsx          ✅  delete confirm, player description, optionText badge
       OptionBadge.tsx         ✅  inline add/edit for step label
     toolbar/
-      ActionToolbar.tsx       ✅  ATK/DEF tabs; 7 offense tools + 3 defense tools; markings toggle
+      ActionToolbar.tsx       ✅  ATK/DEF tabs; 6 offense tools + 3 defense tools; `hasDefenders` prop disables DEF tools when no defenders on court; markings toggle
     setup/
       PlayerSetup.tsx         ✅
       FormationPicker.tsx     ✅  filtered by courtType
     playback/
-      PlaybackControls.tsx    ✅  ◀ ▶ play/pause, speed, Undo, Export button
+      PlaybackControls.tsx    ✅  ◀ ▶ play/pause, speed, Undo, Save + Export buttons (both orange)
     export/
       ExportModal.tsx         ✅  PNG / GIF / Video export
   pages/
     HomePage.tsx              ✅
     EditorPage.tsx            ✅  full editor; positionOverrides, player-drag auto-action, ATK bar
-    SetupPage.tsx             ✅  Flip button in formation + ball steps (full court only)
+    SetupPage.tsx             ✅  Flip button in formation + ball steps (full court only); "← Back" to home on info step
   App.tsx                     ✅
   main.tsx                    ✅
 setplay.sh                    ✅  Docker/npm start+stop
@@ -383,6 +397,13 @@ App: `http://localhost:5173`
 | Post-plan | OOB player support (COURT_PADDING_Y=70, dashed ring, inbounder positions) | ✅ |
 | Post-plan | 1-2-1-1 Press formation with OOB inbounder + auto ball assignment | ✅ |
 | Post-plan | Ball-force rework: angle+targetId model, bar visual instead of curved arrow | ✅ |
+| Post-plan | 1-3-1 Press offense positions (inbounder o3 OOB, press-break alignment) | ✅ |
+| Post-plan | Explicit Save system: Save button, unsaved tracking, confirmation dialog, snapshot restore | ✅ |
+| Post-plan | Player drag auto-action: triggers only after ≥1 court action; 50px minimum drag threshold | ✅ |
+| Post-plan | ActionPanel auto-scroll to bottom on new action | ✅ |
+| Post-plan | OOB drag fix: `dragBoundFunc` + explicit Konva position reset; prevents player disappearing on repeated OOB drags | ✅ |
+| Post-plan | Setup info step: "← Back" navigation to home | ✅ |
+| Post-plan | DEF toolbar disabled (`hasDefenders`) when no defenders on court | ✅ |
 
 ---
 
@@ -391,8 +412,11 @@ App: `http://localhost:5173`
 ### Past arrows are immutable
 When a player is dragged in the editor after step 0, past arrows must not move. Solution: `positionOverrides` is local React state (not in Zustand) — used only for rendering and `ActionPreview`. The state engine (used for arrow computation) always reads from `initialPositions` + applied actions. Overrides are cleared on every `activeStep` change.
 
-### Player drag at step > 0 inserts an action
-If the dragged player has any recorded actions, the drag auto-creates a move action (dribble/cut/defense-move). If the player has zero actions, `initialPositions` is updated instead (safe for repositioning before any play is recorded). The drag path is captured as waypoints (15px sampling).
+### Player drag auto-action
+If at least one action exists anywhere on the court AND the drag distance exceeds 50px, the drag auto-creates a move action (dribble/cut/defense-move). If no actions exist yet OR the drag is too short, `initialPositions` is updated instead. The drag path is captured as waypoints (15px sampling). The 50px threshold prevents accidental micro-drags (e.g. when adjusting a double-team or screen position) from creating unintended actions.
+
+### Explicit Save
+The store's `addAction` / `updateAction` etc. auto-persist changes to localStorage (crash recovery), but the official `savedSets` list (shown on home) requires an explicit Save. `savedSnapshotRef` holds the last saved version; "Don't Save" in the exit dialog restores both `savedSets` and `activeSet` to that snapshot, ensuring the user truly discards changes.
 
 ### basketY threading
 `computeStateAtStep`, `applyAction`, and `computeDoubleTeamPositions` all accept an optional `basketY` parameter. This is computed once in `EditorPage` from `courtType` + `attackBasket` and threaded to all callers including `ActionOverlay` and `ActionArrow`.

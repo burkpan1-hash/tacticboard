@@ -5,7 +5,6 @@ import { wavyPoints, wavyAlongPath, perpendicularBar } from '../../utils/arrowGe
 import { ACTION_COLORS } from '../../utils/actionColors'
 import { computeDoubleTeamPositions } from '../../utils/stateEngine'
 
-const PLAYER_RADIUS = Math.round(20 * COURT_SCALE)
 const ARROW_GAP = Math.round(6 * COURT_SCALE)
 const SCREEN_GAP = Math.round(3 * COURT_SCALE)
 
@@ -43,6 +42,7 @@ interface Props {
 
 export default function ActionArrow({ action, positions, courtType, basketY }: Props) {
   const cH = courtType === 'half' ? HALF_COURT_H : FULL_COURT_H
+  const PLAYER_RADIUS = Math.round((courtType === 'half' ? 17 : 20) * COURT_SCALE)
   const color = ACTION_COLORS[action.type]
 
   function px(id: string) { return denormalize(positions[id].x, positions[id].y, HALF_COURT_W, cH) }
@@ -147,6 +147,25 @@ export default function ActionArrow({ action, positions, courtType, basketY }: P
     case 'defense-move': {
       const from = px(action.playerId)
       const to   = pxPos(action.toPosition)
+
+      if (action.waypoints && action.waypoints.length > 1) {
+        const allPx = [from, ...action.waypoints.map(pxPos), to]
+        const shortened = shortenPathEnd(allPx, PLAYER_RADIUS + ARROW_GAP)
+        if (shortened.length < 2) return null
+        const pts = shortened.flatMap(p => [p.x, p.y])
+        const n = pts.length
+        return (
+          <Group>
+            <Line points={pts} stroke={color} strokeWidth={2.5} lineJoin="round" />
+            <Arrow
+              points={[pts[n - 4], pts[n - 3], pts[n - 2], pts[n - 1]]}
+              stroke={color} fill={color}
+              strokeWidth={2.5} pointerLength={10} pointerWidth={8}
+            />
+          </Group>
+        )
+      }
+
       const end  = shortenEnd(from.x, from.y, to.x, to.y, PLAYER_RADIUS + ARROW_GAP)
       return (
         <Arrow
@@ -178,25 +197,23 @@ export default function ActionArrow({ action, positions, courtType, basketY }: P
     case 'ball-force': {
       const defFrom = px(action.defenderId)
       const target = positions[action.targetId]
-      if (!target) return null
-      const TIP_DIST      = 0.06
-      const DEFENDER_DIST = 0.11
+      if (!defFrom || !target) return null
+      const TIP_PX      = 42
+      const DEFENDER_PX = 77
       const cx = Math.cos(action.angle), cy = Math.sin(action.angle)
-      const tipNorm = {
-        x: Math.max(0, Math.min(1, target.x + cx * TIP_DIST)),
-        y: Math.max(0, Math.min(1, target.y + cy * TIP_DIST)),
-      }
-      const defNewNorm = {
-        x: Math.max(0, Math.min(1, target.x + cx * DEFENDER_DIST)),
-        y: Math.max(0, Math.min(1, target.y + cy * DEFENDER_DIST)),
-      }
-      const tipPx    = pxPos(tipNorm)
-      const defNewPx = pxPos(defNewNorm)
       const targetPx = pxPos(target)
-      const [bx1, by1, bx2, by2] = perpendicularBar(tipPx.x, tipPx.y, targetPx.x, targetPx.y, 22)
+      const tipPx    = { x: targetPx.x + cx * TIP_PX,      y: targetPx.y + cy * TIP_PX }
+      const defNewPx = { x: targetPx.x + cx * DEFENDER_PX, y: targetPx.y + cy * DEFENDER_PX }
+      const ldx = defNewPx.x - defFrom.x, ldy = defNewPx.y - defFrom.y
+      const llen = Math.sqrt(ldx * ldx + ldy * ldy) || 1
+      const bow = Math.min(llen * 0.16, 16)
+      const midX = (defFrom.x + defNewPx.x) / 2 - (ldy / llen) * bow
+      const midY = (defFrom.y + defNewPx.y) / 2 + (ldx / llen) * bow
+      const barHalf = Math.max(12, Math.min(28, llen * 0.28))
+      const [bx1, by1, bx2, by2] = perpendicularBar(tipPx.x, tipPx.y, targetPx.x, targetPx.y, barHalf)
       return (
         <Group>
-          <Line points={[defFrom.x, defFrom.y, defNewPx.x, defNewPx.y]} stroke={color} strokeWidth={2.5} />
+          <Line points={[defFrom.x, defFrom.y, midX, midY, defNewPx.x, defNewPx.y]} tension={0.5} stroke={color} strokeWidth={2.5} />
           <Line points={[bx1, by1, bx2, by2]} stroke={color} strokeWidth={6} strokeLinecap="round" />
         </Group>
       )
@@ -204,9 +221,10 @@ export default function ActionArrow({ action, positions, courtType, basketY }: P
 
     case 'shot': {
       const from = px(action.shooterId)
-      const cx = HALF_COURT.basket.x, cy = HALF_COURT.basket.y
+      const bx = HALF_COURT.basket.x
+      const by = basketY !== undefined ? basketY * cH : HALF_COURT.basket.y
       const basketR = Math.round(15 * COURT_SCALE)
-      const end = shortenEnd(from.x, from.y, cx, cy, basketR)
+      const end = shortenEnd(from.x, from.y, bx, by, basketR)
       return (
         <Group>
           <Arrow
@@ -215,9 +233,9 @@ export default function ActionArrow({ action, positions, courtType, basketY }: P
             strokeWidth={2.5} dash={[10, 6]}
             pointerLength={10} pointerWidth={8}
           />
-          <Circle x={cx} y={cy} radius={9} stroke={color} strokeWidth={2} fill="transparent" />
-          <Line points={[cx - 13, cy, cx + 13, cy]} stroke={color} strokeWidth={2} />
-          <Line points={[cx, cy - 13, cx, cy + 13]} stroke={color} strokeWidth={2} />
+          <Circle x={bx} y={by} radius={9} stroke={color} strokeWidth={2} fill="transparent" />
+          <Line points={[bx - 13, by, bx + 13, by]} stroke={color} strokeWidth={2} />
+          <Line points={[bx, by - 13, bx, by + 13]} stroke={color} strokeWidth={2} />
         </Group>
       )
     }
