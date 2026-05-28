@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { usePlayStore } from '../store/usePlayStore'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
+import { authClient } from '../lib/authClient'
 
 export default function HomePage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { data: session } = authClient.useSession()
   const { savedSets, deleteSet, saveSet, loadSetsFromStorage } = usePlayStore()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
@@ -30,6 +32,10 @@ export default function HomePage() {
     setEditingId(null)
   }
 
+  async function handleLogout() {
+    await authClient.signOut()
+  }
+
   return (
     <div className="min-h-screen p-8 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-8">
@@ -38,6 +44,29 @@ export default function HomePage() {
         </h1>
         <div className="flex items-center gap-3">
           <LanguageSwitcher />
+          {session ? (
+            <>
+              <button
+                onClick={() => navigate('/my-plays')}
+                className="bg-slate-700 hover:bg-slate-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm"
+              >
+                Play'lerim
+              </button>
+              <button
+                onClick={handleLogout}
+                className="text-slate-400 hover:text-slate-300 text-sm px-2 py-2 transition-colors"
+              >
+                Çıkış
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => navigate('/login')}
+              className="bg-slate-700 hover:bg-slate-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm"
+            >
+              Giriş Yap
+            </button>
+          )}
           <button
             onClick={() => navigate('/setup')}
             className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-6 py-2 rounded-lg transition-colors"
