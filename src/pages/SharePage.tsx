@@ -173,7 +173,7 @@ export default function SharePage() {
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-slate-900">
-        <div className="text-slate-400">Yükleniyor...</div>
+        <div className="text-slate-400">{t('common.loading')}</div>
       </div>
     )
   }
@@ -181,9 +181,9 @@ export default function SharePage() {
   if (notFound) {
     return (
       <div className="h-screen flex flex-col items-center justify-center gap-4 bg-slate-900">
-        <p className="text-slate-400 text-lg">Play bulunamadı.</p>
+        <p className="text-slate-400 text-lg">{t('share.notFound')}</p>
         <button onClick={() => navigate('/')} className="bg-orange-500 hover:bg-orange-400 text-white px-6 py-2 rounded-lg">
-          Ana Sayfa
+          {t('share.homeButton')}
         </button>
       </div>
     )

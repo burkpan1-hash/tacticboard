@@ -47,4 +47,5 @@ export interface PlaySet {
   initialBall: BallState
   actions: Action[]
   markings?: Record<string, string>  // defenderId → offensePlayerId
+  cloudPlayId?: string  // server-side play id once persisted — drives PUT-vs-POST in handleSave
 }

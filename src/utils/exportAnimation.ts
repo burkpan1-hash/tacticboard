@@ -212,7 +212,7 @@ export function exportGif(
           if (cancelled) return
           const gif = buildAnimatedGif(frames, scale)
           onEncodeProgress(1)
-          onDone(new Blob([gif], { type: 'image/gif' }))
+          onDone(new Blob([gif as BlobPart], { type: 'image/gif' }))
         }, 16)
         return
       }

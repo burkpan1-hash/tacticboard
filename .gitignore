@@ -4,6 +4,14 @@ dist/
 .superpowers/
 test-*.png
 ballforce-test.png
+# Playwright/manual test screenshots — local-only
+*-test.png
+hc-*.png
+player-*.png
+cloud-loaded-play.png
+save-button-*.png
+share-button-*.png
+tr-toolbar-*.png
 
 # Dev server runtime files
 *.pid

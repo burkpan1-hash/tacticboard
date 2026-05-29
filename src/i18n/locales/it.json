@@ -19,8 +19,13 @@
     "newPlayButton": "+ Nuovo Schema",
     "emptyState": "Nessuno schema ancora. Crea il primo!",
     "renameTooltip": "Clic per rinominare",
+    "renameTitleTooltip": "Clic per modificare il nome",
     "openButton": "Apri",
-    "deleteConfirmation": "Sicuro?"
+    "deleteConfirmation": "Sicuro?",
+    "shareButton": "Condividi",
+    "copiedButton": "Copiato!",
+    "loginButton": "Accedi",
+    "logoutButton": "Esci"
   },
   "setup": {
     "newPlayTitle": "Nuovo Schema",
@@ -87,8 +92,13 @@
   "playback": {
     "saveButton": "Salva",
     "savedButton": "Salvato",
+    "savingButton": "Salvataggio…",
+    "saveErrorButton": "✕ Errore — Riprova",
     "exportButton": "⬇ Esporta",
     "exportTooltip": "Esporta video",
+    "shareButton": "🔗 Condividi",
+    "shareCopiedButton": "✓ Link Copiato!",
+    "shareTooltip": "Copia link pubblico da condividere",
     "undoButton": "↩ Annulla",
     "undoTooltip": "Annulla (Ctrl+Z)",
     "goToStartTooltip": "Vai all'inizio",
@@ -114,15 +124,15 @@
     "downloadSuccess": "Download avviato!"
   },
   "action": {
-    "pass": "Passaggio",
-    "dribble": "Palleggio",
-    "cut": "Taglio",
-    "screen": "Blocco",
-    "shot": "Tiro",
-    "handoff": "Scambio",
-    "defenseMove": "Mossa",
-    "doubleTeam": "Raddoppio",
-    "ballForce": "Pressione"
+    "pass": "Pass",
+    "dribble": "Dribble",
+    "cut": "Cut",
+    "screen": "Screen",
+    "shot": "Shot",
+    "handoff": "Handoff",
+    "defenseMove": "Move",
+    "doubleTeam": "Double",
+    "ballForce": "Force"
   },
   "formation": {
     "fiveOut": "5 Esterni",
@@ -142,5 +152,9 @@
     "custom": "Personalizzato",
     "offenseHeader": "Formazione Offensiva — o posiziona manualmente",
     "defenseHeader": "Formazione Difensiva — o posiziona manualmente"
+  },
+  "share": {
+    "notFound": "Schema non trovato.",
+    "homeButton": "Home"
   }
 }

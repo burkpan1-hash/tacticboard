@@ -19,8 +19,13 @@
     "newPlayButton": "+ Yeni Oyun",
     "emptyState": "Henüz oyun yok. İlkini oluştur!",
     "renameTooltip": "Yeniden adlandırmak için tıkla",
+    "renameTitleTooltip": "İsmi düzenlemek için tıkla",
     "openButton": "Aç",
-    "deleteConfirmation": "Emin misin?"
+    "deleteConfirmation": "Emin misin?",
+    "shareButton": "Paylaş",
+    "copiedButton": "Kopyalandı!",
+    "loginButton": "Giriş Yap",
+    "logoutButton": "Çıkış"
   },
   "setup": {
     "newPlayTitle": "Yeni Oyun",
@@ -87,8 +92,13 @@
   "playback": {
     "saveButton": "Kaydet",
     "savedButton": "Kaydedildi",
+    "savingButton": "Kaydediliyor…",
+    "saveErrorButton": "✕ Hata — Tekrar Dene",
     "exportButton": "⬇ Dışa Aktar",
     "exportTooltip": "Videoyu dışa aktar",
+    "shareButton": "🔗 Paylaş",
+    "shareCopiedButton": "✓ Link Kopyalandı!",
+    "shareTooltip": "Herkese açık paylaşım linki kopyala",
     "undoButton": "↩ Geri Al",
     "undoTooltip": "Geri Al (Ctrl+Z)",
     "goToStartTooltip": "Başa git",
@@ -114,15 +124,15 @@
     "downloadSuccess": "İndirme başladı!"
   },
   "action": {
-    "pass": "Pas",
-    "dribble": "Dribling",
-    "cut": "Sıyrılma",
-    "screen": "Blok",
-    "shot": "Şut",
-    "handoff": "El Değiştirme",
-    "defenseMove": "Hareket",
-    "doubleTeam": "Çifte",
-    "ballForce": "Zorla"
+    "pass": "Pass",
+    "dribble": "Dribble",
+    "cut": "Cut",
+    "screen": "Screen",
+    "shot": "Shot",
+    "handoff": "Handoff",
+    "defenseMove": "Move",
+    "doubleTeam": "Double",
+    "ballForce": "Force"
   },
   "formation": {
     "fiveOut": "5-Dışarı",
@@ -142,5 +152,9 @@
     "custom": "Özel",
     "offenseHeader": "Hücum Formasyonu — veya manuel yerleştirin",
     "defenseHeader": "Savunma Formasyonu — veya manuel yerleştirin"
+  },
+  "share": {
+    "notFound": "Oyun bulunamadı.",
+    "homeButton": "Ana Sayfa"
   }
 }

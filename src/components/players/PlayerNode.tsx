@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import { Circle, Text, Group } from 'react-konva'
 import type Konva from 'konva'
 import type { Player, NormalizedPosition } from '../../models/types'
-import { denormalize, HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_SCALE, COURT_PADDING_Y } from '../../utils/courtCoords'
+import { denormalize, HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_SCALE, COURT_PADDING_X, COURT_PADDING_Y, HALF_COURT_PADDING_TOP } from '../../utils/courtCoords'
 
 interface Props {
   player: Player
@@ -30,11 +30,17 @@ export default function PlayerNode({ player, position, courtType, landscape, has
   const fill = player.team === 'offense' ? OFFENSE_COLOR : DEFENSE_COLOR
   const groupRef = useRef<Konva.Group | null>(null)
 
+  // Allow the player to roam the entire faded OOB padding zone around the court.
+  // Clamp at the outer edge of that zone so dropping in the truly black area beyond the
+  // stage snaps the player back to a reachable position.
   function norm(node: Konva.Node): NormalizedPosition {
-    const maxOobY = COURT_PADDING_Y / canvasH
+    const maxOobX = COURT_PADDING_X / HALF_COURT_W
+    const topPad = courtType === 'half' ? HALF_COURT_PADDING_TOP : COURT_PADDING_Y
+    const maxOobYTop = topPad / canvasH
+    const maxOobYBot = COURT_PADDING_Y / canvasH
     return {
-      x: Math.max(0, Math.min(1, node.x() / HALF_COURT_W)),
-      y: Math.max(-maxOobY, Math.min(1 + maxOobY, node.y() / canvasH)),
+      x: Math.max(-maxOobX, Math.min(1 + maxOobX, node.x() / HALF_COURT_W)),
+      y: Math.max(-maxOobYTop, Math.min(1 + maxOobYBot, node.y() / canvasH)),
     }
   }
 
@@ -42,9 +48,29 @@ export default function PlayerNode({ player, position, courtType, landscape, has
     const stage = groupRef.current?.getStage()
     if (!stage) return pos
     const sw = stage.width(), sh = stage.height()
+    let minX = RADIUS, maxX = sw - RADIUS
+    let minY = RADIUS, maxY = sh - RADIUS
+
+    // Also clamp to the visible clipping ancestor (so half-court players can't be dragged
+    // into the portion of the OOB padding that's hidden behind the editor layout's overflow-hidden).
+    const container = stage.container()
+    const clipper = container.closest('.overflow-hidden') as HTMLElement | null
+    if (clipper) {
+      const canvasRect = container.getBoundingClientRect()
+      const clipRect = clipper.getBoundingClientRect()
+      const visTop    = Math.max(0,  clipRect.top    - canvasRect.top)
+      const visBottom = Math.min(sh, clipRect.bottom - canvasRect.top)
+      const visLeft   = Math.max(0,  clipRect.left   - canvasRect.left)
+      const visRight  = Math.min(sw, clipRect.right  - canvasRect.left)
+      minX = Math.max(minX, visLeft   + RADIUS)
+      maxX = Math.min(maxX, visRight  - RADIUS)
+      minY = Math.max(minY, visTop    + RADIUS)
+      maxY = Math.min(maxY, visBottom - RADIUS)
+    }
+
     return {
-      x: Math.max(RADIUS, Math.min(sw - RADIUS, pos.x)),
-      y: Math.max(RADIUS, Math.min(sh - RADIUS, pos.y)),
+      x: Math.max(minX, Math.min(maxX, pos.x)),
+      y: Math.max(minY, Math.min(maxY, pos.y)),
     }
   }
 
@@ -65,9 +91,6 @@ export default function PlayerNode({ player, position, courtType, landscape, has
       }}
       onClick={() => onClick?.(player.id)}
     >
-      {(position.y < 0 || position.y > 1) && (
-        <Circle radius={RADIUS + 8} stroke="#facc15" strokeWidth={2} dash={[5, 4]} fill="transparent" />
-      )}
       {isSelected && (
         <Circle radius={RADIUS + 5} fill="transparent" stroke="#facc15" strokeWidth={2} />
       )}

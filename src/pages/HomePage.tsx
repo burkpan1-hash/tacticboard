@@ -8,7 +8,7 @@ interface CloudPlay {
   id: string
   title: string
   updatedAt: string
-  data?: { courtType?: string; actions?: unknown[] }
+  data?: { name?: string; courtType?: string; actions?: unknown[] }
 }
 
 export default function HomePage() {
@@ -72,11 +72,15 @@ export default function HomePage() {
     const trimmed = editingTitle.trim()
     setEditingId(null)
     if (!trimmed) return
-    setCloudPlays(prev => prev.map(p => p.id === id ? { ...p, title: trimmed } : p))
+    // Sync data.name with title so reopening the play in the editor sees the new name
+    // (the editor uses data.name as a fallback when title isn't available)
+    const current = cloudPlays.find(p => p.id === id)
+    const nextData = current?.data ? { ...current.data, name: trimmed } : undefined
+    setCloudPlays(prev => prev.map(p => p.id === id ? { ...p, title: trimmed, data: nextData ?? p.data } : p))
     await fetch(`/api/plays/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: trimmed }),
+      body: JSON.stringify({ title: trimmed, ...(nextData ? { data: nextData } : {}) }),
     })
   }
 
@@ -98,14 +102,14 @@ export default function HomePage() {
               onClick={handleLogout}
               className="text-slate-400 hover:text-slate-300 text-sm px-2 py-2 transition-colors"
             >
-              Çıkış
+              {t('home.logoutButton')}
             </button>
           ) : (
             <button
               onClick={() => navigate('/login')}
               className="bg-slate-700 hover:bg-slate-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm"
             >
-              Giriş Yap
+              {t('home.loginButton')}
             </button>
           )}
           <button
@@ -143,7 +147,7 @@ export default function HomePage() {
                   <p
                     className="font-semibold text-white truncate cursor-text hover:text-orange-300 transition-colors"
                     onClick={() => startEditing(p.id, p.title)}
-                    title="İsmi düzenlemek için tıkla"
+                    title={t('home.renameTitleTooltip')}
                   >{p.title}</p>
                 )}
                 <p className="text-sm text-slate-400 mt-1">
@@ -157,7 +161,7 @@ export default function HomePage() {
                   onClick={() => handleShare(p.id)}
                   className="bg-orange-500 hover:bg-orange-400 text-white px-4 py-2 rounded-lg text-sm transition-colors"
                 >
-                  {copiedId === p.id ? 'Kopyalandı!' : 'Paylaş'}
+                  {copiedId === p.id ? t('home.copiedButton') : t('home.shareButton')}
                 </button>
                 <button
                   onClick={() => navigate(`/editor/${p.id}?cloud=1`)}

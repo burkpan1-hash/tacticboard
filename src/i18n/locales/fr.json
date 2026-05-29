@@ -19,8 +19,13 @@
     "newPlayButton": "+ Nouveau Jeu",
     "emptyState": "Aucun jeu encore. Créez le premier !",
     "renameTooltip": "Cliquer pour renommer",
+    "renameTitleTooltip": "Cliquer pour modifier le nom",
     "openButton": "Ouvrir",
-    "deleteConfirmation": "Sûr ?"
+    "deleteConfirmation": "Sûr ?",
+    "shareButton": "Partager",
+    "copiedButton": "Copié !",
+    "loginButton": "Connexion",
+    "logoutButton": "Déconnexion"
   },
   "setup": {
     "newPlayTitle": "Nouveau Jeu",
@@ -87,8 +92,13 @@
   "playback": {
     "saveButton": "Sauvegarder",
     "savedButton": "Sauvegardé",
+    "savingButton": "Sauvegarde…",
+    "saveErrorButton": "✕ Erreur — Réessayer",
     "exportButton": "⬇ Exporter",
     "exportTooltip": "Exporter la vidéo",
+    "shareButton": "🔗 Partager",
+    "shareCopiedButton": "✓ Lien Copié !",
+    "shareTooltip": "Copier un lien de partage public",
     "undoButton": "↩ Annuler",
     "undoTooltip": "Annuler (Ctrl+Z)",
     "goToStartTooltip": "Aller au début",
@@ -114,15 +124,15 @@
     "downloadSuccess": "Téléchargement démarré !"
   },
   "action": {
-    "pass": "Passe",
+    "pass": "Pass",
     "dribble": "Dribble",
-    "cut": "Coupure",
-    "screen": "Écran",
-    "shot": "Tir",
-    "handoff": "Remise",
-    "defenseMove": "Déplacement",
+    "cut": "Cut",
+    "screen": "Screen",
+    "shot": "Shot",
+    "handoff": "Handoff",
+    "defenseMove": "Move",
     "doubleTeam": "Double",
-    "ballForce": "Pression"
+    "ballForce": "Force"
   },
   "formation": {
     "fiveOut": "5 Extérieurs",
@@ -142,5 +152,9 @@
     "custom": "Personnalisé",
     "offenseHeader": "Formation Offensive — ou placez manuellement",
     "defenseHeader": "Formation Défensive — ou placez manuellement"
+  },
+  "share": {
+    "notFound": "Jeu introuvable.",
+    "homeButton": "Accueil"
   }
 }

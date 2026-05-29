@@ -4,7 +4,8 @@ import { ACTION_COLORS } from '../../utils/actionColors'
 
 const ACTION_LABELS: Record<string, string> = {
   pass: 'Pass', dribble: 'Dribble', cut: 'Cut',
-  screen: 'Screen', shot: 'Shot', handoff: 'Handoff', 'defense-move': 'Hareket',
+  screen: 'Screen', shot: 'Shot', handoff: 'Handoff', 'defense-move': 'Move',
+  'double-team': 'Double', 'ball-force': 'Force',
 }
 
 function describeAction(action: Action, players: Player[]): string {
@@ -17,6 +18,8 @@ function describeAction(action: Action, players: Player[]): string {
     case 'shot':         return `#${num(action.shooterId)}`
     case 'handoff':      return `#${num(action.fromId)} → #${num(action.toId)}`
     case 'defense-move': return `#${num(action.playerId)}`
+    case 'double-team':  return `#${num(action.defender1Id)} + #${num(action.defender2Id)} → #${num(action.targetId)}`
+    case 'ball-force':   return `#${num(action.defenderId)} → #${num(action.targetId)}`
   }
 }
 

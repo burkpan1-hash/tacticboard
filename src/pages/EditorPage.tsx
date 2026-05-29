@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type Konva from 'konva'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { nanoid } from 'nanoid'
 import { useTranslation } from 'react-i18next'
 import { Line, Group, Rect, Text, Arrow } from 'react-konva'
@@ -20,6 +20,20 @@ import type { Action, NormalizedPosition, Player, PlaySet, PositionMap } from '.
 import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_PADDING_X, COURT_PADDING_Y, HALF_COURT_PADDING_TOP, HALF_COURT } from '../utils/courtCoords'
 import { ACTION_COLORS, ACTION_LABEL_KEYS } from '../utils/actionColors'
 import { authClient } from '../lib/authClient'
+
+// Stable signature of the user-visible play state — used for dirty tracking.
+// Excludes technical metadata (id, cloudPlayId) that doesn't represent user-authored changes.
+function playSignature(s: PlaySet | null | undefined): string {
+  if (!s) return ''
+  return JSON.stringify({
+    name: s.name,
+    actions: s.actions,
+    initialPositions: s.initialPositions,
+    initialBall: s.initialBall,
+    markings: s.markings,
+    attackBasket: s.attackBasket,
+  })
+}
 
 // Returns the start/end pixel coords of the arrow's direction vector (for label placement)
 function arrowLine(action: Action, positions: PositionMap, cH: number, basketPxY: number): { x1: number; y1: number; x2: number; y2: number } | null {
@@ -82,11 +96,13 @@ export default function EditorPage() {
   const { t } = useTranslation()
   const { setId } = useParams<{ setId: string }>()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const isCloudPlay = searchParams.get('cloud') === '1'
   const {
     savedSets, activeSet, setActiveSet,
     activeStep,
     actionCreation, startActionCreation, setPendingSource, cancelActionCreation,
-    addAction, addPlayerToCourt, removePlayerFromCourt, setInitialBall, updateInitialPosition, updateMarkings, saveSet, deleteSet,
+    addAction, addPlayerToCourt, removePlayerFromCourt, setInitialBall, updateInitialPosition, updateMarkings, saveSet,
     flipAttackBasket,
     isPlaying, setIsPlaying,
   } = usePlayStore()
@@ -102,13 +118,21 @@ export default function EditorPage() {
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState('')
   const nameInputRef = useRef<HTMLInputElement>(null)
-  const [savedActionCount, setSavedActionCount] = useState(activeSet?.actions.length ?? 0)
+  // Signature of the last persisted state — drives isDirty across name, actions, positions,
+  // markings, and attack basket (not just action count).
+  const [savedSignature, setSavedSignature] = useState<string>(playSignature(activeSet))
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   const [saveDialogName, setSaveDialogName] = useState('')
-  const savedSnapshotRef = useRef<PlaySet | null>(null)
   const { data: session } = authClient.useSession()
-  const [cloudSaving, setCloudSaving] = useState(false)
-  const [cloudSaved, setCloudSaved] = useState(false)
+  // Server-side play id once known. Drives create-vs-update branching in handleSave.
+  // Sources, in priority order:
+  //   1. URL flag (/editor/:id?cloud=1) — when arriving from MyPlaysPage
+  //   2. activeSet.cloudPlayId — persisted in localStorage from a previous save
+  //   3. null — fresh play, never persisted
+  const [cloudPlayId, setCloudPlayId] = useState<string | null>(
+    (isCloudPlay && setId) ? setId : (activeSet?.cloudPlayId ?? null)
+  )
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [shareCopied, setShareCopied] = useState(false)
 
   function startNameEdit() {
@@ -117,7 +141,7 @@ export default function EditorPage() {
     setTimeout(() => nameInputRef.current?.select(), 0)
   }
 
-  const isDirty = !!activeSet && activeSet.actions.length !== savedActionCount
+  const isDirty = !!activeSet && playSignature(activeSet) !== savedSignature
 
   async function handleSave() {
     if (!session) {
@@ -126,19 +150,30 @@ export default function EditorPage() {
       return
     }
     if (!activeSet) return
-    setCloudSaving(true)
+    setSaveStatus('saving')
     try {
-      await fetch('/api/plays', {
-        method: 'POST',
+      const url = cloudPlayId ? `/api/plays/${cloudPlayId}` : '/api/plays'
+      const method = cloudPlayId ? 'PUT' : 'POST'
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: activeSet.name, data: activeSet }),
       })
-      savedSnapshotRef.current = activeSet
-      setSavedActionCount(activeSet.actions.length)
-      setCloudSaved(true)
-      setTimeout(() => setCloudSaved(false), 2000)
-    } finally {
-      setCloudSaving(false)
+      if (!res.ok) { setSaveStatus('error'); return }
+      let persisted = activeSet
+      if (method === 'POST') {
+        const saved = await res.json() as { id: string }
+        setCloudPlayId(saved.id)
+        // Persist the cloud id inside the local play so reloads still map to the same DB row
+        persisted = { ...activeSet, cloudPlayId: saved.id }
+        saveSet(persisted)
+        setActiveSet(persisted)
+      }
+      setSavedSignature(playSignature(persisted))
+      setSaveStatus('saved')
+      setTimeout(() => setSaveStatus('idle'), 2000)
+    } catch {
+      setSaveStatus('error')
     }
   }
 
@@ -160,7 +195,8 @@ export default function EditorPage() {
 
   function handleNavigateHome() {
     cancelActionCreation()
-    if (!activeSet || activeSet.actions.length === 0) { navigate('/'); return }
+    // No actions or already saved (not dirty) → skip the save-before-leaving dialog
+    if (!activeSet || activeSet.actions.length === 0 || !isDirty) { navigate('/'); return }
     setSaveDialogName(activeSet.name)
     setSaveDialogOpen(true)
   }
@@ -174,11 +210,19 @@ export default function EditorPage() {
       return
     }
     try {
-      await fetch('/api/plays', {
-        method: 'POST',
+      const url = cloudPlayId ? `/api/plays/${cloudPlayId}` : '/api/plays'
+      const method = cloudPlayId ? 'PUT' : 'POST'
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: updated.name, data: updated }),
       })
+      // If this was a first-time save, persist the new cloud id locally so reopening this
+      // local set finds the same DB row instead of creating yet another duplicate.
+      if (res.ok && method === 'POST') {
+        const saved = await res.json() as { id: string }
+        saveSet({ ...updated, cloudPlayId: saved.id })
+      }
     } finally {
       setSaveDialogOpen(false)
       navigate('/')
@@ -217,6 +261,9 @@ export default function EditorPage() {
   const [benchHoverPlayer, setBenchHoverPlayer] = useState<Player | null>(null)
   const [isDraggingBall, setIsDraggingBall] = useState(false)
   const [ballDragHoverId, setBallDragHoverId] = useState<string | null>(null)
+  // Tracks which cloud id we've already attempted to fetch — prevents re-fetch loop since the
+  // loaded play's local id won't match the URL's cloud id (so activeSet?.id === setId stays false).
+  const fetchedCloudIdRef = useRef<string | null>(null)
 
   const cH = activeSet?.courtType === 'half' ? HALF_COURT_H : FULL_COURT_H
   const atkLeft = activeSet?.courtType === 'full' ? (activeSet.attackBasket ?? 'top') === 'top' : false
@@ -227,17 +274,42 @@ export default function EditorPage() {
 
 
   useEffect(() => {
+    // Cloud-loaded play: fetch from server (URL's setId is the cloud id, not the local set id)
+    if (isCloudPlay && setId) {
+      if (activeSet?.cloudPlayId === setId) return
+      if (fetchedCloudIdRef.current === setId) return
+      fetchedCloudIdRef.current = setId
+      fetch(`/api/plays/${setId}`, { credentials: 'include' })
+        .then(r => r.ok ? r.json() : null)
+        .then(play => {
+          if (!play?.data) return
+          // play.title is the authoritative name (HomePage rename PUTs title only, not data.name).
+          // Carry cloudPlayId so subsequent saves PUT instead of POST.
+          setActiveSet({ ...play.data, name: play.title, cloudPlayId: play.id })
+        })
+      return
+    }
+
     if (activeSet?.id === setId) return
     const found = savedSets.find(s => s.id === setId)
     if (found) setActiveSet(found)
     else usePlayStore.getState().loadSetsFromStorage()
-  }, [setId, savedSets, setActiveSet, activeSet])
+  }, [setId, savedSets, setActiveSet, activeSet, isCloudPlay])
 
+  // Snap the saved-signature baseline whenever a different play loads (so an existing cloud
+  // play starts in a clean !isDirty state instead of erroneously dirty).
   useEffect(() => {
-    if (activeSet && savedSnapshotRef.current?.id !== activeSet.id) {
-      savedSnapshotRef.current = activeSet
-    }
+    if (activeSet) setSavedSignature(playSignature(activeSet))
   }, [activeSet?.id])
+
+  // Resync cloudPlayId when navigating between plays (e.g. /editor/A → /editor/B?cloud=1)
+  // or when the loaded play has a persisted cloudPlayId from a prior save.
+  useEffect(() => {
+    if (isCloudPlay && setId) setCloudPlayId(setId)
+    else if (activeSet?.cloudPlayId) setCloudPlayId(activeSet.cloudPlayId)
+    else setCloudPlayId(null)
+    setSaveStatus('idle')
+  }, [setId, isCloudPlay, activeSet?.id, activeSet?.cloudPlayId])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -397,6 +469,7 @@ export default function EditorPage() {
   }
 
   function handleToggleMarkings() {
+    if (!activeSet) return
     if (markingsEnabled) {
       setMarkingsEnabled(false)
     } else {
@@ -416,6 +489,7 @@ export default function EditorPage() {
   }
 
   function handleCourtDrop(e: React.DragEvent<HTMLDivElement>) {
+    if (!activeSet) return
     e.preventDefault()
     const pid = e.dataTransfer.getData('benchPlayerId')
     const isBall = e.dataTransfer.getData('benchBall') === 'true'
@@ -451,6 +525,7 @@ export default function EditorPage() {
   }
 
   function normFromEvent(e: Konva.KonvaEventObject<MouseEvent>): NormalizedPosition | null {
+    if (!activeSet) return null
     const pos = e.target.getStage()?.getPointerPosition()
     if (!pos) return null
     if (activeSet.courtType === 'full') {
@@ -611,6 +686,7 @@ export default function EditorPage() {
   }
 
   function handlePlayerClick(playerId: string) {
+    if (!activeSet) return
     const { type, pendingSourceId } = actionCreation
     if (!type) {
       const ballOnCourt = activeSet?.players.some(p => p.id === currentState.ball.holderId)
@@ -732,12 +808,6 @@ export default function EditorPage() {
           <span className="text-slate-400 text-sm">
             {activeSet.courtType === 'half' ? t('common.halfCourt') : t('common.fullCourt')}
           </span>
-          <button
-            onClick={handleCloudShare}
-            className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-1.5 rounded-lg text-sm transition-colors"
-          >
-            {shareCopied ? 'Link Kopyalandı!' : 'Paylaş'}
-          </button>
           <LanguageSwitcher />
         </div>
       </div>
@@ -1158,7 +1228,10 @@ export default function EditorPage() {
       <PlaybackControls
         onExport={() => setShowExport(true)}
         onSave={handleSave}
-        canSave={activeSet.actions.length > 0}
+        canSave={activeSet.actions.length > 0 && isDirty}
+        saveStatus={saveStatus}
+        onShare={handleCloudShare}
+        shareCopied={shareCopied}
       />
 
       {saveDialogOpen && (
@@ -1173,7 +1246,7 @@ export default function EditorPage() {
               <input
                 value={saveDialogName}
                 onChange={(e) => setSaveDialogName(e.target.value)}
-                placeholder="Untitled Play"
+                placeholder={t('common.untitledPlay')}
                 className="w-full bg-slate-700/80 text-white font-semibold rounded-lg px-3 py-2.5 outline-none focus:ring-2 focus:ring-orange-500 placeholder-slate-500 border border-slate-600 focus:border-orange-500"
               />
             </div>

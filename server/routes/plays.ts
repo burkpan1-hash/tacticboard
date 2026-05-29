@@ -58,9 +58,13 @@ router.put('/:id', async (c) => {
   const user = c.get('user')
   const id = c.req.param('id')
   const body = await c.req.json<{ title?: string; data?: PlaySet }>()
+  // Only set fields the caller provided — avoids wiping `data` on a title-only PATCH.
+  const patch: { title?: string; data?: PlaySet; updatedAt: Date } = { updatedAt: new Date() }
+  if (body.title !== undefined) patch.title = body.title
+  if (body.data !== undefined)  patch.data  = body.data
   const [play] = await db
     .update(plays)
-    .set({ title: body.title, data: body.data, updatedAt: new Date() })
+    .set(patch)
     .where(and(eq(plays.id, id), eq(plays.userId, user.id)))
     .returning()
   if (!play) return c.json({ error: 'Not found' }, 404)

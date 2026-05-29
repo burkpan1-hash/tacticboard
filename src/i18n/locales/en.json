@@ -19,8 +19,13 @@
     "newPlayButton": "+ New Play",
     "emptyState": "No plays yet. Create your first!",
     "renameTooltip": "Click to rename",
+    "renameTitleTooltip": "Click to edit name",
     "openButton": "Open",
-    "deleteConfirmation": "Sure?"
+    "deleteConfirmation": "Sure?",
+    "shareButton": "Share",
+    "copiedButton": "Copied!",
+    "loginButton": "Log In",
+    "logoutButton": "Log Out"
   },
   "setup": {
     "newPlayTitle": "New Play",
@@ -87,8 +92,13 @@
   "playback": {
     "saveButton": "Save",
     "savedButton": "Saved",
+    "savingButton": "Saving…",
+    "saveErrorButton": "✕ Error — Retry",
     "exportButton": "⬇ Export",
     "exportTooltip": "Export video",
+    "shareButton": "🔗 Share",
+    "shareCopiedButton": "✓ Link Copied!",
+    "shareTooltip": "Copy a public share link",
     "undoButton": "↩ Undo",
     "undoTooltip": "Undo (Ctrl+Z)",
     "goToStartTooltip": "Go to start",
@@ -142,5 +152,9 @@
     "custom": "Custom",
     "offenseHeader": "Offense Formation — or place manually",
     "defenseHeader": "Defense Formation — or place manually"
+  },
+  "share": {
+    "notFound": "Play not found.",
+    "homeButton": "Home"
   }
 }

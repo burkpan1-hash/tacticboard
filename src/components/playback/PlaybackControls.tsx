@@ -1,13 +1,18 @@
 import { useTranslation } from 'react-i18next'
 import { usePlayStore } from '../../store/usePlayStore'
 
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
+
 interface Props {
   onExport?: () => void
   onSave?: () => void
   canSave?: boolean
+  saveStatus?: SaveStatus
+  onShare?: () => void
+  shareCopied?: boolean
 }
 
-export default function PlaybackControls({ onExport, onSave, canSave }: Props) {
+export default function PlaybackControls({ onExport, onSave, canSave, saveStatus = 'idle', onShare, shareCopied = false }: Props) {
   const { t } = useTranslation()
   const {
     activeSet, activeStep, setActiveStep, undoLastAction,
@@ -82,12 +87,35 @@ export default function PlaybackControls({ onExport, onSave, canSave }: Props) {
         ))}
       </div>
 
-      {onSave && (
+      {onSave && (() => {
+        const label =
+          saveStatus === 'saving' ? t('playback.savingButton') :
+          saveStatus === 'saved'  ? `✓ ${t('playback.savedButton')}` :
+          saveStatus === 'error'  ? t('playback.saveErrorButton') :
+          t('playback.saveButton')
+        const colorClass =
+          saveStatus === 'saved' ? 'enabled:bg-emerald-500 enabled:hover:bg-emerald-400 enabled:text-white' :
+          saveStatus === 'error' ? 'enabled:bg-red-500 enabled:hover:bg-red-400 enabled:text-white' :
+          'enabled:bg-orange-500 enabled:hover:bg-orange-400 enabled:text-white'
+        // Keep button enabled while "saved" so green stays visible during the 2s confirmation.
+        // Once status returns to idle, fall back to the canSave (isDirty) gate.
+        const disabled = saveStatus === 'saving' || (saveStatus !== 'saved' && !canSave)
+        return (
+          <button
+            onClick={onSave}
+            disabled={disabled}
+            className={`px-3 py-1 rounded text-sm font-medium transition-colors min-w-[80px] disabled:opacity-50 disabled:cursor-not-allowed ${colorClass}`}
+          >{label}</button>
+        )
+      })()}
+
+      {onShare && (
         <button
-          onClick={onSave}
-          disabled={!canSave}
-          className="px-3 py-1 rounded text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed enabled:bg-orange-500 enabled:hover:bg-orange-400 enabled:text-white"
-        >{canSave ? t('playback.saveButton') : t('playback.savedButton')}</button>
+          onClick={onShare}
+          disabled={total === 0}
+          className="px-3 py-1 rounded bg-orange-500 hover:bg-orange-400 text-white text-sm disabled:opacity-30 transition-colors"
+          title={t('playback.shareTooltip')}
+        >{shareCopied ? t('playback.shareCopiedButton') : t('playback.shareButton')}</button>
       )}
 
       {onExport && (

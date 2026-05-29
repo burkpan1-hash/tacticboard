@@ -19,8 +19,13 @@
     "newPlayButton": "+ Nueva Jugada",
     "emptyState": "Sin jugadas aún. ¡Crea la primera!",
     "renameTooltip": "Clic para renombrar",
+    "renameTitleTooltip": "Clic para editar nombre",
     "openButton": "Abrir",
-    "deleteConfirmation": "¿Seguro?"
+    "deleteConfirmation": "¿Seguro?",
+    "shareButton": "Compartir",
+    "copiedButton": "¡Copiado!",
+    "loginButton": "Iniciar Sesión",
+    "logoutButton": "Cerrar Sesión"
   },
   "setup": {
     "newPlayTitle": "Nueva Jugada",
@@ -87,8 +92,13 @@
   "playback": {
     "saveButton": "Guardar",
     "savedButton": "Guardado",
+    "savingButton": "Guardando…",
+    "saveErrorButton": "✕ Error — Reintentar",
     "exportButton": "⬇ Exportar",
     "exportTooltip": "Exportar video",
+    "shareButton": "🔗 Compartir",
+    "shareCopiedButton": "✓ ¡Enlace Copiado!",
+    "shareTooltip": "Copiar enlace público para compartir",
     "undoButton": "↩ Deshacer",
     "undoTooltip": "Deshacer (Ctrl+Z)",
     "goToStartTooltip": "Ir al inicio",
@@ -114,15 +124,15 @@
     "downloadSuccess": "¡Descarga iniciada!"
   },
   "action": {
-    "pass": "Pase",
-    "dribble": "Bote",
-    "cut": "Corte",
-    "screen": "Bloqueo",
-    "shot": "Tiro",
-    "handoff": "Entrega",
-    "defenseMove": "Mover",
-    "doubleTeam": "Doble",
-    "ballForce": "Presión"
+    "pass": "Pass",
+    "dribble": "Dribble",
+    "cut": "Cut",
+    "screen": "Screen",
+    "shot": "Shot",
+    "handoff": "Handoff",
+    "defenseMove": "Move",
+    "doubleTeam": "Double",
+    "ballForce": "Force"
   },
   "formation": {
     "fiveOut": "5 Exterior",
@@ -142,5 +152,9 @@
     "custom": "Personalizado",
     "offenseHeader": "Formación Ofensiva — o coloca manualmente",
     "defenseHeader": "Formación Defensiva — o coloca manualmente"
+  },
+  "share": {
+    "notFound": "Jugada no encontrada.",
+    "homeButton": "Inicio"
   }
 }

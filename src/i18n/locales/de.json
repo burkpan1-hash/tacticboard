@@ -19,8 +19,13 @@
     "newPlayButton": "+ Neues Spiel",
     "emptyState": "Noch keine Spiele. Erstelle das erste!",
     "renameTooltip": "Klicken zum Umbenennen",
+    "renameTitleTooltip": "Klicken um den Namen zu ändern",
     "openButton": "Öffnen",
-    "deleteConfirmation": "Sicher?"
+    "deleteConfirmation": "Sicher?",
+    "shareButton": "Teilen",
+    "copiedButton": "Kopiert!",
+    "loginButton": "Anmelden",
+    "logoutButton": "Abmelden"
   },
   "setup": {
     "newPlayTitle": "Neues Spiel",
@@ -38,7 +43,7 @@
   "editor": {
     "renamePlayTooltip": "Klicken zum Umbenennen",
     "benchLabel": "Bank",
-    "attackDirection": "ANGr",
+    "attackDirection": "ANG",
     "ballDragTooltip": "Ball — auf einen Spieler ziehen",
     "offensePlayerDragTooltip": "Angriff #{{num}} — aufs Feld ziehen",
     "defensePlayerDragTooltip": "Verteidigung #{{num}} — aufs Feld ziehen",
@@ -65,7 +70,7 @@
     }
   },
   "toolbar": {
-    "offenseHeader": "ANGr",
+    "offenseHeader": "ANG",
     "defenseHeader": "VERT",
     "shotTaken": "WURF AUSGEFÜHRT",
     "playEnded": "Spiel beendet",
@@ -87,8 +92,13 @@
   "playback": {
     "saveButton": "Speichern",
     "savedButton": "Gespeichert",
+    "savingButton": "Speichern…",
+    "saveErrorButton": "✕ Fehler — Wiederholen",
     "exportButton": "⬇ Exportieren",
     "exportTooltip": "Video exportieren",
+    "shareButton": "🔗 Teilen",
+    "shareCopiedButton": "✓ Link Kopiert!",
+    "shareTooltip": "Öffentlichen Teilen-Link kopieren",
     "undoButton": "↩ Rückgängig",
     "undoTooltip": "Rückgängig (Ctrl+Z)",
     "goToStartTooltip": "Zum Anfang",
@@ -115,14 +125,14 @@
   },
   "action": {
     "pass": "Pass",
-    "dribble": "Dribbling",
-    "cut": "Schnitt",
-    "screen": "Block",
-    "shot": "Wurf",
-    "handoff": "Übergabe",
-    "defenseMove": "Bewegen",
-    "doubleTeam": "Doppel",
-    "ballForce": "Druck"
+    "dribble": "Dribble",
+    "cut": "Cut",
+    "screen": "Screen",
+    "shot": "Shot",
+    "handoff": "Handoff",
+    "defenseMove": "Move",
+    "doubleTeam": "Double",
+    "ballForce": "Force"
   },
   "formation": {
     "fiveOut": "5 Außen",
@@ -142,5 +152,9 @@
     "custom": "Benutzerdefiniert",
     "offenseHeader": "Angriffsformation — oder manuell platzieren",
     "defenseHeader": "Verteidigungsformation — oder manuell platzieren"
+  },
+  "share": {
+    "notFound": "Spiel nicht gefunden.",
+    "homeButton": "Startseite"
   }
 }

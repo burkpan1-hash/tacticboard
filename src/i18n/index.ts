@@ -12,6 +12,8 @@ import de from './locales/de.json'
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
+  // Cast through unknown because i18next's bundled DetectorOptions type omits a few
+  // valid runtime options (e.g. cacheUserLanguage) that i18next-browser-languagedetector ships.
   .init({
     resources: {
       en: { translation: en },
@@ -25,11 +27,11 @@ i18n
     detection: {
       order: ['localStorage', 'navigator'],
       lookupLocalStorage: 'setplay_lang',
-      cacheUserLanguage: true,
+      caches: ['localStorage'],
     },
     interpolation: {
       escapeValue: false,
     },
-  })
+  } as Parameters<typeof i18n.init>[0])
 
 export default i18n
