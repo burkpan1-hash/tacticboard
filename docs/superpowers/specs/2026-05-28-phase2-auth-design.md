@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-28  
 **App name:** SetPlay — Basketball Play Designer  
-**Status:** Approved
+**Status:** Implemented (with deviations noted below)
 
 ---
 
@@ -147,3 +147,38 @@ src/store/useAuthStore.ts   → Zustand store: { user, loading, login, logout }
 - `<title>`: `SetPlay — Basketball Play Designer`
 - `<meta name="description">`: `Free basketball play designer and coaching tool. Create, save, and share basketball plays online.`
 - OG tags on share pages for link previews
+
+---
+
+## Implementation Notes (deviations & additions)
+
+### Deviations from original design
+
+**`/my-plays` route dropped**  
+`MyPlaysPage` and the `/my-plays` route were removed from `App.tsx`. Instead, `HomePage` was updated to directly list the user's cloud plays when authenticated. This removes a navigation step and simplifies the UX.
+
+**No `useAuthStore.ts` created**  
+The planned Zustand auth store (`src/store/useAuthStore.ts`) was never created. All session state is read directly via `authClient.useSession()` from Better Auth's React client — no intermediate store needed.
+
+**`authClient.baseURL` uses absolute origin**  
+`src/lib/authClient.ts` uses `${window.location.origin}/api/auth` instead of the relative `/api/auth`. This ensures CORS requests work correctly when the frontend and backend run on different ports in development.
+
+**`trustedOrigins` in server auth config**  
+`server/auth.ts` now includes a `trustedOrigins` field, defaulting to `['http://localhost:5173']` in development. Set via the `TRUSTED_ORIGINS` env var in production (comma-separated list of allowed origins).
+
+### Additional features implemented (beyond original scope)
+
+**OOB zone visual on court**  
+`CourtCanvas.tsx` renders a subtle `#1e2820` background fill for the out-of-bounds area around the court, making it visually distinct from the pure black background. `COURT_PADDING_X` was increased from 42 → 70px to match `COURT_PADDING_Y` (equal OOB zone on all four sides).
+
+**SharePage full animation parity**  
+`SharePage.tsx` implements the same `animFraction`-based smooth interpolation as `EditorPage` (player position tweening, waypoint path following, growing pass arrow, action labels, optionText badge). Playback is identical to the editor view.
+
+**Half-court responsive scaling in EditorPage**  
+`EditorPage.tsx` now computes `courtScale` for half-court too (previously only full-court was scaled). This prevents the top OOB zone (behind the basket) from being clipped on smaller screens, matching the visual in SetupPage.
+
+**HomePage inline title editing**  
+Cloud play titles on `HomePage` can be edited inline by clicking the title text. A `PUT /api/plays/:id` call persists the rename optimistically.
+
+**Double-team overlap fix**  
+`computeDoubleTeamPositions` in `stateEngine.ts`: `GAP` increased from `0.05` → `0.09` so defender positions no longer overlap with the target player or each other. The previous value placed defender centers only 35px apart (vs. the required 56px minimum for non-overlapping 28px-radius circles).

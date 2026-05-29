@@ -3,6 +3,11 @@ dist/
 .playwright-mcp/
 .superpowers/
 test-*.png
+ballforce-test.png
+
+# Dev server runtime files
+*.pid
+*.log
 
 # Runtime secrets and environment variables
 .env

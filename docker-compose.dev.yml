@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: setplay
+      POSTGRES_PASSWORD: setplay
+      POSTGRES_DB: setplay
+    ports:
+      - "5432:5432"
+    volumes:
+      - setplay_pg_data:/var/lib/postgresql/data
+
+volumes:
+  setplay_pg_data:

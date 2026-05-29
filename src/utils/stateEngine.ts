@@ -18,7 +18,7 @@ export function computeDoubleTeamPositions(
   const target = positions[targetId]
   if (!target) return null
 
-  const GAP = 0.05
+  const GAP = 0.09
   const SIDELINE_THR = 0.15
   const clamp = (v: number) => Math.max(0, Math.min(1, v))
 

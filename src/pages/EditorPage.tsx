@@ -119,14 +119,12 @@ export default function EditorPage() {
 
   const isDirty = !!activeSet && activeSet.actions.length !== savedActionCount
 
-  function handleSave() {
-    saveSet(activeSet!)
-    savedSnapshotRef.current = activeSet!
-    setSavedActionCount(activeSet!.actions.length)
-  }
-
-  async function handleCloudSave() {
-    if (!session) { navigate('/login'); return }
+  async function handleSave() {
+    if (!session) {
+      if (activeSet) sessionStorage.setItem('setplay_pending', JSON.stringify(activeSet))
+      navigate('/register')
+      return
+    }
     if (!activeSet) return
     setCloudSaving(true)
     try {
@@ -135,6 +133,8 @@ export default function EditorPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: activeSet.name, data: activeSet }),
       })
+      savedSnapshotRef.current = activeSet
+      setSavedActionCount(activeSet.actions.length)
       setCloudSaved(true)
       setTimeout(() => setCloudSaved(false), 2000)
     } finally {
@@ -143,7 +143,7 @@ export default function EditorPage() {
   }
 
   async function handleCloudShare() {
-    if (!session) { navigate('/login'); return }
+    if (!session) { navigate('/register'); return }
     if (!activeSet) return
     const res = await fetch('/api/plays', {
       method: 'POST',
@@ -160,18 +160,29 @@ export default function EditorPage() {
 
   function handleNavigateHome() {
     cancelActionCreation()
-    if (!activeSet) { navigate('/'); return }
-    if (activeSet.actions.length === 0) {
-      deleteSet(activeSet.id)
-      navigate('/')
-      return
-    }
-    if (!isDirty) {
-      navigate('/')
-      return
-    }
+    if (!activeSet || activeSet.actions.length === 0) { navigate('/'); return }
     setSaveDialogName(activeSet.name)
     setSaveDialogOpen(true)
+  }
+
+  async function handleSaveAndExit(name: string) {
+    if (!activeSet) return
+    const updated = { ...activeSet, name: name.trim() || activeSet.name }
+    if (!session) {
+      sessionStorage.setItem('setplay_pending', JSON.stringify(updated))
+      navigate('/register')
+      return
+    }
+    try {
+      await fetch('/api/plays', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: updated.name, data: updated }),
+      })
+    } finally {
+      setSaveDialogOpen(false)
+      navigate('/')
+    }
   }
 
   function commitNameEdit() {
@@ -722,13 +733,6 @@ export default function EditorPage() {
             {activeSet.courtType === 'half' ? t('common.halfCourt') : t('common.fullCourt')}
           </span>
           <button
-            onClick={handleCloudSave}
-            disabled={cloudSaving}
-            className="bg-orange-500 hover:bg-orange-400 disabled:opacity-50 text-white font-semibold px-4 py-1.5 rounded-lg text-sm transition-colors"
-          >
-            {cloudSaved ? 'Kaydedildi!' : cloudSaving ? 'Kaydediliyor...' : 'Kaydet'}
-          </button>
-          <button
             onClick={handleCloudShare}
             className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-1.5 rounded-lg text-sm transition-colors"
           >
@@ -739,7 +743,7 @@ export default function EditorPage() {
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        <div className="p-2 border-r border-slate-700">
+        <div className="p-2 border-r border-slate-700 overflow-y-auto">
           <ActionToolbar
             activeType={actionCreation.type}
             ballHolderId={currentState.ball.holderId}
@@ -1154,7 +1158,7 @@ export default function EditorPage() {
       <PlaybackControls
         onExport={() => setShowExport(true)}
         onSave={handleSave}
-        canSave={isDirty && activeSet.actions.length > 0}
+        canSave={activeSet.actions.length > 0}
       />
 
       {saveDialogOpen && (
@@ -1175,29 +1179,11 @@ export default function EditorPage() {
             </div>
             <div className="flex flex-col gap-2">
               <button
-                onClick={() => {
-                  const trimmed = saveDialogName.trim() || activeSet.name
-                  const updated = { ...activeSet, name: trimmed }
-                  saveSet(updated)
-                  setActiveSet(updated)
-                  savedSnapshotRef.current = updated
-                  setSavedActionCount(updated.actions.length)
-                  setSaveDialogOpen(false)
-                  navigate('/')
-                }}
+                onClick={() => handleSaveAndExit(saveDialogName)}
                 className="w-full py-2 bg-orange-500 hover:bg-orange-400 text-white rounded-lg font-medium transition-colors"
               >{t('editor.saveAndExitButton')}</button>
               <button
-                onClick={() => {
-                  if (savedSnapshotRef.current) {
-                    saveSet(savedSnapshotRef.current)
-                    setActiveSet(savedSnapshotRef.current)
-                  } else {
-                    deleteSet(activeSet.id)
-                  }
-                  setSaveDialogOpen(false)
-                  navigate('/')
-                }}
+                onClick={() => { setSaveDialogOpen(false); navigate('/') }}
                 className="w-full py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg font-medium transition-colors"
               >{t('editor.dontSaveButton')}</button>
               <button
