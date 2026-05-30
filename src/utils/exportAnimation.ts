@@ -2,7 +2,44 @@ import type Konva from 'konva'
 
 // ─── Shared utils ─────────────────────────────────────────────────────────────
 
-export function downloadBlob(blob: Blob, filename: string) {
+/** Save a blob to disk. Prefers the File System Access API (real "Save As" dialog
+ *  with folder + filename picker) on Chromium-based browsers; falls back to the
+ *  classic <a download> click on Firefox/Safari which just dumps to the default
+ *  Downloads folder. User cancellations are swallowed silently. */
+export async function downloadBlob(blob: Blob, filename: string) {
+  const ext = filename.split('.').pop()?.toLowerCase() ?? 'bin'
+  const mimeMap: Record<string, string> = {
+    mp4: 'video/mp4', webm: 'video/webm', gif: 'image/gif', png: 'image/png',
+  }
+  const mime = mimeMap[ext] ?? blob.type ?? 'application/octet-stream'
+
+  // showSaveFilePicker is the modern "Save As" — gives the user folder + filename control.
+  // Available in Chrome / Edge / Vivaldi / Opera. Not in Firefox or Safari yet.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const picker = (window as any).showSaveFilePicker as
+    | ((opts: { suggestedName: string; types: Array<{ description: string; accept: Record<string, string[]> }> }) => Promise<FileSystemFileHandle>)
+    | undefined
+
+  if (picker) {
+    try {
+      const handle = await picker({
+        suggestedName: filename,
+        types: [{
+          description: ext.toUpperCase() + ' file',
+          accept: { [mime]: [`.${ext}`] },
+        }],
+      })
+      const writable = await handle.createWritable()
+      await writable.write(blob)
+      await writable.close()
+      return
+    } catch (err) {
+      // AbortError = user clicked Cancel; bail without falling through to auto-download.
+      if (err instanceof Error && err.name === 'AbortError') return
+      // Any other failure (e.g. cross-origin restriction) → fall through to <a download>.
+    }
+  }
+
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url; a.download = filename; a.click()
