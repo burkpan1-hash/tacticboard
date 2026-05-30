@@ -18,7 +18,7 @@ export default function AuthShell({ title, subtitle, children, footer }: Props) 
       <div className="flex-1 flex items-start sm:items-center justify-center p-4">
         <div className="bg-slate-800 rounded-2xl p-8 w-full max-w-sm shadow-2xl">
           <div className="flex flex-col items-center mb-6">
-            <Logo size={40} className="mb-4" />
+            <Logo size={48} className="mb-4" />
             <h1 className="text-xl font-bold text-white text-center">{title}</h1>
             {subtitle && <p className="text-slate-400 text-sm mt-2 text-center">{subtitle}</p>}
           </div>

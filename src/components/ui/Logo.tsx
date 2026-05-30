@@ -1,72 +1,61 @@
 // Stacked wordmark:
-//   BASKETBALL  ← orange, top, larger
-//   TACTIC BOARD ← white, bottom, slightly smaller — but stretched to the SAME width
-//                   as the top row so the block looks compact and balanced.
+//   BASKETBALL  ← orange, top, sets the visual width of the whole logo
+//   TACTIC BOARD ← white, bottom, smaller font but wide letter-spacing so it
+//                  reads as part of the same block beneath BASKETBALL
 //
-// Rendered via SVG so we can force both rows to identical width with `textLength` +
-// `lengthAdjust="spacing"` — which adjusts inter-letter gaps only, preserving the
-// Anton glyph shapes. CSS-only stacking can't guarantee width match because Anton's
-// natural width of "BASKETBALL" (10 chars) and "TACTIC BOARD" (11 chars + space)
-// differ for any given font-size.
+// CSS-based rather than SVG — earlier SVG version used `textLength="spacing"`
+// which compressed glyphs at small render sizes, causing letters to overlap.
+// Plain HTML+CSS lets the text render at its natural per-letter width regardless
+// of the container size; only the inter-letter spacing on the bottom row is tuned
+// so its visual width approximates the top row.
 
 interface Props {
-  /** Total height of the logo block in px. Default 80. */
+  /** Height of the BASKETBALL row in px. Default 56. Total logo height ≈ size × 1.5. */
   size?: number
   className?: string
 }
 
-export default function Logo({ size = 80, className = '' }: Props) {
-  // viewBox 200 wide × 130 tall. Internal balance:
-  //   TOP_SIZE: BASKETBALL height — stays large/dominant
-  //   BOT_SIZE: TACTIC BOARD height — bumped up so it's actually readable + close to top
-  //   GAP: visual gap between rows (cap of bottom to baseline of top)
-  //   TEXT_LEN_PCT: both rows stretched to this width so the wordmark is one solid block
-  const VB_W = 200, VB_H = 130
-  const TOP_SIZE = 80
-  const BOT_SIZE = 50
-  const GAP = 6
-  const TEXT_LEN_PCT = 0.96
+export default function Logo({ size = 56, className = '' }: Props) {
+  const fontFamily = '"Anton", "Arial Black", system-ui, sans-serif'
 
-  const textLen = VB_W * TEXT_LEN_PCT
-  const topY = TOP_SIZE
-  const botY = TOP_SIZE + GAP + BOT_SIZE
-
-  // Final pixel width derives from the size (height) prop and the viewBox aspect ratio.
-  const pxWidth = Math.round((size * VB_W) / VB_H)
+  // Top row dominates. Bottom row at ~52% of top — readable without looking small.
+  const topFontSize = size
+  const botFontSize = Math.round(size * 0.52)
+  const gap = Math.round(size * 0.08)
 
   return (
-    <svg
-      viewBox={`0 0 ${VB_W} ${VB_H}`}
-      width={pxWidth}
-      height={size}
-      className={`select-none ${className}`}
-      role="img"
+    <div
+      className={`inline-flex flex-col items-center select-none leading-none ${className}`}
       aria-label="Basketball Tactic Board"
+      role="img"
     >
-      <text
-        x={VB_W / 2}
-        y={topY}
-        textAnchor="middle"
-        fontFamily="'Anton', 'Arial Black', system-ui, sans-serif"
-        fontSize={TOP_SIZE}
-        fill="#f97316"
-        textLength={textLen}
-        lengthAdjust="spacing"
+      <span
+        style={{
+          fontFamily,
+          fontSize: topFontSize,
+          color: '#f97316',
+          lineHeight: 1,
+          letterSpacing: '0.02em',
+        }}
       >
         BASKETBALL
-      </text>
-      <text
-        x={VB_W / 2}
-        y={botY}
-        textAnchor="middle"
-        fontFamily="'Anton', 'Arial Black', system-ui, sans-serif"
-        fontSize={BOT_SIZE}
-        fill="#ffffff"
-        textLength={textLen}
-        lengthAdjust="spacing"
+      </span>
+      <span
+        style={{
+          fontFamily,
+          fontSize: botFontSize,
+          color: '#ffffff',
+          lineHeight: 1,
+          // Wide tracking spreads "TACTIC BOARD" to roughly match BASKETBALL's natural width.
+          // Anton's tight default gaps + this tracking ≈ same span as the top row at any size.
+          letterSpacing: '0.32em',
+          marginTop: gap,
+          // Trailing letter-spacing reserves a gap after the last letter; nudge left to recenter.
+          paddingLeft: '0.32em',
+        }}
       >
         TACTIC BOARD
-      </text>
-    </svg>
+      </span>
+    </div>
   )
 }

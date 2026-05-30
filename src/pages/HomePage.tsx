@@ -93,7 +93,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen p-8 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-8">
-        <Logo size={40} />
+        <Logo />
         <div className="flex items-center gap-3">
           <LanguageSwitcher />
           {session ? (
