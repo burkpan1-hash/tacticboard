@@ -5,6 +5,7 @@ import { authClient } from '../lib/authClient'
 import { authErrorKey } from '../lib/authErrors'
 import { checkPassword } from '../lib/passwordPolicy'
 import AuthShell from '../components/auth/AuthShell'
+import PasswordInput from '../components/auth/PasswordInput'
 import PasswordStrengthMeter from '../components/auth/PasswordStrengthMeter'
 
 export default function RegisterPage() {
@@ -79,9 +80,8 @@ export default function RegisterPage() {
         </div>
         <div>
           <label htmlFor="password" className="block text-slate-300 text-xs font-medium mb-1.5">{t('auth.passwordLabel')}</label>
-          <input
+          <PasswordInput
             id="password"
-            type="password"
             placeholder={t('auth.passwordPlaceholder')}
             value={password}
             onChange={(e) => setPassword(e.target.value)}

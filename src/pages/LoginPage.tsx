@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { authClient } from '../lib/authClient'
 import { authErrorKey } from '../lib/authErrors'
 import AuthShell from '../components/auth/AuthShell'
+import PasswordInput from '../components/auth/PasswordInput'
 
 export default function LoginPage() {
   const { t } = useTranslation()
@@ -78,9 +79,8 @@ export default function LoginPage() {
               {t('auth.forgotPasswordLink')}
             </Link>
           </div>
-          <input
+          <PasswordInput
             id="password"
-            type="password"
             placeholder={t('auth.passwordPlaceholder')}
             value={password}
             onChange={(e) => setPassword(e.target.value)}

@@ -171,6 +171,8 @@
     "namePlaceholder": "Adın",
     "emailPlaceholder": "sen@ornek.com",
     "passwordPlaceholder": "Şifre",
+    "showPassword": "Şifreyi göster",
+    "hidePassword": "Şifreyi gizle",
     "signInButton": "Giriş Yap",
     "signInLoading": "Giriş yapılıyor…",
     "signUpButton": "Hesap oluştur",

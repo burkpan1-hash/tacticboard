@@ -5,6 +5,7 @@ import { authClient } from '../lib/authClient'
 import { authErrorKey } from '../lib/authErrors'
 import { checkPassword } from '../lib/passwordPolicy'
 import AuthShell from '../components/auth/AuthShell'
+import PasswordInput from '../components/auth/PasswordInput'
 import PasswordStrengthMeter from '../components/auth/PasswordStrengthMeter'
 
 export default function ResetPasswordPage() {
@@ -78,9 +79,8 @@ export default function ResetPasswordPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="password" className="block text-slate-300 text-xs font-medium mb-1.5">{t('auth.newPasswordLabel')}</label>
-            <input
+            <PasswordInput
               id="password"
-              type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -92,9 +92,8 @@ export default function ResetPasswordPage() {
           </div>
           <div>
             <label htmlFor="confirm" className="block text-slate-300 text-xs font-medium mb-1.5">{t('auth.confirmPasswordLabel')}</label>
-            <input
+            <PasswordInput
               id="confirm"
-              type="password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               required

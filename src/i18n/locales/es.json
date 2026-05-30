@@ -171,6 +171,8 @@
     "namePlaceholder": "Tu nombre",
     "emailPlaceholder": "tu@ejemplo.com",
     "passwordPlaceholder": "Contraseña",
+    "showPassword": "Mostrar contraseña",
+    "hidePassword": "Ocultar contraseña",
     "signInButton": "Iniciar sesión",
     "signInLoading": "Iniciando sesión…",
     "signUpButton": "Crear cuenta",

@@ -173,6 +173,8 @@
     "namePlaceholder": "Your name",
     "emailPlaceholder": "you@example.com",
     "passwordPlaceholder": "Password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
 
     "signInButton": "Sign In",
     "signInLoading": "Signing in…",
