@@ -15,7 +15,7 @@
     "actionPlural": "hareket"
   },
   "home": {
-    "appName": "SetPlay",
+    "appName": "Basketball Tactic Board",
     "newPlayButton": "+ Yeni Oyun",
     "emptyState": "Henüz oyun yok. İlkini oluştur!",
     "renameTooltip": "Yeniden adlandırmak için tıkla",

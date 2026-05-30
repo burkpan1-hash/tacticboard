@@ -3,8 +3,8 @@
 
 import { Resend } from 'resend'
 
-const FROM = process.env.EMAIL_FROM || 'SetPlay <onboarding@resend.dev>'
-const APP_NAME = 'SetPlay'
+const FROM = process.env.EMAIL_FROM || 'Basketball Tactic Board <onboarding@resend.dev>'
+const APP_NAME = 'Basketball Tactic Board'
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 

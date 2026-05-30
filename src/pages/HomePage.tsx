@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
+import Logo from '../components/ui/Logo'
 import { authClient } from '../lib/authClient'
 
 interface CloudPlay {
@@ -92,9 +93,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen p-8 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-white">
-          {t('home.appName')} <span className="text-orange-400">🏀</span>
-        </h1>
+        <Logo size={40} />
         <div className="flex items-center gap-3">
           <LanguageSwitcher />
           {session ? (

@@ -15,7 +15,7 @@
     "actionPlural": "actions"
   },
   "home": {
-    "appName": "SetPlay",
+    "appName": "Basketball Tactic Board",
     "newPlayButton": "+ New Play",
     "emptyState": "No plays yet. Create your first!",
     "renameTooltip": "Click to rename",
