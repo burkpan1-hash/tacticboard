@@ -19,7 +19,7 @@ export default function ExportModal({ stageRef, stepMs, onClose }: Props) {
 
   const scale = 1
   const [phase, setPhase] = useState<Phase>('idle')
-  const [format, setFormat] = useState<Format>('gif')
+  const [format, setFormat] = useState<Format>('mp4')
   const [captureProgress, setCaptureProgress] = useState(0)
   const [encodeProgress, setEncodeProgress] = useState(0)
   const cancelRef = useRef<(() => void) | null>(null)
