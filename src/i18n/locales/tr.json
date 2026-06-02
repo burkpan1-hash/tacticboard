@@ -121,7 +121,11 @@
     "captureProgressLabel": "Kayıt",
     "encodingStatus": "Video tamamlanıyor…",
     "processingStatus": "İşleniyor…",
-    "downloadSuccess": "İndirme başladı!"
+    "downloadSuccess": "İndirme başladı!",
+    "formatLabel": "Format",
+    "gifHint": "Her yerde açılır (Mac Önizleme, Slack, Discord). Daha büyük dosya, sessiz.",
+    "mp4Hint": "Daha küçük dosya. Tarayıcı veya VLC ile aç; Mac QuickTime oynatmayabilir.",
+    "encodingLabel": "Kodlama"
   },
   "action": {
     "pass": "Pass",

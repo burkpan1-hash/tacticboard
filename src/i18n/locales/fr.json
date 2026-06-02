@@ -121,7 +121,11 @@
     "captureProgressLabel": "Capture",
     "encodingStatus": "Finalisation de la vidéo…",
     "processingStatus": "Traitement…",
-    "downloadSuccess": "Téléchargement démarré !"
+    "downloadSuccess": "Téléchargement démarré !",
+    "formatLabel": "Format",
+    "gifHint": "S'ouvre partout (Aperçu Mac, Slack, Discord). Fichier plus gros, sans son.",
+    "mp4Hint": "Fichier plus petit. À ouvrir dans un navigateur ou VLC ; QuickTime Mac peut ne pas le lire.",
+    "encodingLabel": "Encodage"
   },
   "action": {
     "pass": "Pass",

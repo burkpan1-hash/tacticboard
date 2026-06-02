@@ -247,7 +247,10 @@ export function exportVideo(
   const chunks: Blob[] = []
   recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data) }
   recorder.onstop = () => { cancelAnimationFrame(rafId); onDone(new Blob(chunks, { type: mimeType })) }
-  recorder.start(100)
+  // No timeslice argument — MediaRecorder emits a SINGLE blob at stop with a complete moov
+  // atom at the start. With timeslice (e.g. start(100)), Chromium produces fragmented MP4
+  // (fMP4) which QuickTime + native macOS players can't play. VLC and browsers can.
+  recorder.start()
 
   const t0 = performance.now()
   let rafId: number, cancelled = false
