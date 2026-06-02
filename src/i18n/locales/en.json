@@ -51,10 +51,6 @@
     "saveDialogPlayNameLabel": "Play name",
     "saveAndExitButton": "Save & Exit",
     "dontSaveButton": "Don't Save",
-    "narrowTitle": "Use a wider screen",
-    "narrowMessage": "The editor is designed for tablets and laptops. On a narrow screen, drawing and dragging are awkward. Open this on a larger device — or continue anyway.",
-    "narrowGoHome": "Back to Home",
-    "narrowContinueAnyway": "Continue anyway",
     "instructions": {
       "pass": "Click the player to receive the pass",
       "dribble": "Click the target position on court",
@@ -167,8 +163,7 @@
   },
   "share": {
     "notFound": "Play not found.",
-    "homeButton": "Home",
-    "readOnly": "Read-only"
+    "homeButton": "Home"
   },
   "auth": {
     "signInTitle": "Sign In",

@@ -51,10 +51,6 @@
     "saveDialogPlayNameLabel": "Nom du jeu",
     "saveAndExitButton": "Sauvegarder et Quitter",
     "dontSaveButton": "Ne Pas Sauvegarder",
-    "narrowTitle": "Utilise un écran plus large",
-    "narrowMessage": "L'éditeur est conçu pour les tablettes et ordinateurs portables. Sur un écran étroit, dessiner et faire glisser est délicat. Ouvre-le sur un appareil plus grand — ou continue quand même.",
-    "narrowGoHome": "Retour à l'Accueil",
-    "narrowContinueAnyway": "Continuer quand même",
     "instructions": {
       "pass": "Cliquez sur le joueur qui recevra la passe",
       "dribble": "Cliquez sur la position cible sur le terrain",
@@ -167,8 +163,7 @@
   },
   "share": {
     "notFound": "Jeu introuvable.",
-    "homeButton": "Accueil",
-    "readOnly": "Lecture seule"
+    "homeButton": "Accueil"
   },
   "auth": {
     "signInTitle": "Se connecter",
