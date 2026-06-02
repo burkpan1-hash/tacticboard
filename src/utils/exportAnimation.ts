@@ -264,9 +264,32 @@ export function exportGif(
   return { cancel: () => { cancelled = true; cancelAnimationFrame(rafId) } }
 }
 
-// ─── Public: Export Video (WebM) ──────────────────────────────────────────────
+// ─── Public: Export Video (MP4) ───────────────────────────────────────────────
 
 export interface VideoExportHandle { cancel: () => void }
+
+// Lazy-instantiate ffmpeg.wasm and cache the instance for the lifetime of the page.
+// `load()` downloads ~5MB of WASM on first call (browser caches it after); subsequent
+// exports reuse the same loaded instance for instant remux.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let ffmpegInstance: any = null
+async function getFFmpeg() {
+  if (ffmpegInstance) return ffmpegInstance
+  const { FFmpeg } = await import('@ffmpeg/ffmpeg')
+  const ffmpeg = new FFmpeg()
+  await ffmpeg.load()
+  ffmpegInstance = ffmpeg
+  return ffmpeg
+}
+
+async function remuxFmp4ToStandardMp4(fmp4Blob: Blob): Promise<Blob> {
+  const ffmpeg = await getFFmpeg()
+  const { fetchFile } = await import('@ffmpeg/util')
+  await ffmpeg.writeFile('in.mp4', await fetchFile(fmp4Blob))
+  await ffmpeg.exec(['-i', 'in.mp4', '-c', 'copy', '-movflags', '+faststart', 'out.mp4'])
+  const data = await ffmpeg.readFile('out.mp4')
+  return new Blob([data as BlobPart], { type: 'video/mp4' })
+}
 
 export function exportVideo(
   stage: Konva.Stage,
@@ -286,10 +309,24 @@ export function exportVideo(
   const recorder = new MediaRecorder(stream, { mimeType })
   const chunks: Blob[] = []
   recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data) }
-  recorder.onstop = () => { cancelAnimationFrame(rafId); onDone(new Blob(chunks, { type: mimeType })) }
-  // No timeslice argument — MediaRecorder emits a SINGLE blob at stop with a complete moov
-  // atom at the start. With timeslice (e.g. start(100)), Chromium produces fragmented MP4
-  // (fMP4) which QuickTime + native macOS players can't play. VLC and browsers can.
+  recorder.onstop = async () => {
+    cancelAnimationFrame(rafId)
+    const raw = new Blob(chunks, { type: mimeType })
+    // Chromium's MediaRecorder ships fragmented MP4 (fMP4) — valid container, but macOS
+    // QuickTime and other native players reject it. Remux through ffmpeg.wasm with
+    // `-c copy -movflags +faststart` to produce a standard MP4 with the moov atom at
+    // the start of the file. Codec stream is copied (no re-encode), so it's fast and
+    // doesn't degrade quality.
+    if (mimeType.includes('mp4')) {
+      try {
+        onDone(await remuxFmp4ToStandardMp4(raw))
+        return
+      } catch (err) {
+        console.warn('[export] ffmpeg remux failed, falling back to raw fMP4', err)
+      }
+    }
+    onDone(raw)
+  }
   recorder.start()
 
   const t0 = performance.now()
