@@ -16,10 +16,11 @@ import LanguageSwitcher from '../components/ui/LanguageSwitcher'
 import { usePlayStore } from '../store/usePlayStore'
 import { computeStateAtStep } from '../utils/stateEngine'
 import { denormalize } from '../utils/courtCoords'
-import type { Action, NormalizedPosition, Player, PlaySet, PositionMap } from '../models/types'
+import type { Action, ActionType, NormalizedPosition, Player, PlaySet, PositionMap } from '../models/types'
 import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_PADDING_X, COURT_PADDING_Y, HALF_COURT_PADDING_TOP, HALF_COURT } from '../utils/courtCoords'
 import { ACTION_COLORS, ACTION_LABEL_KEYS } from '../utils/actionColors'
 import { authClient } from '../lib/authClient'
+import { useEditorShortcuts } from '../hooks/useEditorShortcuts'
 
 // Stable signature of the user-visible play state — used for dirty tracking.
 // Excludes technical metadata (id, cloudPlayId) that doesn't represent user-authored changes.
@@ -311,17 +312,89 @@ export default function EditorPage() {
     setSaveStatus('idle')
   }, [setId, isCloudPlay, activeSet?.id, activeSet?.cloudPlayId])
 
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault()
-        usePlayStore.getState().undoLastAction()
-      }
-      if (e.key === 'Escape') cancelAll()
+  // Mirror the disabled logic from ActionToolbar so keyboard cannot start an action
+  // the user can't start with a click (e.g., shot without ball, defense action without defenders)
+  const hasDefenders = (activeSet?.players ?? []).some(p => p.team === 'defense')
+  function canStartAction(type: ActionType): boolean {
+    if (!activeSet) return false
+    if (hasShotActionFromStore()) return false
+    const isDefense = type === 'defense-move' || type === 'double-team' || type === 'ball-force'
+    if (isDefense) return hasDefenders
+    const requiresBall: Record<ActionType, boolean> = {
+      pass: true, dribble: true, shot: true, handoff: true,
+      cut: false, screen: false,
+      'defense-move': false, 'double-team': false, 'ball-force': false,
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
+    if (requiresBall[type] && !currentStateBallHolder()) return false
+    return true
+  }
+  // Lazy reads — these need the latest values at the moment the shortcut fires.
+  function hasShotActionFromStore(): boolean {
+    return !!usePlayStore.getState().activeSet?.actions.some(a => a.type === 'shot')
+  }
+  function currentStateBallHolder(): string {
+    const s = usePlayStore.getState()
+    const set = s.activeSet
+    if (!set) return ''
+    const state = computeStateAtStep(
+      set.actions, s.activeStep, set.initialPositions, set.initialBall, undefined,
+      set.courtType === 'full'
+        ? (set.attackBasket === 'bottom' ? 1 - 42 / FULL_COURT_H : 42 / FULL_COURT_H)
+        : 42 / HALF_COURT_H,
+      HALF_COURT_W,
+      set.courtType === 'half' ? HALF_COURT_H : FULL_COURT_H,
+    )
+    return state.ball.holderId
+  }
+
+  useEditorShortcuts({
+    enabled: !!activeSet,
+    onAction: (type) => {
+      if (actionCreation.type === type) cancelAll()
+      else startActionCreation(type)
+    },
+    onCancel: () => cancelAll(),
+    onUndo: () => usePlayStore.getState().undoLastAction(),
+    onPlayPause: () => {
+      const s = usePlayStore.getState()
+      const tot = s.activeSet?.actions.length ?? 0
+      if (tot === 0) return
+      if (s.isPlaying) { s.setIsPlaying(false); return }
+      if (s.activeStep >= tot) s.setActiveStep(0)
+      s.setIsPlaying(true)
+    },
+    onStepBack: () => {
+      const s = usePlayStore.getState()
+      if (s.isPlaying) return
+      s.setActiveStep(Math.max(0, s.activeStep - 1))
+    },
+    onStepForward: () => {
+      const s = usePlayStore.getState()
+      if (s.isPlaying) return
+      const tot = s.activeSet?.actions.length ?? 0
+      s.setActiveStep(Math.min(tot, s.activeStep + 1))
+    },
+    onGoToStart: () => {
+      const s = usePlayStore.getState()
+      if (s.isPlaying) return
+      s.setActiveStep(0)
+    },
+    onGoToEnd: () => {
+      const s = usePlayStore.getState()
+      if (s.isPlaying) return
+      const tot = s.activeSet?.actions.length ?? 0
+      s.setActiveStep(tot)
+    },
+    onSave: () => handleSave(),
+    canSave: !!activeSet && activeSet.actions.length > 0 && isDirty,
+    onExport: () => setShowExport(true),
+    canExport: !!activeSet && activeSet.actions.length > 0 && !isPlaying,
+    onShare: () => handleCloudShare(),
+    canShare: !!activeSet && activeSet.actions.length > 0,
+    onToggleMarkings: () => handleToggleMarkings(),
+    canToggleMarkings: hasDefenders,
+    canStartAction,
+  })
 
   useEffect(() => {
     if (!actionCreation.type) setMousePos(null)

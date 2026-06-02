@@ -1,6 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import type { ActionType } from '../../models/types'
 import { ACTION_COLORS, ACTION_LABEL_KEYS } from '../../utils/actionColors'
+import { ACTION_SHORTCUTS } from '../../hooks/useEditorShortcuts'
+
+const KBD_CLASS = 'absolute top-0.5 right-0.5 text-[9px] font-mono font-bold bg-slate-900/90 text-slate-300 rounded px-1 py-0.5 border border-slate-700 leading-none pointer-events-none'
 
 interface OffenseTool {
   type: ActionType
@@ -104,16 +107,17 @@ export default function ActionToolbar({ activeType, ballHolderId, hasDefenders, 
             return (
               <button
                 key={tool.type}
-                title={t(ACTION_LABEL_KEYS[tool.type])}
+                title={`${t(ACTION_LABEL_KEYS[tool.type])} (${ACTION_SHORTCUTS[tool.type]})`}
                 disabled={disabled}
                 onClick={() => active ? onCancel() : onSelect(tool.type)}
                 className={`
-                  flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors
+                  relative flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors
                   ${active ? 'bg-slate-600 ring-1 ring-white/30' : ''}
                   ${!active && !disabled ? 'bg-slate-700 text-slate-200 hover:bg-slate-600' : ''}
                   ${disabled ? 'opacity-30 cursor-not-allowed bg-slate-800 text-slate-500' : ''}
                 `}
               >
+                <kbd className={KBD_CLASS}>{ACTION_SHORTCUTS[tool.type]}</kbd>
                 {ICONS[tool.type]}
                 <span style={{ color: disabled ? undefined : ACTION_COLORS[tool.type] }}>{t(ACTION_LABEL_KEYS[tool.type])}</span>
                 <span className="text-slate-500 text-[9px] leading-tight text-center">{t(HINT_KEYS[tool.type])}</span>
@@ -132,14 +136,15 @@ export default function ActionToolbar({ activeType, ballHolderId, hasDefenders, 
             return (
               <button
                 key={tool.type}
-                title={t(ACTION_LABEL_KEYS[tool.type])}
+                title={`${t(ACTION_LABEL_KEYS[tool.type])} (${ACTION_SHORTCUTS[tool.type]})`}
                 disabled={disabled}
                 onClick={() => active ? onCancel() : onSelect(tool.type)}
-                className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors
+                className={`relative flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors
                   ${active ? 'bg-slate-600 ring-1 ring-white/30' : ''}
                   ${!active && !disabled ? 'bg-slate-700 text-slate-200 hover:bg-slate-600' : ''}
                   ${disabled ? 'opacity-30 cursor-not-allowed bg-slate-800 text-slate-500' : ''}`}
               >
+                <kbd className={KBD_CLASS}>{ACTION_SHORTCUTS[tool.type]}</kbd>
                 {ICONS[tool.type]}
                 <span style={{ color: ACTION_COLORS[tool.type] }}>{t(ACTION_LABEL_KEYS[tool.type])}</span>
                 <span className="text-slate-500 text-[9px] leading-tight text-center">{t(HINT_KEYS[tool.type])}</span>
@@ -147,7 +152,8 @@ export default function ActionToolbar({ activeType, ballHolderId, hasDefenders, 
             )
           })}
 
-          <div className="flex flex-col items-center gap-1.5 px-2 py-2 bg-slate-700 rounded-lg">
+          <div className="relative flex flex-col items-center gap-1.5 px-2 py-2 bg-slate-700 rounded-lg">
+            <kbd className={KBD_CLASS}>K</kbd>
             <svg viewBox="0 0 32 14" width={32} height={14} fill="none" strokeLinecap="round">
               <circle cx="8" cy="7" r="5" stroke="#60a5fa" strokeWidth="1.5" strokeDasharray="2 2"/>
               <circle cx="24" cy="7" r="5" stroke="#f97316" strokeWidth="1.5"/>
