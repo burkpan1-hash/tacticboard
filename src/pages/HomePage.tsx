@@ -91,29 +91,32 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen p-8 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
-        <Logo />
-        <div className="flex items-center gap-3">
+    <div className="min-h-screen p-4 sm:p-8 max-w-4xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 gap-4">
+        <div className="flex justify-center sm:justify-start">
+          <div className="sm:hidden"><Logo size={36} /></div>
+          <div className="hidden sm:block"><Logo size={56} /></div>
+        </div>
+        <div className="flex items-center justify-end gap-2 sm:gap-3 flex-wrap">
           <LanguageSwitcher />
           {session ? (
             <button
               onClick={handleLogout}
-              className="text-slate-400 hover:text-slate-300 text-sm px-2 py-2 transition-colors"
+              className="text-slate-400 hover:text-slate-300 text-sm px-2 py-2 transition-colors whitespace-nowrap"
             >
               {t('home.logoutButton')}
             </button>
           ) : (
             <button
               onClick={() => navigate('/login')}
-              className="bg-slate-700 hover:bg-slate-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm"
+              className="bg-slate-700 hover:bg-slate-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm whitespace-nowrap"
             >
               {t('home.loginButton')}
             </button>
           )}
           <button
             onClick={() => navigate('/setup')}
-            className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-6 py-2 rounded-lg transition-colors"
+            className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-4 sm:px-6 py-2 rounded-lg transition-colors whitespace-nowrap"
           >
             {t('home.newPlayButton')}
           </button>
@@ -128,8 +131,8 @@ export default function HomePage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {cloudPlays.map((p) => (
-            <div key={p.id} className="bg-slate-800 rounded-xl p-5 flex items-center justify-between">
-              <div className="flex-1 min-w-0 mr-3">
+            <div key={p.id} className="bg-slate-800 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex-1 min-w-0 sm:mr-3">
                 {editingId === p.id ? (
                   <input
                     ref={editInputRef}

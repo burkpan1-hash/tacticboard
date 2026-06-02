@@ -398,6 +398,21 @@ export default function EditorPage() {
     canStartAction,
   })
 
+  // Tracks whether the user has dismissed the "use a wider screen" prompt.
+  // Stored in sessionStorage so the prompt re-appears on a fresh visit but doesn't
+  // nag the user every time they pinch-zoom or rotate the device this session.
+  const [narrowOverrideAccepted, setNarrowOverrideAccepted] = useState(
+    () => typeof sessionStorage !== 'undefined' && sessionStorage.getItem('btb_narrow_ok') === '1'
+  )
+  const [isNarrow, setIsNarrow] = useState(() =>
+    typeof window !== 'undefined' && window.innerWidth < 768
+  )
+  useEffect(() => {
+    function check() { setIsNarrow(window.innerWidth < 768) }
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
   useEffect(() => {
     if (!actionCreation.type) setMousePos(null)
   }, [actionCreation.type])
@@ -1368,6 +1383,26 @@ export default function EditorPage() {
           />
         )
       })()}
+
+      {isNarrow && !narrowOverrideAccepted && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 p-6">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-sm w-full flex flex-col gap-4 shadow-2xl text-center">
+            <div className="text-5xl">📐</div>
+            <h2 className="text-white font-bold text-lg">{t('editor.narrowTitle')}</h2>
+            <p className="text-slate-300 text-sm leading-relaxed">{t('editor.narrowMessage')}</p>
+            <div className="flex flex-col gap-2 pt-2">
+              <button
+                onClick={() => navigate('/')}
+                className="w-full py-2.5 bg-orange-500 hover:bg-orange-400 text-white rounded-lg font-medium transition-colors"
+              >{t('editor.narrowGoHome')}</button>
+              <button
+                onClick={() => { sessionStorage.setItem('btb_narrow_ok', '1'); setNarrowOverrideAccepted(true) }}
+                className="w-full py-2 text-slate-400 hover:text-white text-sm transition-colors"
+              >{t('editor.narrowContinueAnyway')}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

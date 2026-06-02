@@ -51,6 +51,10 @@
     "saveDialogPlayNameLabel": "Nome schema",
     "saveAndExitButton": "Salva ed Esci",
     "dontSaveButton": "Non Salvare",
+    "narrowTitle": "Usa uno schermo più ampio",
+    "narrowMessage": "L'editor è progettato per tablet e laptop. Su uno schermo stretto, disegnare e trascinare è scomodo. Aprilo su un dispositivo più grande — oppure continua comunque.",
+    "narrowGoHome": "Torna alla Home",
+    "narrowContinueAnyway": "Continua comunque",
     "instructions": {
       "pass": "Clic sul giocatore che riceverà il passaggio",
       "dribble": "Clic sulla posizione obiettivo in campo",
@@ -163,7 +167,8 @@
   },
   "share": {
     "notFound": "Schema non trovato.",
-    "homeButton": "Home"
+    "homeButton": "Home",
+    "readOnly": "Sola lettura"
   },
   "auth": {
     "signInTitle": "Accedi",

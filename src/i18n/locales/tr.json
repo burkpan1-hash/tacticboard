@@ -51,6 +51,10 @@
     "saveDialogPlayNameLabel": "Oyun adı",
     "saveAndExitButton": "Kaydet & Çık",
     "dontSaveButton": "Kaydetme",
+    "narrowTitle": "Daha geniş bir ekran kullan",
+    "narrowMessage": "Editör tablet ve laptop için tasarlandı. Dar ekranda çizim ve sürükleme zorlaşıyor. Daha büyük bir cihazda aç — ya da yine de devam et.",
+    "narrowGoHome": "Ana Sayfaya Dön",
+    "narrowContinueAnyway": "Yine de devam et",
     "instructions": {
       "pass": "Pası alacak oyuncuya tıkla",
       "dribble": "Sahada hedef konuma tıkla",
@@ -163,7 +167,8 @@
   },
   "share": {
     "notFound": "Oyun bulunamadı.",
-    "homeButton": "Ana Sayfa"
+    "homeButton": "Ana Sayfa",
+    "readOnly": "Salt okunur"
   },
   "auth": {
     "signInTitle": "Giriş Yap",

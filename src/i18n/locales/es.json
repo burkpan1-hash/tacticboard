@@ -51,6 +51,10 @@
     "saveDialogPlayNameLabel": "Nombre de jugada",
     "saveAndExitButton": "Guardar y Salir",
     "dontSaveButton": "No Guardar",
+    "narrowTitle": "Usa una pantalla más ancha",
+    "narrowMessage": "El editor está diseñado para tablets y portátiles. En una pantalla estrecha, dibujar y arrastrar es incómodo. Ábrelo en un dispositivo más grande — o continúa de todos modos.",
+    "narrowGoHome": "Volver a Inicio",
+    "narrowContinueAnyway": "Continuar de todos modos",
     "instructions": {
       "pass": "Clic en el jugador que recibirá el pase",
       "dribble": "Clic en la posición objetivo de la pista",
@@ -163,7 +167,8 @@
   },
   "share": {
     "notFound": "Jugada no encontrada.",
-    "homeButton": "Inicio"
+    "homeButton": "Inicio",
+    "readOnly": "Solo lectura"
   },
   "auth": {
     "signInTitle": "Iniciar sesión",

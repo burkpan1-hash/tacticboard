@@ -51,6 +51,10 @@
     "saveDialogPlayNameLabel": "Spielname",
     "saveAndExitButton": "Speichern & Beenden",
     "dontSaveButton": "Nicht Speichern",
+    "narrowTitle": "Verwende einen breiteren Bildschirm",
+    "narrowMessage": "Der Editor wurde für Tablets und Laptops entwickelt. Auf einem schmalen Bildschirm sind Zeichnen und Ziehen unhandlich. Öffne ihn auf einem größeren Gerät — oder mache trotzdem weiter.",
+    "narrowGoHome": "Zurück zur Startseite",
+    "narrowContinueAnyway": "Trotzdem fortfahren",
     "instructions": {
       "pass": "Klicke auf den Spieler, der den Pass erhält",
       "dribble": "Klicke auf die Zielposition auf dem Feld",
@@ -163,7 +167,8 @@
   },
   "share": {
     "notFound": "Spiel nicht gefunden.",
-    "homeButton": "Startseite"
+    "homeButton": "Startseite",
+    "readOnly": "Nur Lesen"
   },
   "auth": {
     "signInTitle": "Anmelden",
