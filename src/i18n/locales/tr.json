@@ -153,6 +153,14 @@
     "offenseHeader": "Hücum Formasyonu — veya manuel yerleştirin",
     "defenseHeader": "Savunma Formasyonu — veya manuel yerleştirin"
   },
+  "playerEdit": {
+    "title": "Oyuncu Düzenle",
+    "nameLabel": "İsim",
+    "namePlaceholder": "Forma adı (opsiyonel)",
+    "numberLabel": "Forma Numarası",
+    "saveButton": "Kaydet",
+    "tooltip": "İsim / numara düzenlemek için çift tıkla"
+  },
   "share": {
     "notFound": "Oyun bulunamadı.",
     "homeButton": "Ana Sayfa"

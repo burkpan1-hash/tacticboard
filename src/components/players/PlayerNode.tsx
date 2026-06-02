@@ -17,12 +17,13 @@ interface Props {
   onDragMove?: (playerId: string, pos: NormalizedPosition) => void
   onDragEnd: (playerId: string, newPos: NormalizedPosition) => void
   onClick?: (playerId: string) => void
+  onDblClick?: (playerId: string) => void
 }
 
 const OFFENSE_COLOR = '#f97316'
 const DEFENSE_COLOR = '#1d4ed8'
 
-export default function PlayerNode({ player, position, courtType, landscape, hasBall, showBallDrop, isSelected, draggable = true, onDragStart, onDragMove, onDragEnd, onClick }: Props) {
+export default function PlayerNode({ player, position, courtType, landscape, hasBall, showBallDrop, isSelected, draggable = true, onDragStart, onDragMove, onDragEnd, onClick, onDblClick }: Props) {
   const canvasH = courtType === 'half' ? HALF_COURT_H : FULL_COURT_H
   const RADIUS = Math.round((courtType === 'half' ? 17 : 20) * COURT_SCALE)
   const FONT_SIZE = courtType === 'half' ? 12 : 14
@@ -90,6 +91,9 @@ export default function PlayerNode({ player, position, courtType, landscape, has
         onDragEnd(player.id, newPos)
       }}
       onClick={() => onClick?.(player.id)}
+      onDblClick={() => onDblClick?.(player.id)}
+      onTap={() => onClick?.(player.id)}
+      onDblTap={() => onDblClick?.(player.id)}
     >
       {isSelected && (
         <Circle radius={RADIUS + 5} fill="transparent" stroke="#facc15" strokeWidth={2} />
@@ -97,23 +101,54 @@ export default function PlayerNode({ player, position, courtType, landscape, has
       <Circle radius={RADIUS} fill={fill} stroke="white" strokeWidth={2} />
       {landscape ? (
         // Counter-rotate +90° to cancel the parent Group's -90° rotation — net 0° (upright)
-        <Text
-          text={String(player.number)}
-          fontSize={FONT_SIZE} fontStyle="bold"
-          fill="white" align="center" verticalAlign="middle"
-          x={0} y={0}
-          offsetX={RADIUS} offsetY={RADIUS}
-          width={RADIUS * 2} height={RADIUS * 2}
-          rotation={90}
-        />
+        <>
+          <Text
+            text={String(player.number)}
+            fontSize={FONT_SIZE} fontStyle="bold"
+            fill="white" align="center" verticalAlign="middle"
+            x={0} y={0}
+            offsetX={RADIUS} offsetY={RADIUS}
+            width={RADIUS * 2} height={RADIUS * 2}
+            rotation={90}
+          />
+          {player.name && (
+            <Text
+              text={player.name}
+              fontSize={11} fontStyle="bold"
+              fill="white"
+              stroke="#0f172a" strokeWidth={3}
+              fillAfterStrokeEnabled
+              align="center"
+              x={RADIUS + 5} y={-40}
+              width={80} height={14}
+              rotation={90}
+              listening={false}
+            />
+          )}
+        </>
       ) : (
-        <Text
-          text={String(player.number)}
-          fontSize={FONT_SIZE} fontStyle="bold"
-          fill="white" align="center" verticalAlign="middle"
-          x={-RADIUS} y={-RADIUS}
-          width={RADIUS * 2} height={RADIUS * 2}
-        />
+        <>
+          <Text
+            text={String(player.number)}
+            fontSize={FONT_SIZE} fontStyle="bold"
+            fill="white" align="center" verticalAlign="middle"
+            x={-RADIUS} y={-RADIUS}
+            width={RADIUS * 2} height={RADIUS * 2}
+          />
+          {player.name && (
+            <Text
+              text={player.name}
+              fontSize={11} fontStyle="bold"
+              fill="white"
+              stroke="#0f172a" strokeWidth={3}
+              fillAfterStrokeEnabled
+              align="center"
+              x={-40} y={RADIUS + 3}
+              width={80} height={14}
+              listening={false}
+            />
+          )}
+        </>
       )}
       {hasBall && (
         <>

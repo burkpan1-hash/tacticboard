@@ -153,6 +153,14 @@
     "offenseHeader": "Angriffsformation — oder manuell platzieren",
     "defenseHeader": "Verteidigungsformation — oder manuell platzieren"
   },
+  "playerEdit": {
+    "title": "Spieler Bearbeiten",
+    "nameLabel": "Name",
+    "namePlaceholder": "Trikotname (optional)",
+    "numberLabel": "Trikotnummer",
+    "saveButton": "Speichern",
+    "tooltip": "Doppelklick zum Bearbeiten von Name / Nummer"
+  },
   "share": {
     "notFound": "Spiel nicht gefunden.",
     "homeButton": "Startseite"

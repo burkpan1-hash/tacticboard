@@ -12,6 +12,7 @@ import ActionToolbar from '../components/toolbar/ActionToolbar'
 import ActionPanel from '../components/actions/ActionPanel'
 import PlaybackControls from '../components/playback/PlaybackControls'
 import ExportModal from '../components/export/ExportModal'
+import PlayerEditModal from '../components/players/PlayerEditModal'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
 import { usePlayStore } from '../store/usePlayStore'
 import { computeStateAtStep } from '../utils/stateEngine'
@@ -103,7 +104,7 @@ export default function EditorPage() {
     savedSets, activeSet, setActiveSet,
     activeStep,
     actionCreation, startActionCreation, setPendingSource, cancelActionCreation,
-    addAction, addPlayerToCourt, removePlayerFromCourt, setInitialBall, updateInitialPosition, updateMarkings, saveSet,
+    addAction, addPlayerToCourt, removePlayerFromCourt, setInitialBall, updateInitialPosition, updateMarkings, saveSet, updatePlayer,
     flipAttackBasket,
     isPlaying, setIsPlaying,
   } = usePlayStore()
@@ -241,6 +242,7 @@ export default function EditorPage() {
   }
   const stageRef = useRef<Konva.Stage | null>(null)
   const [showExport, setShowExport] = useState(false)
+  const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null)
   const rafRef = useRef(0)
   const lastTsRef = useRef(0)
   const STEP_MS = 1600
@@ -533,8 +535,8 @@ export default function EditorPage() {
   const inPlayIds = new Set(activeSet.players.map(p => p.id))
   const allBenchPlayers: Player[] = []
   for (let n = 1; n <= 5; n++) {
-    allBenchPlayers.push({ id: `o${n}`, number: n as Player['number'], team: 'offense' })
-    allBenchPlayers.push({ id: `d${n}`, number: n as Player['number'], team: 'defense' })
+    allBenchPlayers.push({ id: `o${n}`, number: n, team: 'offense' })
+    allBenchPlayers.push({ id: `d${n}`, number: n, team: 'defense' })
   }
 
   function cancelAll() {
@@ -1134,6 +1136,12 @@ export default function EditorPage() {
                       }
                     }}
                     onClick={handlePlayerClick}
+                    onDblClick={(id) => {
+                      // Only let the user edit a player's identity when not mid-action;
+                      // double-click during action creation would conflict with click-to-select flows.
+                      if (actionCreation.type) return
+                      setEditingPlayerId(id)
+                    }}
                   />
                 )
               })}
@@ -1348,6 +1356,18 @@ export default function EditorPage() {
           onClose={() => setShowExport(false)}
         />
       )}
+
+      {editingPlayerId && (() => {
+        const player = activeSet.players.find(p => p.id === editingPlayerId)
+        if (!player) return null
+        return (
+          <PlayerEditModal
+            player={player}
+            onSave={(updates) => updatePlayer(player.id, updates)}
+            onClose={() => setEditingPlayerId(null)}
+          />
+        )
+      })()}
     </div>
   )
 }

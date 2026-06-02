@@ -153,6 +153,14 @@
     "offenseHeader": "Formazione Offensiva — o posiziona manualmente",
     "defenseHeader": "Formazione Difensiva — o posiziona manualmente"
   },
+  "playerEdit": {
+    "title": "Modifica Giocatore",
+    "nameLabel": "Nome",
+    "namePlaceholder": "Nome maglia (opzionale)",
+    "numberLabel": "Numero Maglia",
+    "saveButton": "Salva",
+    "tooltip": "Doppio clic per modificare nome / numero"
+  },
   "share": {
     "notFound": "Schema non trovato.",
     "homeButton": "Home"

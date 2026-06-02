@@ -153,6 +153,14 @@
     "offenseHeader": "Offense Formation — or place manually",
     "defenseHeader": "Defense Formation — or place manually"
   },
+  "playerEdit": {
+    "title": "Edit Player",
+    "nameLabel": "Name",
+    "namePlaceholder": "Jersey name (optional)",
+    "numberLabel": "Jersey Number",
+    "saveButton": "Save",
+    "tooltip": "Double-click to edit name / number"
+  },
   "share": {
     "notFound": "Play not found.",
     "homeButton": "Home"

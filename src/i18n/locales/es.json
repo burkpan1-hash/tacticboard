@@ -153,6 +153,14 @@
     "offenseHeader": "Formación Ofensiva — o coloca manualmente",
     "defenseHeader": "Formación Defensiva — o coloca manualmente"
   },
+  "playerEdit": {
+    "title": "Editar Jugador",
+    "nameLabel": "Nombre",
+    "namePlaceholder": "Nombre de camiseta (opcional)",
+    "numberLabel": "Número de Camiseta",
+    "saveButton": "Guardar",
+    "tooltip": "Doble clic para editar nombre / número"
+  },
   "share": {
     "notFound": "Jugada no encontrada.",
     "homeButton": "Inicio"

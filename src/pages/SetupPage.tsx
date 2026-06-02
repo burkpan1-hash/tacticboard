@@ -17,9 +17,9 @@ type Step = 'info' | 'positions' | 'ball'
 function buildPlayers(offenseCount: number, defenseCount: number): Player[] {
   const players: Player[] = []
   for (let i = 1; i <= offenseCount; i++)
-    players.push({ id: `o${i}`, number: i as 1|2|3|4|5, team: 'offense' })
+    players.push({ id: `o${i}`, number: i, team: 'offense' })
   for (let i = 1; i <= defenseCount; i++)
-    players.push({ id: `d${i}`, number: i as 1|2|3|4|5, team: 'defense' })
+    players.push({ id: `d${i}`, number: i, team: 'defense' })
   return players
 }
 
