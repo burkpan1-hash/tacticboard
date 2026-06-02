@@ -121,11 +121,7 @@
     "captureProgressLabel": "Acquisizione",
     "encodingStatus": "Finalizzazione video…",
     "processingStatus": "Elaborazione…",
-    "downloadSuccess": "Download avviato!",
-    "formatLabel": "Formato",
-    "gifHint": "Si apre ovunque (Anteprima Mac, Slack, Discord). File più grande, senza audio.",
-    "mp4Hint": "File più piccolo. Aprilo nel browser o VLC; QuickTime di Mac potrebbe non riprodurlo.",
-    "encodingLabel": "Codifica"
+    "downloadSuccess": "Download avviato!"
   },
   "action": {
     "pass": "Pass",

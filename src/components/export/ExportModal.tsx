@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import type Konva from 'konva'
 import { useTranslation } from 'react-i18next'
-import { exportGif, exportVideo, downloadBlob } from '../../utils/exportAnimation'
+import { exportVideo, downloadBlob } from '../../utils/exportAnimation'
 import { usePlayStore } from '../../store/usePlayStore'
 
 type Phase = 'idle' | 'playing' | 'encoding' | 'done'
-type Format = 'gif' | 'mp4'
 
 interface Props {
   stageRef: React.RefObject<Konva.Stage | null>
@@ -19,9 +18,7 @@ export default function ExportModal({ stageRef, stepMs, onClose }: Props) {
 
   const scale = 1
   const [phase, setPhase] = useState<Phase>('idle')
-  const [format, setFormat] = useState<Format>('mp4')
   const [captureProgress, setCaptureProgress] = useState(0)
-  const [encodeProgress, setEncodeProgress] = useState(0)
   const cancelRef = useRef<(() => void) | null>(null)
   const savedSpeed = useRef(playbackSpeed)
   const savedStep = useRef(activeStep)
@@ -40,50 +37,27 @@ export default function ExportModal({ stageRef, stepMs, onClose }: Props) {
 
     setPhase('playing')
     setCaptureProgress(0)
-    setEncodeProgress(0)
 
     setTimeout(() => {
       setIsPlaying(true)
 
       const baseName = activeSet.name || 'play'
-      if (format === 'gif') {
-        // GIF: capture frames at 15fps, scale down for reasonable file size, then encode
-        // (encode is heavy — runs on main thread, shows separate progress bar).
-        const handle = exportGif(
-          stage,
-          durationMs,
-          15,         // fps — 15 is plenty for playbook visualization
-          0.55,       // scale (0.55 ≈ 460×360 from 840×658) keeps under ~5MB
-          (p) => setCaptureProgress(p),
-          (p) => {
-            if (p > 0) setPhase('encoding')
-            setEncodeProgress(p)
-          },
-          (blob) => {
-            downloadBlob(blob, `${baseName}.gif`)
-            setPhase('done')
-            restore()
-          },
-        )
-        cancelRef.current = handle.cancel
-      } else {
-        const handle = exportVideo(
-          stage,
-          durationMs,
-          scale,
-          (p) => {
-            setCaptureProgress(p)
-            if (p >= 1) setPhase('encoding')
-          },
-          (blob) => {
-            const ext = blob.type.includes('mp4') ? 'mp4' : 'webm'
-            downloadBlob(blob, `${baseName}.${ext}`)
-            setPhase('done')
-            restore()
-          },
-        )
-        cancelRef.current = handle.cancel
-      }
+      const handle = exportVideo(
+        stage,
+        durationMs,
+        scale,
+        (p) => {
+          setCaptureProgress(p)
+          if (p >= 1) setPhase('encoding')
+        },
+        (blob) => {
+          const ext = blob.type.includes('mp4') ? 'mp4' : 'webm'
+          downloadBlob(blob, `${baseName}.${ext}`)
+          setPhase('done')
+          restore()
+        },
+      )
+      cancelRef.current = handle.cancel
     }, 80)
   }
 
@@ -130,25 +104,9 @@ export default function ExportModal({ stageRef, stepMs, onClose }: Props) {
 
         {phase === 'idle' && (
           <>
-            {/* Format picker: GIF default — opens natively in Preview/Finder/messaging apps.
-                MP4 is smaller but Chromium's fragmented MP4 doesn't play in macOS native players;
-                still useful when sharing inside a browser/Slack/Discord. */}
-            <div className="flex flex-col gap-1">
-              <span className="text-slate-400 text-xs">{t('export.formatLabel')}</span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setFormat('gif')}
-                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors border ${format === 'gif' ? 'bg-orange-600 text-white border-orange-500' : 'bg-slate-700 text-slate-300 border-slate-600 hover:bg-slate-600'}`}
-                >GIF</button>
-                <button
-                  onClick={() => setFormat('mp4')}
-                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors border ${format === 'mp4' ? 'bg-orange-600 text-white border-orange-500' : 'bg-slate-700 text-slate-300 border-slate-600 hover:bg-slate-600'}`}
-                >MP4</button>
-              </div>
-              <p className="text-slate-500 text-[11px] leading-relaxed mt-1">
-                {format === 'gif' ? t('export.gifHint') : t('export.mp4Hint')}
-              </p>
-            </div>
+            <p className="text-slate-400 text-xs leading-relaxed">
+              {t('export.description')}
+            </p>
 
             {total === 0 && (
               <p className="text-red-400 text-xs">{t('export.noActionsError')}</p>
@@ -188,9 +146,7 @@ export default function ExportModal({ stageRef, stepMs, onClose }: Props) {
         {phase === 'encoding' && (
           <div className="flex flex-col gap-3">
             <p className="text-slate-300 text-xs">{t('export.encodingStatus')}</p>
-            {format === 'gif' && encodeProgress > 0
-              ? progressBar(encodeProgress, t('export.encodingLabel'))
-              : <div className="text-slate-400 text-xs">{t('export.processingStatus')}</div>}
+            <div className="text-slate-400 text-xs">{t('export.processingStatus')}</div>
           </div>
         )}
 
