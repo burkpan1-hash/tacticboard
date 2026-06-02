@@ -2,7 +2,47 @@ import type Konva from 'konva'
 
 // ─── Shared utils ─────────────────────────────────────────────────────────────
 
-export function downloadBlob(blob: Blob, filename: string) {
+/** Save a blob to disk via a real native "Save As" dialog on Chromium-based browsers
+ *  (Chrome / Edge / Vivaldi / Opera). Falls back to <a download> on Firefox / Safari.
+ *
+ *  Why the picker matters here: programmatic <a download> click works most of the time
+ *  but occasionally fails silently — the browser logs the download in its UI but never
+ *  writes the file to disk, leaving the user staring at a "downloaded" entry that
+ *  doesn't exist anywhere. The File System Access API uses a real OS file dialog and
+ *  writes the bytes directly via FileSystemWritableFileStream, so the file is
+ *  guaranteed to land where the user picked it. */
+export async function downloadBlob(blob: Blob, filename: string) {
+  const ext = filename.split('.').pop()?.toLowerCase() ?? 'bin'
+  const mimeMap: Record<string, string> = {
+    mp4: 'video/mp4', webm: 'video/webm', gif: 'image/gif', png: 'image/png',
+  }
+  const mime = mimeMap[ext] ?? blob.type ?? 'application/octet-stream'
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const picker = (window as any).showSaveFilePicker as
+    | ((opts: { suggestedName: string; types: Array<{ description: string; accept: Record<string, string[]> }> }) => Promise<FileSystemFileHandle>)
+    | undefined
+
+  if (picker) {
+    try {
+      const handle = await picker({
+        suggestedName: filename,
+        types: [{
+          description: ext.toUpperCase() + ' file',
+          accept: { [mime]: [`.${ext}`] },
+        }],
+      })
+      const writable = await handle.createWritable()
+      await writable.write(blob)
+      await writable.close()
+      return
+    } catch (err) {
+      // User clicked Cancel — bail without falling through to auto-download.
+      if (err instanceof Error && err.name === 'AbortError') return
+      // Picker unavailable on this origin / iframe → fall through to <a download>.
+    }
+  }
+
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url; a.download = filename; a.click()
