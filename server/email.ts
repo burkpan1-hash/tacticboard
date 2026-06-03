@@ -6,6 +6,10 @@ import { Resend } from 'resend'
 const FROM = process.env.EMAIL_FROM || 'Basketball Tactic Board <onboarding@resend.dev>'
 const APP_NAME = 'Basketball Tactic Board'
 
+if (!process.env.RESEND_API_KEY && process.env.NODE_ENV === 'production') {
+  throw new Error('RESEND_API_KEY is required in production — set it via: flyctl secrets set RESEND_API_KEY=re_...')
+}
+
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
 type SendArgs = { to: string; subject: string; html: string; text: string }
@@ -13,6 +17,7 @@ type SendArgs = { to: string; subject: string; html: string; text: string }
 export async function sendMail({ to, subject, html, text }: SendArgs): Promise<void> {
   if (!resend) {
     // Dev/staging fallback — print the message so flows can be exercised without a provider.
+    // Never reached in production (guarded above at module load).
     console.log('\n=== EMAIL (dev fallback — no RESEND_API_KEY set) ===')
     console.log('To:     ', to)
     console.log('Subject:', subject)
