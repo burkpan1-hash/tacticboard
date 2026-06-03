@@ -193,6 +193,8 @@ export default function HomePage() {
 
       <footer className="mt-12 pt-6 border-t border-slate-800 text-center text-xs text-slate-500 space-y-2">
         <div>
+          <a href="/pricing" className="hover:text-orange-400 transition-colors">Pricing</a>
+          <span className="mx-3">·</span>
           <a href="/privacy" className="hover:text-orange-400 transition-colors">Privacy</a>
           <span className="mx-3">·</span>
           <a href="/terms" className="hover:text-orange-400 transition-colors">Terms</a>
