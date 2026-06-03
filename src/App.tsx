@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import HomePage from './pages/HomePage'
 import SetupPage from './pages/SetupPage'
 import EditorPage from './pages/EditorPage'
@@ -10,6 +10,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage'
 import SharePage from './pages/SharePage'
 import PrivacyPage from './pages/PrivacyPage'
 import TermsPage from './pages/TermsPage'
+import NotFoundPage from './pages/NotFoundPage'
 import CookieConsentBanner from './components/ui/CookieConsentBanner'
 
 export default function App() {
@@ -27,7 +28,7 @@ export default function App() {
         <Route path="/share/:token" element={<SharePage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <CookieConsentBanner />
     </>
