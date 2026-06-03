@@ -195,6 +195,8 @@ export default function HomePage() {
         <a href="/privacy" className="hover:text-orange-400 transition-colors">Privacy</a>
         <span className="mx-3">·</span>
         <a href="/terms" className="hover:text-orange-400 transition-colors">Terms</a>
+        <span className="mx-3">·</span>
+        <a href="mailto:support@basketballtacticboard.com" className="hover:text-orange-400 transition-colors">Support</a>
       </footer>
     </div>
   )

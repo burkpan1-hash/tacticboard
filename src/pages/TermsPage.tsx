@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import Logo from '../components/ui/Logo'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
 
-const CONTACT_EMAIL = 'burkpan1@gmail.com'
+const CONTACT_EMAIL = 'support@basketballtacticboard.com'
 const LAST_UPDATED = '2026-06-03'
 
 const COPY: Record<'tr' | 'en', { title: string; sections: Array<{ heading: string; body: string }> }> = {
