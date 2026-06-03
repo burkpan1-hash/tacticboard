@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /editor/
+Disallow: /share/
+Disallow: /verify-email
+Disallow: /reset-password
+Disallow: /api/
+
+Sitemap: https://basketballtacticboard.com/sitemap.xml
