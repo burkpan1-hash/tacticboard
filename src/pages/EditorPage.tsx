@@ -181,16 +181,27 @@ export default function EditorPage() {
   }
 
   async function handleCloudShare() {
-    if (!session) { navigate('/register'); return }
     if (!activeSet) return
-    const res = await fetch('/api/plays', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: activeSet.name, data: activeSet }),
-    })
-    const play = await res.json()
-    const shareRes = await fetch(`/api/plays/${play.id}/share`, { method: 'POST' })
-    const { shareToken } = await shareRes.json()
+    let shareToken: string
+    if (session) {
+      // Logged-in: save to user's account then share
+      const res = await fetch('/api/plays', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: activeSet.name, data: activeSet }),
+      })
+      const play = await res.json()
+      const shareRes = await fetch(`/api/plays/${play.id}/share`, { method: 'POST' })
+      shareToken = (await shareRes.json()).shareToken
+    } else {
+      // Anonymous: save as guest play
+      const res = await fetch('/api/share-public', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: activeSet.name, data: activeSet }),
+      })
+      shareToken = (await res.json()).shareToken
+    }
     await navigator.clipboard.writeText(`${window.location.origin}/share/${shareToken}`)
     setShareCopied(true)
     setTimeout(() => setShareCopied(false), 2000)

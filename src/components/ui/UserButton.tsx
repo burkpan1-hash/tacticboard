@@ -25,7 +25,7 @@ export default function UserButton({ onSignOut }: UserButtonProps) {
   return (
     <button
       onClick={() => navigate('/login')}
-      className="bg-slate-700 hover:bg-slate-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm"
+      className="bg-orange-500 hover:bg-orange-400 text-white font-bold px-4 py-2 rounded-lg transition-colors text-sm shadow-md shadow-orange-500/30"
     >
       {t('home.loginButton')}
     </button>
