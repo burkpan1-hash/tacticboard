@@ -7,6 +7,7 @@ import PlayerNode from '../components/players/PlayerNode'
 import PlayerSetup from '../components/setup/PlayerSetup'
 import FormationPicker from '../components/setup/FormationPicker'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
+import UserButton from '../components/ui/UserButton'
 import { usePlayStore } from '../store/usePlayStore'
 import type { Player, PositionMap, NormalizedPosition, PlaySet } from '../models/types'
 import type { FormationPreset } from '../utils/formations'
@@ -17,9 +18,9 @@ type Step = 'info' | 'positions' | 'ball'
 function buildPlayers(offenseCount: number, defenseCount: number): Player[] {
   const players: Player[] = []
   for (let i = 1; i <= offenseCount; i++)
-    players.push({ id: `o${i}`, number: i as 1|2|3|4|5, team: 'offense' })
+    players.push({ id: `o${i}`, number: i, team: 'offense' })
   for (let i = 1; i <= defenseCount; i++)
-    players.push({ id: `d${i}`, number: i as 1|2|3|4|5, team: 'defense' })
+    players.push({ id: `d${i}`, number: i, team: 'defense' })
   return players
 }
 
@@ -56,13 +57,18 @@ export default function SetupPage() {
 
   useEffect(() => {
     const el = courtAreaRef.current
-    if (!el || setupDraft.courtType !== 'full') return
-    const STAGE_W = HALF_COURT_W + 2 * COURT_PADDING_X
+    if (!el) return
+    const STAGE_W_VAL = HALF_COURT_W + 2 * COURT_PADDING_X
     function updateScale() {
       if (!el) return
       const aw = el.clientWidth - 32
       const ah = el.clientHeight - 16
-      if (aw > 0 && ah > 0) setCourtScale(Math.min(aw / (FULL_COURT_H + 2 * COURT_PADDING_Y), ah / STAGE_W))
+      if (aw <= 0 || ah <= 0) return
+      if (setupDraft.courtType === 'full') {
+        setCourtScale(Math.min(aw / (FULL_COURT_H + 2 * COURT_PADDING_Y), ah / STAGE_W_VAL))
+      } else {
+        setCourtScale(Math.min(1, aw / STAGE_W_VAL))
+      }
     }
     updateScale()
     const ro = new ResizeObserver(updateScale)
@@ -138,7 +144,10 @@ export default function SetupPage() {
               <button onClick={() => navigate('/')} className="text-slate-400 hover:text-white transition-colors text-sm">{t('common.backButton')}</button>
               <h2 className="text-2xl font-bold text-white">{t('setup.newPlayTitle')}</h2>
             </div>
-            <LanguageSwitcher />
+            <div className="flex items-center gap-2">
+              <LanguageSwitcher />
+              <UserButton />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -207,29 +216,30 @@ export default function SetupPage() {
   if (step === 'positions') {
     return (
       <div className="h-screen flex flex-col bg-slate-900 overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
-          <button onClick={() => setStep('info')} className="text-slate-400 hover:text-white transition-colors text-sm">{t('common.backButton')}</button>
-          <div className="flex items-center gap-3">
-            <span className="text-white font-semibold">{t('setup.startingFormationTitle')}</span>
+        <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-slate-800 border-b border-slate-700">
+          <button onClick={() => setStep('info')} className="text-slate-400 hover:text-white transition-colors text-sm shrink-0">{t('common.backButton')}</button>
+          <div className="flex items-center gap-2">
+            <span className="hidden sm:block text-white font-semibold text-sm">{t('setup.startingFormationTitle')}</span>
             <FlipButton />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <LanguageSwitcher />
+            <UserButton />
             <button
               onClick={() => {
                 if (!draftBall) setDraftBall({ holderId: 'o1' })
                 setStep('ball')
               }}
-              className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-4 py-1.5 rounded-lg text-sm transition-colors"
+              className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-3 sm:px-4 py-1.5 rounded-lg text-sm transition-colors"
             >
               {t('common.nextButton')}
             </button>
           </div>
         </div>
 
-        <div className="flex flex-1 overflow-hidden">
-          <div className="p-2 border-r border-slate-700 overflow-y-auto">
-            <div className="flex flex-col gap-4 w-52">
+        <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+          <div className="p-2 md:border-r border-b md:border-b-0 border-slate-700 overflow-x-auto md:overflow-y-auto md:overflow-x-hidden shrink-0">
+            <div className="flex flex-row md:flex-col gap-2 md:gap-4 w-max md:w-52">
               {setupDraft.offenseCount > 0 && (
                 <FormationPicker
                   team="offense"
@@ -252,7 +262,7 @@ export default function SetupPage() {
           <div ref={courtAreaRef} className="flex-1 flex items-center justify-center overflow-hidden">
             <CourtCanvas
               courtType={setupDraft.courtType}
-              scale={isLandscape ? courtScale : 1}
+              scale={courtScale}
               landscape={isLandscape}
               attackBasket={isLandscape ? attackBasket : undefined}
             >
@@ -282,26 +292,26 @@ export default function SetupPage() {
 
   return (
     <div className="h-screen flex flex-col bg-slate-900 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
-        <button onClick={() => setStep('positions')} className="text-slate-400 hover:text-white transition-colors text-sm">{t('common.backButton')}</button>
-        <div className="flex flex-col items-center gap-1">
-          <div className="flex items-center gap-3">
-            <div className="text-white font-semibold">{t('setup.assignBallTitle')}</div>
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-slate-800 border-b border-slate-700">
+        <button onClick={() => setStep('positions')} className="text-slate-400 hover:text-white transition-colors text-sm shrink-0">{t('common.backButton')}</button>
+        <div className="flex flex-col items-center gap-0.5">
+          <div className="flex items-center gap-2">
+            <div className="text-white font-semibold text-sm">{t('setup.assignBallTitle')}</div>
             <FlipButton />
           </div>
-          <div className="text-amber-400 text-sm font-medium">{t('setup.assignBallSubtitle')}</div>
+          <div className="text-amber-400 text-xs font-medium">{t('setup.assignBallSubtitle')}</div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <LanguageSwitcher />
           <button
             onClick={() => handleReady(true)}
-            className="bg-slate-600 hover:bg-slate-500 text-white font-semibold px-4 py-1.5 rounded-lg text-sm transition-colors"
+            className="bg-slate-600 hover:bg-slate-500 text-white font-semibold px-2.5 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm transition-colors"
           >
             {t('setup.noballButton')}
           </button>
           <button
             onClick={() => handleReady(false)}
-            className="bg-green-600 hover:bg-green-500 text-white font-bold px-5 py-2 rounded-lg transition-colors"
+            className="bg-green-600 hover:bg-green-500 text-white font-bold px-3 sm:px-5 py-1.5 sm:py-2 rounded-lg text-sm transition-colors"
           >
             {t('setup.readyButton')}
           </button>
@@ -311,7 +321,7 @@ export default function SetupPage() {
       <div ref={courtAreaRef} className="flex-1 flex items-center justify-center overflow-hidden">
         <CourtCanvas
           courtType={setupDraft.courtType}
-          scale={isLandscape ? courtScale : 1}
+          scale={courtScale}
           landscape={isLandscape}
         >
           {players.map((p) => {

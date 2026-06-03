@@ -12,14 +12,17 @@ import ActionToolbar from '../components/toolbar/ActionToolbar'
 import ActionPanel from '../components/actions/ActionPanel'
 import PlaybackControls from '../components/playback/PlaybackControls'
 import ExportModal from '../components/export/ExportModal'
+import PlayerEditModal from '../components/players/PlayerEditModal'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
+import UserButton from '../components/ui/UserButton'
 import { usePlayStore } from '../store/usePlayStore'
 import { computeStateAtStep } from '../utils/stateEngine'
 import { denormalize } from '../utils/courtCoords'
-import type { Action, NormalizedPosition, Player, PlaySet, PositionMap } from '../models/types'
+import type { Action, ActionType, NormalizedPosition, Player, PlaySet, PositionMap } from '../models/types'
 import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_PADDING_X, COURT_PADDING_Y, HALF_COURT_PADDING_TOP, HALF_COURT } from '../utils/courtCoords'
-import { ACTION_COLORS, ACTION_LABEL_KEYS } from '../utils/actionColors'
+import { ACTION_COLORS, ACTION_LABEL_KEYS, actionLabelPlayerId } from '../utils/actionColors'
 import { authClient } from '../lib/authClient'
+import { useEditorShortcuts } from '../hooks/useEditorShortcuts'
 
 // Stable signature of the user-visible play state — used for dirty tracking.
 // Excludes technical metadata (id, cloudPlayId) that doesn't represent user-authored changes.
@@ -102,7 +105,7 @@ export default function EditorPage() {
     savedSets, activeSet, setActiveSet,
     activeStep,
     actionCreation, startActionCreation, setPendingSource, cancelActionCreation,
-    addAction, addPlayerToCourt, removePlayerFromCourt, setInitialBall, updateInitialPosition, updateMarkings, saveSet,
+    addAction, addPlayerToCourt, removePlayerFromCourt, setInitialBall, updateInitialPosition, updateMarkings, saveSet, updatePlayer,
     flipAttackBasket,
     isPlaying, setIsPlaying,
   } = usePlayStore()
@@ -178,16 +181,27 @@ export default function EditorPage() {
   }
 
   async function handleCloudShare() {
-    if (!session) { navigate('/register'); return }
     if (!activeSet) return
-    const res = await fetch('/api/plays', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: activeSet.name, data: activeSet }),
-    })
-    const play = await res.json()
-    const shareRes = await fetch(`/api/plays/${play.id}/share`, { method: 'POST' })
-    const { shareToken } = await shareRes.json()
+    let shareToken: string
+    if (session) {
+      // Logged-in: save to user's account then share
+      const res = await fetch('/api/plays', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: activeSet.name, data: activeSet }),
+      })
+      const play = await res.json()
+      const shareRes = await fetch(`/api/plays/${play.id}/share`, { method: 'POST' })
+      shareToken = (await shareRes.json()).shareToken
+    } else {
+      // Anonymous: save as guest play
+      const res = await fetch('/api/share-public', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: activeSet.name, data: activeSet }),
+      })
+      shareToken = (await res.json()).shareToken
+    }
     await navigator.clipboard.writeText(`${window.location.origin}/share/${shareToken}`)
     setShareCopied(true)
     setTimeout(() => setShareCopied(false), 2000)
@@ -240,6 +254,7 @@ export default function EditorPage() {
   }
   const stageRef = useRef<Konva.Stage | null>(null)
   const [showExport, setShowExport] = useState(false)
+  const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null)
   const rafRef = useRef(0)
   const lastTsRef = useRef(0)
   const STEP_MS = 1600
@@ -311,17 +326,89 @@ export default function EditorPage() {
     setSaveStatus('idle')
   }, [setId, isCloudPlay, activeSet?.id, activeSet?.cloudPlayId])
 
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault()
-        usePlayStore.getState().undoLastAction()
-      }
-      if (e.key === 'Escape') cancelAll()
+  // Mirror the disabled logic from ActionToolbar so keyboard cannot start an action
+  // the user can't start with a click (e.g., shot without ball, defense action without defenders)
+  const hasDefenders = (activeSet?.players ?? []).some(p => p.team === 'defense')
+  function canStartAction(type: ActionType): boolean {
+    if (!activeSet) return false
+    if (hasShotActionFromStore()) return false
+    const isDefense = type === 'defense-move' || type === 'double-team' || type === 'ball-force'
+    if (isDefense) return hasDefenders
+    const requiresBall: Record<ActionType, boolean> = {
+      pass: true, dribble: true, shot: true, handoff: true,
+      cut: false, screen: false,
+      'defense-move': false, 'double-team': false, 'ball-force': false,
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
+    if (requiresBall[type] && !currentStateBallHolder()) return false
+    return true
+  }
+  // Lazy reads — these need the latest values at the moment the shortcut fires.
+  function hasShotActionFromStore(): boolean {
+    return !!usePlayStore.getState().activeSet?.actions.some(a => a.type === 'shot')
+  }
+  function currentStateBallHolder(): string {
+    const s = usePlayStore.getState()
+    const set = s.activeSet
+    if (!set) return ''
+    const state = computeStateAtStep(
+      set.actions, s.activeStep, set.initialPositions, set.initialBall, undefined,
+      set.courtType === 'full'
+        ? (set.attackBasket === 'bottom' ? 1 - 42 / FULL_COURT_H : 42 / FULL_COURT_H)
+        : 42 / HALF_COURT_H,
+      HALF_COURT_W,
+      set.courtType === 'half' ? HALF_COURT_H : FULL_COURT_H,
+    )
+    return state.ball.holderId
+  }
+
+  useEditorShortcuts({
+    enabled: !!activeSet,
+    onAction: (type) => {
+      if (actionCreation.type === type) cancelAll()
+      else startActionCreation(type)
+    },
+    onCancel: () => cancelAll(),
+    onUndo: () => usePlayStore.getState().undoLastAction(),
+    onPlayPause: () => {
+      const s = usePlayStore.getState()
+      const tot = s.activeSet?.actions.length ?? 0
+      if (tot === 0) return
+      if (s.isPlaying) { s.setIsPlaying(false); return }
+      if (s.activeStep >= tot) s.setActiveStep(0)
+      s.setIsPlaying(true)
+    },
+    onStepBack: () => {
+      const s = usePlayStore.getState()
+      if (s.isPlaying) return
+      s.setActiveStep(Math.max(0, s.activeStep - 1))
+    },
+    onStepForward: () => {
+      const s = usePlayStore.getState()
+      if (s.isPlaying) return
+      const tot = s.activeSet?.actions.length ?? 0
+      s.setActiveStep(Math.min(tot, s.activeStep + 1))
+    },
+    onGoToStart: () => {
+      const s = usePlayStore.getState()
+      if (s.isPlaying) return
+      s.setActiveStep(0)
+    },
+    onGoToEnd: () => {
+      const s = usePlayStore.getState()
+      if (s.isPlaying) return
+      const tot = s.activeSet?.actions.length ?? 0
+      s.setActiveStep(tot)
+    },
+    onSave: () => handleSave(),
+    canSave: !!activeSet && activeSet.actions.length > 0 && isDirty,
+    onExport: () => setShowExport(true),
+    canExport: !!activeSet && activeSet.actions.length > 0 && !isPlaying,
+    onShare: () => handleCloudShare(),
+    canShare: !!activeSet && activeSet.actions.length > 0,
+    onToggleMarkings: () => handleToggleMarkings(),
+    canToggleMarkings: hasDefenders,
+    canStartAction,
+  })
 
   useEffect(() => {
     if (!actionCreation.type) setMousePos(null)
@@ -339,13 +426,18 @@ export default function EditorPage() {
 
   useEffect(() => {
     const el = courtAreaRef.current
-    if (!el || activeSet?.courtType !== 'full') return
-    const STAGE_W = HALF_COURT_W + 2 * COURT_PADDING_X
+    if (!el) return
+    const STAGE_W_VAL = HALF_COURT_W + 2 * COURT_PADDING_X
     function updateScale() {
       if (!el) return
       const aw = el.clientWidth - 32
       const ah = el.clientHeight - 16
-      if (aw > 0 && ah > 0) setCourtScale(Math.min(aw / (FULL_COURT_H + 2 * COURT_PADDING_Y), ah / STAGE_W))
+      if (aw <= 0 || ah <= 0) return
+      if (activeSet?.courtType === 'full') {
+        setCourtScale(Math.min(aw / (FULL_COURT_H + 2 * COURT_PADDING_Y), ah / STAGE_W_VAL))
+      } else {
+        setCourtScale(Math.min(1, aw / STAGE_W_VAL))
+      }
     }
     updateScale()
     const ro = new ResizeObserver(updateScale)
@@ -460,8 +552,8 @@ export default function EditorPage() {
   const inPlayIds = new Set(activeSet.players.map(p => p.id))
   const allBenchPlayers: Player[] = []
   for (let n = 1; n <= 5; n++) {
-    allBenchPlayers.push({ id: `o${n}`, number: n as Player['number'], team: 'offense' })
-    allBenchPlayers.push({ id: `d${n}`, number: n as Player['number'], team: 'defense' })
+    allBenchPlayers.push({ id: `o${n}`, number: n, team: 'offense' })
+    allBenchPlayers.push({ id: `d${n}`, number: n, team: 'defense' })
   }
 
   function cancelAll() {
@@ -502,7 +594,9 @@ export default function EditorPage() {
       const ky = (e.clientY - rect.top) / courtScale
       dropNorm = { x: Math.max(0.02, Math.min(0.98, (STAGE_W - ky - COURT_PADDING_X) / HALF_COURT_W)), y: Math.max(-0.05, Math.min(1.05, (kx - COURT_PADDING_Y) / FULL_COURT_H)) }
     } else {
-      dropNorm = { x: Math.max(0.02, Math.min(0.98, (e.clientX - rect.left - COURT_PADDING_X) / HALF_COURT_W)), y: Math.max(-0.05, Math.min(1.05, (e.clientY - rect.top - HALF_COURT_PADDING_TOP) / cH)) }
+      const cx = (e.clientX - rect.left) / courtScale
+      const cy = (e.clientY - rect.top) / courtScale
+      dropNorm = { x: Math.max(0.02, Math.min(0.98, (cx - COURT_PADDING_X) / HALF_COURT_W)), y: Math.max(-0.05, Math.min(1.05, (cy - HALF_COURT_PADDING_TOP) / cH)) }
     }
 
     if (isBall) {
@@ -530,12 +624,11 @@ export default function EditorPage() {
     if (!pos) return null
     if (activeSet.courtType === 'full') {
       const STAGE_W = HALF_COURT_W + 2 * COURT_PADDING_X
-      // pos is in CSS pixels; divide by courtScale to get Stage logical coords
       const sx = STAGE_W - pos.y / courtScale
       const sy = (pos.x / courtScale) - COURT_PADDING_Y
       return { x: (sx - COURT_PADDING_X) / HALF_COURT_W, y: sy / FULL_COURT_H }
     }
-    return { x: (pos.x - COURT_PADDING_X) / HALF_COURT_W, y: (pos.y - HALF_COURT_PADDING_TOP) / cH }
+    return { x: (pos.x / courtScale - COURT_PADDING_X) / HALF_COURT_W, y: (pos.y / courtScale - HALF_COURT_PADDING_TOP) / cH }
   }
 
   function handleMouseDown(e: Konva.KonvaEventObject<MouseEvent>) {
@@ -781,9 +874,9 @@ export default function EditorPage() {
 
   return (
     <div className="h-screen flex flex-col bg-slate-900 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
-        <div className="flex items-center gap-3">
-          <button onClick={handleNavigateHome} className="text-slate-400 hover:text-white transition-colors text-sm">{t('common.backButton')}</button>
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-slate-800 border-b border-slate-700">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <button onClick={handleNavigateHome} className="text-slate-400 hover:text-white transition-colors text-sm shrink-0">{t('common.backButton')}</button>
           {editingName ? (
             <input
               ref={nameInputRef}
@@ -794,26 +887,27 @@ export default function EditorPage() {
                 if (e.key === 'Enter') commitNameEdit()
                 if (e.key === 'Escape') setEditingName(false)
               }}
-              className="bg-slate-700 text-white rounded px-2 py-0.5 outline-none focus:ring-2 focus:ring-orange-500 font-semibold text-sm"
+              className="bg-slate-700 text-white rounded px-2 py-0.5 outline-none focus:ring-2 focus:ring-orange-500 font-semibold text-sm min-w-0 w-32 sm:w-auto"
             />
           ) : (
             <span
-              className="text-white font-semibold cursor-text hover:text-orange-300 transition-colors"
+              className="text-white font-semibold cursor-text hover:text-orange-300 transition-colors truncate max-w-[120px] sm:max-w-none"
               title={t('editor.renamePlayTooltip')}
               onClick={startNameEdit}
             >{activeSet.name}</span>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-slate-400 text-sm">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <span className="hidden sm:block text-slate-400 text-sm">
             {activeSet.courtType === 'half' ? t('common.halfCourt') : t('common.fullCourt')}
           </span>
           <LanguageSwitcher />
+          <UserButton />
         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        <div className="p-2 border-r border-slate-700 overflow-y-auto">
+        <div className="hidden md:block p-2 border-r border-slate-700 overflow-y-auto shrink-0">
           <ActionToolbar
             activeType={actionCreation.type}
             ballHolderId={currentState.ball.holderId}
@@ -868,8 +962,8 @@ export default function EditorPage() {
               </div>
             )}
           </div>
-          <div ref={courtAreaRef} className="relative flex-1 flex items-center justify-center px-4 overflow-hidden">
-          <div className={`flex flex-row gap-3 ${activeSet.courtType === 'full' ? 'items-center' : 'items-end'}`}>
+          <div ref={courtAreaRef} className="relative flex-1 flex items-center justify-center px-2 sm:px-4 overflow-hidden">
+          <div className={`flex flex-col md:flex-row gap-2 md:gap-3 items-center ${activeSet.courtType === 'full' ? 'md:items-center' : 'md:items-end'}`}>
           <div
             className="relative"
             onDragOver={(e) => {
@@ -884,8 +978,10 @@ export default function EditorPage() {
                 nx = (STAGE_W - ky - COURT_PADDING_X) / HALF_COURT_W
                 ny = (kx - COURT_PADDING_Y) / FULL_COURT_H
               } else {
-                nx = (e.clientX - rect.left - COURT_PADDING_X) / HALF_COURT_W
-                ny = (e.clientY - rect.top - HALF_COURT_PADDING_TOP) / cH
+                const bcx = (e.clientX - rect.left) / courtScale
+                const bcy = (e.clientY - rect.top) / courtScale
+                nx = (bcx - COURT_PADDING_X) / HALF_COURT_W
+                ny = (bcy - HALF_COURT_PADDING_TOP) / cH
               }
               let closest: string | null = null, minD = Infinity
               for (const p of (activeSet?.players ?? [])) {
@@ -904,7 +1000,7 @@ export default function EditorPage() {
             <CourtCanvas
               courtType={activeSet.courtType}
               stageRef={stageRef}
-              scale={activeSet.courtType === 'full' ? courtScale : 1}
+              scale={courtScale}
               landscape={activeSet.courtType === 'full'}
               attackBasket={activeSet.attackBasket}
               onStageClick={handleCourtClick}
@@ -1061,6 +1157,12 @@ export default function EditorPage() {
                       }
                     }}
                     onClick={handlePlayerClick}
+                    onDblClick={(id) => {
+                      // Only let the user edit a player's identity when not mid-action;
+                      // double-click during action creation would conflict with click-to-select flows.
+                      if (actionCreation.type) return
+                      setEditingPlayerId(id)
+                    }}
                   />
                 )
               })}
@@ -1099,9 +1201,12 @@ export default function EditorPage() {
               {(() => {
                 const action = activeSet.actions[activeStep - 1]
                 if (!action?.optionText) return null
-                const holder = displayPositions[currentState.ball.holderId]
-                if (!holder) return null
-                const hpx = denormalize(holder.x, holder.y, HALF_COURT_W, cH)
+                // Anchor to the player tied to the action, not the ball holder —
+                // labels on cut/screen/defense actions used to land on the wrong player.
+                const anchorId = actionLabelPlayerId(action)
+                const anchor = displayPositions[anchorId]
+                if (!anchor) return null
+                const hpx = denormalize(anchor.x, anchor.y, HALF_COURT_W, cH)
                 const W = Math.min(Math.max(action.optionText.length * 7 + 16, 60), 140)
                 const H = 20
                 return (
@@ -1118,8 +1223,8 @@ export default function EditorPage() {
           </div>
 
           {activeSet.courtType !== 'full' && (
-            <div ref={benchRef} className="flex flex-col items-center gap-2 px-2 py-3 bg-slate-800/60 rounded-xl border border-slate-700 overflow-y-auto self-center max-h-[80vh]">
-              <span className="text-slate-500 text-xs">{t('editor.benchLabel')}</span>
+            <div ref={benchRef} className="flex flex-row md:flex-col items-center gap-1.5 md:gap-2 px-2 py-2 md:py-3 bg-slate-800/60 rounded-xl border border-slate-700 overflow-x-auto md:overflow-x-visible md:overflow-y-auto order-last md:order-none md:self-center max-h-none md:max-h-[80vh] w-full md:w-auto">
+              <span className="text-slate-500 text-xs shrink-0">{t('editor.benchLabel')}</span>
               {!activeSet.players.some(p => p.id === currentState.ball.holderId) && (
                 <div
                   draggable
@@ -1134,7 +1239,7 @@ export default function EditorPage() {
                     requestAnimationFrame(() => document.body.removeChild(ghost))
                   }}
                   onDragEnd={() => { setIsDraggingBall(false); setBallDragHoverId(null) }}
-                  className="w-9 h-9 rounded-full flex items-center justify-center cursor-grab select-none bg-amber-500/20 border-2 border-amber-400"
+                  className="w-9 h-9 rounded-full flex items-center justify-center cursor-grab select-none bg-amber-500/20 border-2 border-amber-400 shrink-0"
                   style={{ fontSize: 20 }}
                   title={t('editor.ballDragTooltip')}
                 >
@@ -1144,7 +1249,7 @@ export default function EditorPage() {
               {allBenchPlayers.filter(p => !inPlayIds.has(p.id) || p.id === benchHoverPlayer?.id).map(p => {
                 const isHover = p.id === benchHoverPlayer?.id
                 return isHover ? (
-                  <div key={p.id} className="relative">
+                  <div key={p.id} className="relative shrink-0">
                     <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold select-none"
                       style={{ backgroundColor: p.team === 'offense' ? '#f97316' : '#1d4ed8', border: '2px dashed rgba(255,255,255,0.6)', opacity: 0.9 }}>
                       {p.number}
@@ -1156,7 +1261,7 @@ export default function EditorPage() {
                     key={p.id}
                     draggable
                     onDragStart={(e) => e.dataTransfer.setData('benchPlayerId', p.id)}
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold cursor-grab select-none"
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold cursor-grab select-none shrink-0"
                     style={{ backgroundColor: p.team === 'offense' ? '#f97316' : '#1d4ed8', border: '2px dashed rgba(255,255,255,0.4)', opacity: 0.8 }}
                     title={p.team === 'offense' ? t('editor.offensePlayerDragTooltip', { num: p.number }) : t('editor.defensePlayerDragTooltip', { num: p.number })}
                   >
@@ -1184,7 +1289,7 @@ export default function EditorPage() {
                     requestAnimationFrame(() => document.body.removeChild(ghost))
                   }}
                   onDragEnd={() => { setIsDraggingBall(false); setBallDragHoverId(null) }}
-                  className="w-9 h-9 rounded-full flex items-center justify-center cursor-grab select-none bg-amber-500/20 border-2 border-amber-400"
+                  className="w-9 h-9 rounded-full flex items-center justify-center cursor-grab select-none bg-amber-500/20 border-2 border-amber-400 shrink-0"
                   style={{ fontSize: 20 }}
                   title={t('editor.ballDragTooltip')}
                 >
@@ -1194,7 +1299,7 @@ export default function EditorPage() {
               {allBenchPlayers.filter(p => !inPlayIds.has(p.id) || p.id === benchHoverPlayer?.id).map(p => {
                 const isHover = p.id === benchHoverPlayer?.id
                 return isHover ? (
-                  <div key={p.id} className="relative">
+                  <div key={p.id} className="relative shrink-0">
                     <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold select-none"
                       style={{ backgroundColor: p.team === 'offense' ? '#f97316' : '#1d4ed8', border: '2px dashed rgba(255,255,255,0.6)', opacity: 0.9 }}>
                       {p.number}
@@ -1206,7 +1311,7 @@ export default function EditorPage() {
                     key={p.id}
                     draggable
                     onDragStart={(e) => e.dataTransfer.setData('benchPlayerId', p.id)}
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold cursor-grab select-none"
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold cursor-grab select-none shrink-0"
                     style={{ backgroundColor: p.team === 'offense' ? '#f97316' : '#1d4ed8', border: '2px dashed rgba(255,255,255,0.4)', opacity: 0.8 }}
                     title={p.team === 'offense' ? t('editor.offensePlayerDragTooltip', { num: p.number }) : t('editor.defensePlayerDragTooltip', { num: p.number })}
                   >
@@ -1219,9 +1324,24 @@ export default function EditorPage() {
           </div>
         </div>
 
-        <div className="w-64 flex flex-col border-l border-slate-700">
+        <div className="hidden md:flex w-64 flex-col border-l border-slate-700">
           <ActionPanel />
         </div>
+      </div>
+
+      {/* Mobile bottom action toolbar — replaces the left sidebar on small screens */}
+      <div className="md:hidden">
+        <ActionToolbar
+          layout="horizontal"
+          activeType={actionCreation.type}
+          ballHolderId={currentState.ball.holderId}
+          hasDefenders={(activeSet?.players ?? []).some(p => p.team === 'defense')}
+          onSelect={startActionCreation}
+          onCancel={cancelAll}
+          markingsEnabled={markingsEnabled}
+          onToggleMarkings={handleToggleMarkings}
+          gameOver={hasShotAction}
+        />
       </div>
 
 
@@ -1275,6 +1395,18 @@ export default function EditorPage() {
           onClose={() => setShowExport(false)}
         />
       )}
+
+      {editingPlayerId && (() => {
+        const player = activeSet.players.find(p => p.id === editingPlayerId)
+        if (!player) return null
+        return (
+          <PlayerEditModal
+            player={player}
+            onSave={(updates) => updatePlayer(player.id, updates)}
+            onClose={() => setEditingPlayerId(null)}
+          />
+        )
+      })()}
     </div>
   )
 }

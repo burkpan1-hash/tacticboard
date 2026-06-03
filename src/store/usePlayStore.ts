@@ -58,6 +58,9 @@ interface PlayStoreState {
   removePlayerFromCourt: (playerId: string) => void
   setInitialBall: (playerId: string) => void
 
+  // ── Player metadata (jersey number, name) ────────────────────
+  updatePlayer: (playerId: string, updates: Partial<Pick<Player, 'number' | 'name'>>) => void
+
   // ── Markings ─────────────────────────────────────────────────
   updateMarkings: (markings: Record<string, string>) => void
 
@@ -207,7 +210,7 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
     set(s => {
       if (!s.activeSet) return s
       const isOffense = playerId.startsWith('o')
-      const number = parseInt(playerId.slice(1)) as Player['number']
+      const number = parseInt(playerId.slice(1))
       const newPlayer: Player = { id: playerId, number, team: isOffense ? 'offense' : 'defense' }
       const updated: PlaySet = {
         ...s.activeSet,
@@ -253,6 +256,23 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
     set(s => {
       if (!s.activeSet) return s
       const updated: PlaySet = { ...s.activeSet, initialBall: { holderId: playerId } }
+      get().saveSet(updated)
+      return { activeSet: updated }
+    })
+  },
+
+  updatePlayer: (playerId, updates) => {
+    set(s => {
+      if (!s.activeSet) return s
+      const players = s.activeSet.players.map(p => {
+        if (p.id !== playerId) return p
+        // Strip blank name so an empty input restores the "number-only" display
+        // instead of persisting a meaningless empty string in the JSON blob.
+        const nextName = updates.name === undefined ? p.name : (updates.name.trim() || undefined)
+        const nextNum = updates.number === undefined ? p.number : updates.number
+        return { ...p, number: nextNum, name: nextName }
+      })
+      const updated: PlaySet = { ...s.activeSet, players }
       get().saveSet(updated)
       return { activeSet: updated }
     })

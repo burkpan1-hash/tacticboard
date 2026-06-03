@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
+import Logo from '../components/ui/Logo'
 import { authClient } from '../lib/authClient'
 
 interface CloudPlay {
@@ -90,12 +91,10 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen p-8 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-white">
-          {t('home.appName')} <span className="text-orange-400">🏀</span>
-        </h1>
-        <div className="flex items-center gap-3">
+    <div className="min-h-screen p-4 sm:p-8 max-w-4xl mx-auto">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 sm:mb-8">
+        <Logo />
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <LanguageSwitcher />
           {session ? (
             <button
@@ -107,14 +106,14 @@ export default function HomePage() {
           ) : (
             <button
               onClick={() => navigate('/login')}
-              className="bg-slate-700 hover:bg-slate-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm"
+              className="bg-orange-500 hover:bg-orange-400 text-white font-bold px-4 py-2 rounded-lg transition-colors text-sm shadow-md shadow-orange-500/30"
             >
               {t('home.loginButton')}
             </button>
           )}
           <button
             onClick={() => navigate('/setup')}
-            className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-6 py-2 rounded-lg transition-colors"
+            className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-4 sm:px-6 py-2 rounded-lg transition-colors text-sm sm:text-base"
           >
             {t('home.newPlayButton')}
           </button>
@@ -156,16 +155,16 @@ export default function HomePage() {
                   {p.data?.actions?.length ?? 0} {(p.data?.actions?.length ?? 0) === 1 ? t('common.actionSingular') : t('common.actionPlural')}
                 </p>
               </div>
-              <div className="flex gap-2 shrink-0">
+              <div className="flex gap-1.5 sm:gap-2 shrink-0">
                 <button
                   onClick={() => handleShare(p.id)}
-                  className="bg-orange-500 hover:bg-orange-400 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                  className="bg-orange-500 hover:bg-orange-400 text-white px-2.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm transition-colors"
                 >
                   {copiedId === p.id ? t('home.copiedButton') : t('home.shareButton')}
                 </button>
                 <button
                   onClick={() => navigate(`/editor/${p.id}?cloud=1`)}
-                  className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                  className="bg-slate-700 hover:bg-slate-600 text-white px-2.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm transition-colors"
                 >
                   {t('home.openButton')}
                 </button>
@@ -174,7 +173,7 @@ export default function HomePage() {
                     onClick={() => handleDelete(p.id)}
                     onBlur={() => setConfirmDeleteId(null)}
                     autoFocus
-                    className="text-red-400 hover:text-red-300 bg-red-400/10 px-3 py-2 rounded-lg text-xs font-semibold transition-colors"
+                    className="text-red-400 hover:text-red-300 bg-red-400/10 px-2 sm:px-3 py-2 rounded-lg text-xs font-semibold transition-colors"
                   >
                     {t('home.deleteConfirmation')}
                   </button>
@@ -191,6 +190,12 @@ export default function HomePage() {
           ))}
         </div>
       )}
+
+      <footer className="mt-12 pt-6 border-t border-slate-800 text-center text-xs text-slate-500">
+        <a href="/privacy" className="hover:text-orange-400 transition-colors">Privacy</a>
+        <span className="mx-3">·</span>
+        <a href="/terms" className="hover:text-orange-400 transition-colors">Terms</a>
+      </footer>
     </div>
   )
 }

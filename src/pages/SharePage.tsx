@@ -9,13 +9,14 @@ import PlayerNode from '../components/players/PlayerNode'
 import PlaybackControls from '../components/playback/PlaybackControls'
 import { computeStateAtStep } from '../utils/stateEngine'
 import { denormalize } from '../utils/courtCoords'
-import { ACTION_COLORS, ACTION_LABEL_KEYS } from '../utils/actionColors'
+import { ACTION_COLORS, ACTION_LABEL_KEYS, actionLabelPlayerId } from '../utils/actionColors'
 import {
   HALF_COURT_W, HALF_COURT_H, FULL_COURT_H,
   COURT_PADDING_X, COURT_PADDING_Y, HALF_COURT_PADDING_TOP,
   HALF_COURT,
 } from '../utils/courtCoords'
 import type { Action, NormalizedPosition, PlaySet, PositionMap } from '../models/types'
+import UserButton from '../components/ui/UserButton'
 
 const STAGE_W = HALF_COURT_W + 2 * COURT_PADDING_X
 const BASKET_PX = HALF_COURT.basket.y                // 42 — basket y inside court, not padding
@@ -255,7 +256,10 @@ export default function SharePage() {
     <div className="h-screen flex flex-col bg-slate-900 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700 shrink-0">
         <h1 className="text-white font-semibold truncate mr-4">{title}</h1>
-        <span className="text-xs text-slate-500 bg-slate-700 px-3 py-1 rounded-full shrink-0">Salt okunur</span>
+        <div className="flex items-center gap-3 shrink-0">
+          <span className="text-xs text-slate-500 bg-slate-700 px-3 py-1 rounded-full">{t('common.readOnly')}</span>
+          <UserButton />
+        </div>
       </div>
 
       <div ref={courtAreaRef} className="flex-1 flex items-center justify-center overflow-hidden bg-slate-950">
@@ -354,13 +358,14 @@ export default function SharePage() {
             )
           })}
 
-          {/* optionText badge */}
+          {/* optionText badge — anchored to the action's primary player, not the ball holder */}
           {(() => {
             const action = activeSet.actions[activeStep - 1]
             if (!action?.optionText) return null
-            const holder = displayPositions[currentState.ball.holderId]
-            if (!holder) return null
-            const hpx = denormalize(holder.x, holder.y, HALF_COURT_W, cH)
+            const anchorId = actionLabelPlayerId(action)
+            const anchor = displayPositions[anchorId]
+            if (!anchor) return null
+            const hpx = denormalize(anchor.x, anchor.y, HALF_COURT_W, cH)
             const W = Math.min(Math.max(action.optionText.length * 7 + 16, 60), 140)
             const H = 20
             return (

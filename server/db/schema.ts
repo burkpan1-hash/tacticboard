@@ -3,6 +3,16 @@ import { user } from './auth-schema'
 
 export { user, session, account, verification } from './auth-schema'
 
+export const guestPlays = pgTable('guest_plays', {
+  id: text('id').primaryKey(),
+  shareToken: text('share_token').unique().notNull(),
+  title: text('title').notNull(),
+  data: jsonb('data').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export type GuestPlay = typeof guestPlays.$inferSelect
+
 export const plays = pgTable('plays', {
   id: text('id').primaryKey(),
   userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),

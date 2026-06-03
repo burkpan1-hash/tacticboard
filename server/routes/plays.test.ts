@@ -41,7 +41,7 @@ describe('requireAuth middleware', () => {
       session: { id: 'session-1' },
     } as any)
 
-    const app = new Hono()
+    const app = new Hono<{ Variables: { user: { id: string } } }>()
     app.use('*', requireAuth)
     app.get('/test', (c) => c.json({ userId: c.get('user').id }))
 

@@ -15,7 +15,7 @@
     "actionPlural": "actions"
   },
   "home": {
-    "appName": "SetPlay",
+    "appName": "Basketball Tactic Board",
     "newPlayButton": "+ New Play",
     "emptyState": "No plays yet. Create your first!",
     "renameTooltip": "Click to rename",
@@ -153,8 +153,90 @@
     "offenseHeader": "Offense Formation — or place manually",
     "defenseHeader": "Defense Formation — or place manually"
   },
+  "playerEdit": {
+    "title": "Edit Player",
+    "nameLabel": "Name",
+    "namePlaceholder": "Jersey name (optional)",
+    "numberLabel": "Jersey Number",
+    "saveButton": "Save",
+    "tooltip": "Double-click to edit name / number"
+  },
   "share": {
     "notFound": "Play not found.",
+    "readOnly": "Read only",
     "homeButton": "Home"
+  },
+  "auth": {
+    "signInTitle": "Sign In",
+    "signUpTitle": "Create Account",
+    "verifyEmailTitle": "Check your inbox",
+    "forgotPasswordTitle": "Forgot password?",
+    "resetPasswordTitle": "Set a new password",
+
+    "nameLabel": "Name",
+    "emailLabel": "Email",
+    "passwordLabel": "Password",
+    "confirmPasswordLabel": "Confirm password",
+    "newPasswordLabel": "New password",
+
+    "namePlaceholder": "Your name",
+    "emailPlaceholder": "you@example.com",
+    "passwordPlaceholder": "Password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+
+    "signInButton": "Sign In",
+    "signInLoading": "Signing in…",
+    "signUpButton": "Create account",
+    "signUpLoading": "Creating account…",
+    "googleButton": "Continue with Google",
+    "sendResetButton": "Send reset link",
+    "sendResetLoading": "Sending…",
+    "resetPasswordButton": "Save new password",
+    "resetPasswordLoading": "Saving…",
+    "resendVerificationButton": "Resend email",
+    "resendCooldown": "Resend available in {{seconds}}s",
+
+    "alreadyHaveAccount": "Already have an account?",
+    "noAccount": "Don't have an account?",
+    "signInLink": "Sign in",
+    "signUpLink": "Create one",
+    "forgotPasswordLink": "Forgot password?",
+    "backToLogin": "Back to sign in",
+
+    "verifyEmailSent": "We sent a verification link to {{email}}. Click it to finish creating your account.",
+    "verifyEmailUnverified": "Please verify your email first. Check your inbox for the link.",
+    "verifyEmailSuccess": "Email verified — you're signed in.",
+    "verifyEmailInvalid": "This verification link is invalid or expired. Request a new one.",
+    "verifyEmailVerifying": "Verifying…",
+    "verifyEmailResent": "Verification email resent.",
+
+    "forgotPasswordIntro": "Enter your email and we'll send you a reset link.",
+    "forgotPasswordSent": "If an account exists for {{email}}, a reset link is on its way.",
+    "resetPasswordIntro": "Pick a new password for your account.",
+    "resetPasswordSuccess": "Password updated — you can sign in now.",
+    "resetTokenInvalid": "This reset link is invalid or expired. Request a new one.",
+
+    "strengthLabel": "Strength",
+    "strengthVeryWeak": "Very weak",
+    "strengthWeak": "Weak",
+    "strengthFair": "Fair",
+    "strengthGood": "Good",
+    "strengthStrong": "Strong",
+
+    "passwordRule": "At least 8 characters with upper, lower, and a number.",
+    "passwordMismatch": "Passwords don't match.",
+    "weakTooShort": "Password is too short (min 8 characters).",
+    "weakTooLong": "Password is too long (max 72 characters).",
+    "weakNoUpper": "Add an uppercase letter.",
+    "weakNoLower": "Add a lowercase letter.",
+    "weakNoDigit": "Add a number.",
+    "weakCommon": "This password is too common.",
+
+    "errorInvalidCredentials": "Email or password is incorrect.",
+    "errorEmailInUse": "An account with this email already exists.",
+    "errorRateLimited": "Too many attempts. Please wait a moment and try again.",
+    "errorGoogleUnavailable": "Google sign-in is not configured.",
+    "errorGeneric": "Something went wrong. Please try again."
   }
 }

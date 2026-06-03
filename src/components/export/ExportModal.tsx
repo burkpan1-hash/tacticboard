@@ -41,6 +41,7 @@ export default function ExportModal({ stageRef, stepMs, onClose }: Props) {
     setTimeout(() => {
       setIsPlaying(true)
 
+      const baseName = activeSet.name || 'play'
       const handle = exportVideo(
         stage,
         durationMs,
@@ -51,7 +52,7 @@ export default function ExportModal({ stageRef, stepMs, onClose }: Props) {
         },
         (blob) => {
           const ext = blob.type.includes('mp4') ? 'mp4' : 'webm'
-          downloadBlob(blob, `${activeSet.name || 'play'}.${ext}`)
+          downloadBlob(blob, `${baseName}.${ext}`)
           setPhase('done')
           restore()
         },

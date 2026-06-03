@@ -1,5 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import { usePlayStore } from '../../store/usePlayStore'
+import { MOD_KEY } from '../../hooks/useEditorShortcuts'
+
+const KBD_INLINE = 'ml-1 text-[10px] font-mono opacity-70 hidden sm:inline'
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
@@ -35,45 +38,47 @@ export default function PlaybackControls({ onExport, onSave, canSave, saveStatus
   const SPEEDS = [0.5, 1, 1.5, 2]
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2 bg-slate-800 border-t border-slate-700">
+    <div className="flex flex-wrap items-center gap-1.5 sm:gap-3 px-3 sm:px-4 py-2 bg-slate-800 border-t border-slate-700">
       <button
         onClick={() => stepTo(0)}
         disabled={activeStep === 0 || isPlaying}
         className="px-3 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white disabled:opacity-30 transition-colors"
-        title={t('playback.goToStartTooltip')}
+        title={`${t('playback.goToStartTooltip')} (Home)`}
       >⏮</button>
 
       <button
         onClick={() => stepTo(Math.max(0, activeStep - 1))}
         disabled={activeStep === 0 || isPlaying}
         className="px-3 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white disabled:opacity-30 transition-colors"
+        title="← "
       >◀</button>
 
       <button
         onClick={togglePlay}
         disabled={total === 0}
         className="px-3 py-1 rounded bg-orange-600 hover:bg-orange-500 text-white disabled:opacity-30 transition-colors text-base leading-none"
-        title={isPlaying ? t('playback.pauseTooltip') : t('playback.playTooltip')}
+        title={`${isPlaying ? t('playback.pauseTooltip') : t('playback.playTooltip')} (Space)`}
       >{isPlaying ? '⏸' : '▶'}</button>
 
       <button
         onClick={() => stepTo(Math.min(total, activeStep + 1))}
         disabled={activeStep === total || isPlaying}
         className="px-3 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white disabled:opacity-30 transition-colors"
+        title="→ "
       >▶</button>
 
       <button
         onClick={() => stepTo(total)}
         disabled={activeStep === total || isPlaying}
         className="px-3 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white disabled:opacity-30 transition-colors"
-        title={t('playback.goToEndTooltip')}
+        title={`${t('playback.goToEndTooltip')} (End)`}
       >⏭</button>
 
       <span className="text-sm text-slate-400 min-w-[72px] text-center">
         {activeStep} / {total}
       </span>
 
-      <div className="flex items-center gap-1 ml-2">
+      <div className="hidden sm:flex items-center gap-1 ml-1">
         {SPEEDS.map(s => (
           <button
             key={s}
@@ -104,8 +109,9 @@ export default function PlaybackControls({ onExport, onSave, canSave, saveStatus
           <button
             onClick={onSave}
             disabled={disabled}
+            title={`${t('playback.saveButton')} (${MOD_KEY}S)`}
             className={`px-3 py-1 rounded text-sm font-medium transition-colors min-w-[80px] disabled:opacity-50 disabled:cursor-not-allowed ${colorClass}`}
-          >{label}</button>
+          >{label}{saveStatus === 'idle' && <kbd className={KBD_INLINE}>{MOD_KEY}S</kbd>}</button>
         )
       })()}
 
@@ -114,8 +120,8 @@ export default function PlaybackControls({ onExport, onSave, canSave, saveStatus
           onClick={onShare}
           disabled={total === 0}
           className="px-3 py-1 rounded bg-orange-500 hover:bg-orange-400 text-white text-sm disabled:opacity-30 transition-colors"
-          title={t('playback.shareTooltip')}
-        >{shareCopied ? t('playback.shareCopiedButton') : t('playback.shareButton')}</button>
+          title={`${t('playback.shareTooltip')} (${MOD_KEY}L)`}
+        >{shareCopied ? t('playback.shareCopiedButton') : <>{t('playback.shareButton')}<kbd className={KBD_INLINE}>{MOD_KEY}L</kbd></>}</button>
       )}
 
       {onExport && (
@@ -123,18 +129,18 @@ export default function PlaybackControls({ onExport, onSave, canSave, saveStatus
           onClick={onExport}
           disabled={isPlaying || total === 0}
           className="px-3 py-1 rounded bg-orange-500 hover:bg-orange-400 text-white text-sm disabled:opacity-30 transition-colors"
-          title={t('playback.exportTooltip')}
-        >{t('playback.exportButton')}</button>
+          title={`${t('playback.exportTooltip')} (${MOD_KEY}E)`}
+        >{t('playback.exportButton')}<kbd className={KBD_INLINE}>{MOD_KEY}E</kbd></button>
       )}
 
-      <div className="flex-1" />
+      <div className="hidden sm:block flex-1" />
 
       <button
         onClick={undoLastAction}
         disabled={total === 0 || isPlaying}
         className="px-3 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white text-sm disabled:opacity-30 transition-colors"
-        title={t('playback.undoTooltip')}
-      >{t('playback.undoButton')}</button>
+        title={`${t('playback.undoTooltip')} (${MOD_KEY}Z)`}
+      >{t('playback.undoButton')}<kbd className={KBD_INLINE}>{MOD_KEY}Z</kbd></button>
     </div>
   )
 }

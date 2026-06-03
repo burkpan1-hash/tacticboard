@@ -3,6 +3,42 @@ dist
 dist-server
 drizzle
 .env
+.env.*
 *.log
+
+# Test + dev artifacts (large — first deploy uploaded 286MB because of these)
+.playwright-mcp/
+.superpowers/
+.fly/
+
+# Test screenshots
 ballforce-test.png
 test-*.png
+*-test.png
+editor-*.png
+mobile-*.png
+tablet-*.png
+cookie-*.png
+privacy-*.png
+404.png
+cut-*.png
+cut7-*.png
+player-*.png
+
+# Git
+.git
+.gitignore
+
+# Docs / design files (not needed in image)
+docs/
+DESIGN.md
+*.md
+!README.md
+
+# IDE
+.vscode
+.idea
+.cursor
+
+# Backups
+*.bak

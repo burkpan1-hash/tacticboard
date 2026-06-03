@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Black background rounded square — favicon legibility on light browser tabs -->
+  <rect width="64" height="64" rx="12" fill="#0f172a"/>
+  <!-- Wordmark monogram: "B" big orange on top, "TB" smaller white below.
+       Anton font isn't reliably available in favicons (no @font-face in <link rel="icon">),
+       so we use a system condensed-black stack with explicit fallbacks. -->
+  <text x="32" y="36"
+        text-anchor="middle"
+        font-family="'Anton', 'Arial Black', 'Helvetica Neue', sans-serif"
+        font-weight="900"
+        font-size="40"
+        fill="#f97316">B</text>
+  <text x="32" y="54"
+        text-anchor="middle"
+        font-family="'Anton', 'Arial Black', 'Helvetica Neue', sans-serif"
+        font-weight="900"
+        font-size="16"
+        letter-spacing="2"
+        fill="#ffffff">TB</text>
+</svg>

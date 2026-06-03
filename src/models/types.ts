@@ -10,9 +10,10 @@ export interface NormalizedPosition {
 export type PositionMap = Record<string, NormalizedPosition>
 
 export interface Player {
-  id: string          // 'o1'–'o5' offense, 'd1'–'d5' defense
-  number: 1 | 2 | 3 | 4 | 5
+  id: string          // 'o1'–'o5' offense, 'd1'–'d5' defense — stable across number/name edits
+  number: number      // jersey number (0–99); default derived from id suffix at setup
   team: Team
+  name?: string       // optional jersey name shown under the circle (e.g. "Jordan"); blank ⇒ only number shown
 }
 
 export interface BallState {

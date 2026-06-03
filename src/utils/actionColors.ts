@@ -1,4 +1,33 @@
-import type { ActionType } from '../models/types'
+import type { Action, ActionType } from '../models/types'
+
+/**
+ * Returns the player most semantically tied to an action — used to anchor the
+ * optionText label badge. Previously the badge was always pinned to whoever
+ * held the ball after the action, which was wrong for non-ball actions
+ * (cut/screen/defense-move/etc) — the label appeared on a player who had
+ * nothing to do with what the coach was annotating.
+ *
+ * Choice rules:
+ *  - pass/handoff: receiver (toId) — the new ball location is the action's outcome
+ *  - cut/dribble/defense-move: the moving player
+ *  - screen: the screener
+ *  - shot: the shooter
+ *  - double-team: the helper (defender2) — the action's defining participant
+ *  - ball-force: the defender doing the forcing
+ */
+export function actionLabelPlayerId(action: Action): string {
+  switch (action.type) {
+    case 'pass':         return action.toId
+    case 'cut':          return action.playerId
+    case 'dribble':      return action.playerId
+    case 'screen':       return action.screenerId
+    case 'shot':         return action.shooterId
+    case 'handoff':      return action.toId
+    case 'defense-move': return action.playerId
+    case 'double-team':  return action.defender2Id
+    case 'ball-force':   return action.defenderId
+  }
+}
 
 export const ACTION_COLORS: Record<ActionType, string> = {
   pass:           '#fbbf24',  // amber

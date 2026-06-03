@@ -16,7 +16,7 @@ log_err()  { echo -e "  ${R}✗${N}  $1"; }
 header() {
   echo ""
   echo -e "${C}  ┌─────────────────────────────────┐"
-  echo -e "  │         SetPlay Dev             │"
+  echo -e "  │    Basketball Tactic Board      │"
   echo -e "  └─────────────────────────────────┘${N}"
   echo ""
 }
@@ -165,20 +165,84 @@ cmd_stop() {
   echo ""
 }
 
+# ── DEPLOY ─────────────────────────────────────────────────────────────────────
+DB_APP="btb-db"
+APP="basketball-tactic-board"
+DB_USER="basketball_tactic_board"
+DB_PASS="btb_migrate_2026"
+DB_NAME="basketball_tactic_board"
+PROXY_PORT=5433
+
+cmd_deploy() {
+  header
+
+  # fly CLI kontrolü
+  if ! command -v fly &> /dev/null; then
+    log_err "fly CLI bulunamadı. https://fly.io/docs/hands-on/install-flyctl/ adresinden kur."
+    exit 1
+  fi
+  log_ok "fly CLI: $(fly version 2>&1 | head -1)"
+
+  # fly auth kontrolü
+  if ! fly auth whoami &> /dev/null; then
+    log_err "Fly'a giriş yapılmamış. 'fly auth login' komutunu çalıştır."
+    exit 1
+  fi
+  log_ok "Fly kullanıcısı: $(fly auth whoami)"
+
+  # DB makinesini başlat
+  log_info "Veritabanı makinesi başlatılıyor ($DB_APP)..."
+  fly machines start --app "$DB_APP" 2>/dev/null | grep -v "^$" || true
+  sleep 3
+
+  # Proxy aç
+  log_info "DB proxy açılıyor (localhost:$PROXY_PORT → $DB_APP:5432)..."
+  pkill -f "fly proxy.*$PROXY_PORT" 2>/dev/null || true
+  fly proxy "$PROXY_PORT":5432 -a "$DB_APP" &
+  PROXY_PID=$!
+  sleep 5
+
+  # Schema push
+  log_info "Veritabanı schema push yapılıyor..."
+  if DATABASE_URL="postgresql://$DB_USER:$DB_PASS@localhost:$PROXY_PORT/$DB_NAME" \
+     npx --prefix "$SCRIPT_DIR" drizzle-kit push --force 2>&1 | grep -E "✓|Error|error"; then
+    log_ok "Schema güncel"
+  else
+    log_warn "Schema push başarısız olabilir, devam ediliyor..."
+  fi
+
+  # Proxy kapat
+  kill $PROXY_PID 2>/dev/null || true
+
+  # Uygulama deploy et
+  log_info "Uygulama deploy ediliyor ($APP)..."
+  if fly deploy --app "$APP" 2>&1 | tail -5; then
+    log_ok "Deploy tamamlandı!"
+    echo ""
+    echo -e "  ${G}▶  https://$APP.fly.dev${N}"
+    echo ""
+  else
+    log_err "Deploy başarısız."
+    exit 1
+  fi
+}
+
 # ── Yardım ─────────────────────────────────────────────────────────────────────
 cmd_help() {
   header
   echo -e "  Kullanım:"
-  echo -e "    ${C}./setplay.sh start${N}   — uygulamayı başlat (Docker yoksa npm fallback)"
-  echo -e "    ${C}./setplay.sh stop${N}    — tüm servisleri durdur"
+  echo -e "    ${C}./setplay.sh start${N}    — uygulamayı başlat (Docker yoksa npm fallback)"
+  echo -e "    ${C}./setplay.sh stop${N}     — tüm servisleri durdur"
+  echo -e "    ${C}./setplay.sh deploy${N}   — schema push + Fly.io'ya deploy et"
   echo ""
-  echo -e "  Gereksinimler: Node.js + (opsiyonel) Docker Desktop"
+  echo -e "  Gereksinimler: Node.js + (opsiyonel) Docker Desktop + fly CLI"
   echo ""
 }
 
 # ── Entry point ────────────────────────────────────────────────────────────────
 case "${1:-help}" in
-  start) cmd_start ;;
-  stop)  cmd_stop  ;;
-  *)     cmd_help  ;;
+  start)  cmd_start  ;;
+  stop)   cmd_stop   ;;
+  deploy) cmd_deploy ;;
+  *)      cmd_help   ;;
 esac
