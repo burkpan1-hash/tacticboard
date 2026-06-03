@@ -39,6 +39,6 @@ if (process.env.NODE_ENV === 'production') {
 const port = Number(process.env.PORT) || 3000
 console.log(`Server running on port ${port}`)
 
-serve({ fetch: app.fetch, port })
+serve({ fetch: app.fetch, port, hostname: '0.0.0.0' })
 
 export default app
