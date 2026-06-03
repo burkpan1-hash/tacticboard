@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
+import UserButton from '../components/ui/UserButton'
 import Logo from '../components/ui/Logo'
 import { authClient } from '../lib/authClient'
 
@@ -85,32 +86,13 @@ export default function HomePage() {
     })
   }
 
-  async function handleLogout() {
-    await authClient.signOut()
-    setCloudPlays([])
-  }
-
   return (
     <div className="min-h-screen p-8 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <Logo />
         <div className="flex items-center gap-3">
           <LanguageSwitcher />
-          {session ? (
-            <button
-              onClick={handleLogout}
-              className="text-slate-400 hover:text-slate-300 text-sm px-2 py-2 transition-colors"
-            >
-              {t('home.logoutButton')}
-            </button>
-          ) : (
-            <button
-              onClick={() => navigate('/login')}
-              className="bg-slate-700 hover:bg-slate-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm"
-            >
-              {t('home.loginButton')}
-            </button>
-          )}
+          <UserButton onSignOut={() => setCloudPlays([])} />
           <button
             onClick={() => navigate('/setup')}
             className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-6 py-2 rounded-lg transition-colors"

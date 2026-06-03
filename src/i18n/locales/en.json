@@ -163,6 +163,7 @@
   },
   "share": {
     "notFound": "Play not found.",
+    "readOnly": "Read only",
     "homeButton": "Home"
   },
   "auth": {

@@ -163,6 +163,7 @@
   },
   "share": {
     "notFound": "Oyun bulunamadı.",
+    "readOnly": "Salt okunur",
     "homeButton": "Ana Sayfa"
   },
   "auth": {

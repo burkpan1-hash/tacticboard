@@ -163,6 +163,7 @@
   },
   "share": {
     "notFound": "Schema non trovato.",
+    "readOnly": "Sola lettura",
     "homeButton": "Home"
   },
   "auth": {

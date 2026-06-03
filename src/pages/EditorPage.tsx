@@ -14,6 +14,7 @@ import PlaybackControls from '../components/playback/PlaybackControls'
 import ExportModal from '../components/export/ExportModal'
 import PlayerEditModal from '../components/players/PlayerEditModal'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
+import UserButton from '../components/ui/UserButton'
 import { usePlayStore } from '../store/usePlayStore'
 import { computeStateAtStep } from '../utils/stateEngine'
 import { denormalize } from '../utils/courtCoords'
@@ -884,6 +885,7 @@ export default function EditorPage() {
             {activeSet.courtType === 'half' ? t('common.halfCourt') : t('common.fullCourt')}
           </span>
           <LanguageSwitcher />
+          <UserButton />
         </div>
       </div>
 

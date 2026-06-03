@@ -163,6 +163,7 @@
   },
   "share": {
     "notFound": "Spiel nicht gefunden.",
+    "readOnly": "Nur lesen",
     "homeButton": "Startseite"
   },
   "auth": {

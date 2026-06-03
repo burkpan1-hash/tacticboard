@@ -163,6 +163,7 @@
   },
   "share": {
     "notFound": "Jugada no encontrada.",
+    "readOnly": "Solo lectura",
     "homeButton": "Inicio"
   },
   "auth": {

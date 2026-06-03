@@ -163,6 +163,7 @@
   },
   "share": {
     "notFound": "Jeu introuvable.",
+    "readOnly": "Lecture seule",
     "homeButton": "Accueil"
   },
   "auth": {

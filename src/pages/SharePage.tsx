@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Arrow, Group, Rect, Text } from 'react-konva'
 import { useTranslation } from 'react-i18next'
 import { usePlayStore } from '../store/usePlayStore'
+import UserButton from '../components/ui/UserButton'
 import CourtCanvas from '../components/court/CourtCanvas'
 import ActionOverlay from '../components/actions/ActionOverlay'
 import PlayerNode from '../components/players/PlayerNode'
@@ -255,7 +256,10 @@ export default function SharePage() {
     <div className="h-screen flex flex-col bg-slate-900 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700 shrink-0">
         <h1 className="text-white font-semibold truncate mr-4">{title}</h1>
-        <span className="text-xs text-slate-500 bg-slate-700 px-3 py-1 rounded-full shrink-0">Salt okunur</span>
+        <div className="flex items-center gap-3 shrink-0">
+          <span className="text-xs text-slate-500 bg-slate-700 px-3 py-1 rounded-full">{t('share.readOnly')}</span>
+          <UserButton />
+        </div>
       </div>
 
       <div ref={courtAreaRef} className="flex-1 flex items-center justify-center overflow-hidden bg-slate-950">

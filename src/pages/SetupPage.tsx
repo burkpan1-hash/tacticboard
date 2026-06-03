@@ -7,6 +7,7 @@ import PlayerNode from '../components/players/PlayerNode'
 import PlayerSetup from '../components/setup/PlayerSetup'
 import FormationPicker from '../components/setup/FormationPicker'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
+import UserButton from '../components/ui/UserButton'
 import { usePlayStore } from '../store/usePlayStore'
 import type { Player, PositionMap, NormalizedPosition, PlaySet } from '../models/types'
 import type { FormationPreset } from '../utils/formations'
@@ -138,7 +139,10 @@ export default function SetupPage() {
               <button onClick={() => navigate('/')} className="text-slate-400 hover:text-white transition-colors text-sm">{t('common.backButton')}</button>
               <h2 className="text-2xl font-bold text-white">{t('setup.newPlayTitle')}</h2>
             </div>
-            <LanguageSwitcher />
+            <div className="flex items-center gap-2">
+              <LanguageSwitcher />
+              <UserButton />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -215,6 +219,7 @@ export default function SetupPage() {
           </div>
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
+            <UserButton />
             <button
               onClick={() => {
                 if (!draftBall) setDraftBall({ holderId: 'o1' })
