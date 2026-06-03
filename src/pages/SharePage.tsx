@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Arrow, Group, Rect, Text } from 'react-konva'
 import { useTranslation } from 'react-i18next'
 import { usePlayStore } from '../store/usePlayStore'
-import UserButton from '../components/ui/UserButton'
 import CourtCanvas from '../components/court/CourtCanvas'
 import ActionOverlay from '../components/actions/ActionOverlay'
 import PlayerNode from '../components/players/PlayerNode'
@@ -17,6 +16,7 @@ import {
   HALF_COURT,
 } from '../utils/courtCoords'
 import type { Action, NormalizedPosition, PlaySet, PositionMap } from '../models/types'
+import UserButton from '../components/ui/UserButton'
 
 const STAGE_W = HALF_COURT_W + 2 * COURT_PADDING_X
 const BASKET_PX = HALF_COURT.basket.y                // 42 — basket y inside court, not padding
@@ -257,7 +257,7 @@ export default function SharePage() {
       <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700 shrink-0">
         <h1 className="text-white font-semibold truncate mr-4">{title}</h1>
         <div className="flex items-center gap-3 shrink-0">
-          <span className="text-xs text-slate-500 bg-slate-700 px-3 py-1 rounded-full">{t('share.readOnly')}</span>
+          <span className="text-xs text-slate-500 bg-slate-700 px-3 py-1 rounded-full">{t('common.readOnly')}</span>
           <UserButton />
         </div>
       </div>
