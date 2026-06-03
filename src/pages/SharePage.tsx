@@ -9,7 +9,7 @@ import PlayerNode from '../components/players/PlayerNode'
 import PlaybackControls from '../components/playback/PlaybackControls'
 import { computeStateAtStep } from '../utils/stateEngine'
 import { denormalize } from '../utils/courtCoords'
-import { ACTION_COLORS, ACTION_LABEL_KEYS } from '../utils/actionColors'
+import { ACTION_COLORS, ACTION_LABEL_KEYS, actionLabelPlayerId } from '../utils/actionColors'
 import {
   HALF_COURT_W, HALF_COURT_H, FULL_COURT_H,
   COURT_PADDING_X, COURT_PADDING_Y, HALF_COURT_PADDING_TOP,
@@ -354,13 +354,14 @@ export default function SharePage() {
             )
           })}
 
-          {/* optionText badge */}
+          {/* optionText badge — anchored to the action's primary player, not the ball holder */}
           {(() => {
             const action = activeSet.actions[activeStep - 1]
             if (!action?.optionText) return null
-            const holder = displayPositions[currentState.ball.holderId]
-            if (!holder) return null
-            const hpx = denormalize(holder.x, holder.y, HALF_COURT_W, cH)
+            const anchorId = actionLabelPlayerId(action)
+            const anchor = displayPositions[anchorId]
+            if (!anchor) return null
+            const hpx = denormalize(anchor.x, anchor.y, HALF_COURT_W, cH)
             const W = Math.min(Math.max(action.optionText.length * 7 + 16, 60), 140)
             const H = 20
             return (
