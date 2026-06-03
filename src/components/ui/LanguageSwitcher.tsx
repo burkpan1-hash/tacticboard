@@ -15,7 +15,8 @@ export default function LanguageSwitcher() {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
-  const current = LANGUAGES.find(l => l.code === i18n.language) ?? LANGUAGES[0]
+  const langCode = i18n.language.split('-')[0]
+  const current = LANGUAGES.find(l => l.code === langCode) ?? LANGUAGES[0]
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -52,7 +53,7 @@ export default function LanguageSwitcher() {
               key={lang.code}
               onClick={() => select(lang.code)}
               className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors ${
-                lang.code === i18n.language
+                lang.code === langCode
                   ? 'bg-indigo-600 text-white'
                   : 'text-gray-200 hover:bg-white/10'
               }`}
