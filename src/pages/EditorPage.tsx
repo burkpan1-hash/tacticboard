@@ -426,13 +426,18 @@ export default function EditorPage() {
 
   useEffect(() => {
     const el = courtAreaRef.current
-    if (!el || activeSet?.courtType !== 'full') return
-    const STAGE_W = HALF_COURT_W + 2 * COURT_PADDING_X
+    if (!el) return
+    const STAGE_W_VAL = HALF_COURT_W + 2 * COURT_PADDING_X
     function updateScale() {
       if (!el) return
       const aw = el.clientWidth - 32
       const ah = el.clientHeight - 16
-      if (aw > 0 && ah > 0) setCourtScale(Math.min(aw / (FULL_COURT_H + 2 * COURT_PADDING_Y), ah / STAGE_W))
+      if (aw <= 0 || ah <= 0) return
+      if (activeSet?.courtType === 'full') {
+        setCourtScale(Math.min(aw / (FULL_COURT_H + 2 * COURT_PADDING_Y), ah / STAGE_W_VAL))
+      } else {
+        setCourtScale(Math.min(1, aw / STAGE_W_VAL))
+      }
     }
     updateScale()
     const ro = new ResizeObserver(updateScale)
@@ -589,7 +594,9 @@ export default function EditorPage() {
       const ky = (e.clientY - rect.top) / courtScale
       dropNorm = { x: Math.max(0.02, Math.min(0.98, (STAGE_W - ky - COURT_PADDING_X) / HALF_COURT_W)), y: Math.max(-0.05, Math.min(1.05, (kx - COURT_PADDING_Y) / FULL_COURT_H)) }
     } else {
-      dropNorm = { x: Math.max(0.02, Math.min(0.98, (e.clientX - rect.left - COURT_PADDING_X) / HALF_COURT_W)), y: Math.max(-0.05, Math.min(1.05, (e.clientY - rect.top - HALF_COURT_PADDING_TOP) / cH)) }
+      const cx = (e.clientX - rect.left) / courtScale
+      const cy = (e.clientY - rect.top) / courtScale
+      dropNorm = { x: Math.max(0.02, Math.min(0.98, (cx - COURT_PADDING_X) / HALF_COURT_W)), y: Math.max(-0.05, Math.min(1.05, (cy - HALF_COURT_PADDING_TOP) / cH)) }
     }
 
     if (isBall) {
@@ -617,12 +624,11 @@ export default function EditorPage() {
     if (!pos) return null
     if (activeSet.courtType === 'full') {
       const STAGE_W = HALF_COURT_W + 2 * COURT_PADDING_X
-      // pos is in CSS pixels; divide by courtScale to get Stage logical coords
       const sx = STAGE_W - pos.y / courtScale
       const sy = (pos.x / courtScale) - COURT_PADDING_Y
       return { x: (sx - COURT_PADDING_X) / HALF_COURT_W, y: sy / FULL_COURT_H }
     }
-    return { x: (pos.x - COURT_PADDING_X) / HALF_COURT_W, y: (pos.y - HALF_COURT_PADDING_TOP) / cH }
+    return { x: (pos.x / courtScale - COURT_PADDING_X) / HALF_COURT_W, y: (pos.y / courtScale - HALF_COURT_PADDING_TOP) / cH }
   }
 
   function handleMouseDown(e: Konva.KonvaEventObject<MouseEvent>) {
@@ -868,9 +874,9 @@ export default function EditorPage() {
 
   return (
     <div className="h-screen flex flex-col bg-slate-900 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
-        <div className="flex items-center gap-3">
-          <button onClick={handleNavigateHome} className="text-slate-400 hover:text-white transition-colors text-sm">{t('common.backButton')}</button>
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-slate-800 border-b border-slate-700">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <button onClick={handleNavigateHome} className="text-slate-400 hover:text-white transition-colors text-sm shrink-0">{t('common.backButton')}</button>
           {editingName ? (
             <input
               ref={nameInputRef}
@@ -881,18 +887,18 @@ export default function EditorPage() {
                 if (e.key === 'Enter') commitNameEdit()
                 if (e.key === 'Escape') setEditingName(false)
               }}
-              className="bg-slate-700 text-white rounded px-2 py-0.5 outline-none focus:ring-2 focus:ring-orange-500 font-semibold text-sm"
+              className="bg-slate-700 text-white rounded px-2 py-0.5 outline-none focus:ring-2 focus:ring-orange-500 font-semibold text-sm min-w-0 w-32 sm:w-auto"
             />
           ) : (
             <span
-              className="text-white font-semibold cursor-text hover:text-orange-300 transition-colors"
+              className="text-white font-semibold cursor-text hover:text-orange-300 transition-colors truncate max-w-[120px] sm:max-w-none"
               title={t('editor.renamePlayTooltip')}
               onClick={startNameEdit}
             >{activeSet.name}</span>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-slate-400 text-sm">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <span className="hidden sm:block text-slate-400 text-sm">
             {activeSet.courtType === 'half' ? t('common.halfCourt') : t('common.fullCourt')}
           </span>
           <LanguageSwitcher />
@@ -901,7 +907,7 @@ export default function EditorPage() {
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        <div className="p-2 border-r border-slate-700 overflow-y-auto">
+        <div className="hidden md:block p-2 border-r border-slate-700 overflow-y-auto shrink-0">
           <ActionToolbar
             activeType={actionCreation.type}
             ballHolderId={currentState.ball.holderId}
@@ -956,8 +962,8 @@ export default function EditorPage() {
               </div>
             )}
           </div>
-          <div ref={courtAreaRef} className="relative flex-1 flex items-center justify-center px-4 overflow-hidden">
-          <div className={`flex flex-row gap-3 ${activeSet.courtType === 'full' ? 'items-center' : 'items-end'}`}>
+          <div ref={courtAreaRef} className="relative flex-1 flex items-center justify-center px-2 sm:px-4 overflow-hidden">
+          <div className={`flex flex-col md:flex-row gap-2 md:gap-3 items-center ${activeSet.courtType === 'full' ? 'md:items-center' : 'md:items-end'}`}>
           <div
             className="relative"
             onDragOver={(e) => {
@@ -972,8 +978,10 @@ export default function EditorPage() {
                 nx = (STAGE_W - ky - COURT_PADDING_X) / HALF_COURT_W
                 ny = (kx - COURT_PADDING_Y) / FULL_COURT_H
               } else {
-                nx = (e.clientX - rect.left - COURT_PADDING_X) / HALF_COURT_W
-                ny = (e.clientY - rect.top - HALF_COURT_PADDING_TOP) / cH
+                const bcx = (e.clientX - rect.left) / courtScale
+                const bcy = (e.clientY - rect.top) / courtScale
+                nx = (bcx - COURT_PADDING_X) / HALF_COURT_W
+                ny = (bcy - HALF_COURT_PADDING_TOP) / cH
               }
               let closest: string | null = null, minD = Infinity
               for (const p of (activeSet?.players ?? [])) {
@@ -992,7 +1000,7 @@ export default function EditorPage() {
             <CourtCanvas
               courtType={activeSet.courtType}
               stageRef={stageRef}
-              scale={activeSet.courtType === 'full' ? courtScale : 1}
+              scale={courtScale}
               landscape={activeSet.courtType === 'full'}
               attackBasket={activeSet.attackBasket}
               onStageClick={handleCourtClick}
@@ -1215,8 +1223,8 @@ export default function EditorPage() {
           </div>
 
           {activeSet.courtType !== 'full' && (
-            <div ref={benchRef} className="flex flex-col items-center gap-2 px-2 py-3 bg-slate-800/60 rounded-xl border border-slate-700 overflow-y-auto self-center max-h-[80vh]">
-              <span className="text-slate-500 text-xs">{t('editor.benchLabel')}</span>
+            <div ref={benchRef} className="flex flex-row md:flex-col items-center gap-1.5 md:gap-2 px-2 py-2 md:py-3 bg-slate-800/60 rounded-xl border border-slate-700 overflow-x-auto md:overflow-x-visible md:overflow-y-auto order-last md:order-none md:self-center max-h-none md:max-h-[80vh] w-full md:w-auto">
+              <span className="text-slate-500 text-xs shrink-0">{t('editor.benchLabel')}</span>
               {!activeSet.players.some(p => p.id === currentState.ball.holderId) && (
                 <div
                   draggable
@@ -1231,7 +1239,7 @@ export default function EditorPage() {
                     requestAnimationFrame(() => document.body.removeChild(ghost))
                   }}
                   onDragEnd={() => { setIsDraggingBall(false); setBallDragHoverId(null) }}
-                  className="w-9 h-9 rounded-full flex items-center justify-center cursor-grab select-none bg-amber-500/20 border-2 border-amber-400"
+                  className="w-9 h-9 rounded-full flex items-center justify-center cursor-grab select-none bg-amber-500/20 border-2 border-amber-400 shrink-0"
                   style={{ fontSize: 20 }}
                   title={t('editor.ballDragTooltip')}
                 >
@@ -1241,7 +1249,7 @@ export default function EditorPage() {
               {allBenchPlayers.filter(p => !inPlayIds.has(p.id) || p.id === benchHoverPlayer?.id).map(p => {
                 const isHover = p.id === benchHoverPlayer?.id
                 return isHover ? (
-                  <div key={p.id} className="relative">
+                  <div key={p.id} className="relative shrink-0">
                     <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold select-none"
                       style={{ backgroundColor: p.team === 'offense' ? '#f97316' : '#1d4ed8', border: '2px dashed rgba(255,255,255,0.6)', opacity: 0.9 }}>
                       {p.number}
@@ -1253,7 +1261,7 @@ export default function EditorPage() {
                     key={p.id}
                     draggable
                     onDragStart={(e) => e.dataTransfer.setData('benchPlayerId', p.id)}
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold cursor-grab select-none"
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold cursor-grab select-none shrink-0"
                     style={{ backgroundColor: p.team === 'offense' ? '#f97316' : '#1d4ed8', border: '2px dashed rgba(255,255,255,0.4)', opacity: 0.8 }}
                     title={p.team === 'offense' ? t('editor.offensePlayerDragTooltip', { num: p.number }) : t('editor.defensePlayerDragTooltip', { num: p.number })}
                   >
@@ -1281,7 +1289,7 @@ export default function EditorPage() {
                     requestAnimationFrame(() => document.body.removeChild(ghost))
                   }}
                   onDragEnd={() => { setIsDraggingBall(false); setBallDragHoverId(null) }}
-                  className="w-9 h-9 rounded-full flex items-center justify-center cursor-grab select-none bg-amber-500/20 border-2 border-amber-400"
+                  className="w-9 h-9 rounded-full flex items-center justify-center cursor-grab select-none bg-amber-500/20 border-2 border-amber-400 shrink-0"
                   style={{ fontSize: 20 }}
                   title={t('editor.ballDragTooltip')}
                 >
@@ -1291,7 +1299,7 @@ export default function EditorPage() {
               {allBenchPlayers.filter(p => !inPlayIds.has(p.id) || p.id === benchHoverPlayer?.id).map(p => {
                 const isHover = p.id === benchHoverPlayer?.id
                 return isHover ? (
-                  <div key={p.id} className="relative">
+                  <div key={p.id} className="relative shrink-0">
                     <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold select-none"
                       style={{ backgroundColor: p.team === 'offense' ? '#f97316' : '#1d4ed8', border: '2px dashed rgba(255,255,255,0.6)', opacity: 0.9 }}>
                       {p.number}
@@ -1303,7 +1311,7 @@ export default function EditorPage() {
                     key={p.id}
                     draggable
                     onDragStart={(e) => e.dataTransfer.setData('benchPlayerId', p.id)}
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold cursor-grab select-none"
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold cursor-grab select-none shrink-0"
                     style={{ backgroundColor: p.team === 'offense' ? '#f97316' : '#1d4ed8', border: '2px dashed rgba(255,255,255,0.4)', opacity: 0.8 }}
                     title={p.team === 'offense' ? t('editor.offensePlayerDragTooltip', { num: p.number }) : t('editor.defensePlayerDragTooltip', { num: p.number })}
                   >
@@ -1316,9 +1324,24 @@ export default function EditorPage() {
           </div>
         </div>
 
-        <div className="w-64 flex flex-col border-l border-slate-700">
+        <div className="hidden md:flex w-64 flex-col border-l border-slate-700">
           <ActionPanel />
         </div>
+      </div>
+
+      {/* Mobile bottom action toolbar — replaces the left sidebar on small screens */}
+      <div className="md:hidden">
+        <ActionToolbar
+          layout="horizontal"
+          activeType={actionCreation.type}
+          ballHolderId={currentState.ball.holderId}
+          hasDefenders={(activeSet?.players ?? []).some(p => p.team === 'defense')}
+          onSelect={startActionCreation}
+          onCancel={cancelAll}
+          markingsEnabled={markingsEnabled}
+          onToggleMarkings={handleToggleMarkings}
+          gameOver={hasShotAction}
+        />
       </div>
 
 

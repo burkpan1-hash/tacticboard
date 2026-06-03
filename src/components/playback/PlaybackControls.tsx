@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { usePlayStore } from '../../store/usePlayStore'
 import { MOD_KEY } from '../../hooks/useEditorShortcuts'
 
-const KBD_INLINE = 'ml-1 text-[10px] font-mono opacity-70'
+const KBD_INLINE = 'ml-1 text-[10px] font-mono opacity-70 hidden sm:inline'
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
@@ -38,7 +38,7 @@ export default function PlaybackControls({ onExport, onSave, canSave, saveStatus
   const SPEEDS = [0.5, 1, 1.5, 2]
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2 bg-slate-800 border-t border-slate-700">
+    <div className="flex flex-wrap items-center gap-1.5 sm:gap-3 px-3 sm:px-4 py-2 bg-slate-800 border-t border-slate-700">
       <button
         onClick={() => stepTo(0)}
         disabled={activeStep === 0 || isPlaying}
@@ -78,7 +78,7 @@ export default function PlaybackControls({ onExport, onSave, canSave, saveStatus
         {activeStep} / {total}
       </span>
 
-      <div className="flex items-center gap-1 ml-2">
+      <div className="hidden sm:flex items-center gap-1 ml-1">
         {SPEEDS.map(s => (
           <button
             key={s}
@@ -133,7 +133,7 @@ export default function PlaybackControls({ onExport, onSave, canSave, saveStatus
         >{t('playback.exportButton')}<kbd className={KBD_INLINE}>{MOD_KEY}E</kbd></button>
       )}
 
-      <div className="flex-1" />
+      <div className="hidden sm:block flex-1" />
 
       <button
         onClick={undoLastAction}

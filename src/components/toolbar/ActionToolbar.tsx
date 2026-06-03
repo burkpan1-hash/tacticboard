@@ -81,10 +81,93 @@ interface Props {
   markingsEnabled: boolean
   onToggleMarkings: () => void
   gameOver?: boolean
+  layout?: 'vertical' | 'horizontal'
 }
 
-export default function ActionToolbar({ activeType, ballHolderId, hasDefenders, onSelect, onCancel, markingsEnabled, onToggleMarkings, gameOver }: Props) {
+export default function ActionToolbar({ activeType, ballHolderId, hasDefenders, onSelect, onCancel, markingsEnabled, onToggleMarkings, gameOver, layout = 'vertical' }: Props) {
   const { t } = useTranslation()
+
+  if (layout === 'horizontal') {
+    return (
+      <div className="bg-slate-800 border-t border-slate-700 overflow-x-auto">
+        <div className="flex items-center gap-1 px-2 py-1.5 min-w-max">
+          {gameOver && (
+            <div className="shrink-0 px-2 py-1 bg-slate-700/80 rounded-lg text-orange-400 text-[9px] font-bold whitespace-nowrap mr-1">
+              {t('toolbar.shotTaken')}
+            </div>
+          )}
+
+          {/* Offense tools */}
+          {OFFENSE_TOOLS.map(tool => {
+            const disabled = gameOver || (tool.requiresBall && !ballHolderId)
+            const active = activeType === tool.type
+            return (
+              <button
+                key={tool.type}
+                title={t(ACTION_LABEL_KEYS[tool.type])}
+                disabled={disabled}
+                onClick={() => active ? onCancel() : onSelect(tool.type)}
+                className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg shrink-0 transition-colors
+                  ${active ? 'bg-slate-600 ring-1 ring-white/30' : ''}
+                  ${!active && !disabled ? 'bg-slate-700 text-slate-200 active:bg-slate-600' : ''}
+                  ${disabled ? 'opacity-30 cursor-not-allowed bg-slate-800 text-slate-500' : ''}`}
+              >
+                {ICONS[tool.type]}
+                <span className="text-[9px] font-medium" style={{ color: disabled ? undefined : ACTION_COLORS[tool.type] }}>{t(ACTION_LABEL_KEYS[tool.type])}</span>
+              </button>
+            )
+          })}
+
+          <div className="w-px h-8 bg-slate-600 mx-1 shrink-0" />
+
+          {/* Defense tools */}
+          {DEF_TOOLS.map(tool => {
+            const disabled = !!gameOver || !hasDefenders
+            const active = activeType === tool.type
+            return (
+              <button
+                key={tool.type}
+                title={t(ACTION_LABEL_KEYS[tool.type])}
+                disabled={disabled}
+                onClick={() => active ? onCancel() : onSelect(tool.type)}
+                className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg shrink-0 transition-colors
+                  ${active ? 'bg-slate-600 ring-1 ring-white/30' : ''}
+                  ${!active && !disabled ? 'bg-slate-700 text-slate-200 active:bg-slate-600' : ''}
+                  ${disabled ? 'opacity-30 cursor-not-allowed bg-slate-800 text-slate-500' : ''}`}
+              >
+                {ICONS[tool.type]}
+                <span className="text-[9px] font-medium" style={{ color: ACTION_COLORS[tool.type] }}>{t(ACTION_LABEL_KEYS[tool.type])}</span>
+              </button>
+            )
+          })}
+
+          <div className="w-px h-8 bg-slate-600 mx-1 shrink-0" />
+
+          {/* Markings toggle */}
+          <button
+            onClick={onToggleMarkings}
+            className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg shrink-0 transition-colors ${markingsEnabled ? 'bg-blue-900/50 ring-1 ring-blue-500/50' : 'bg-slate-700'}`}
+          >
+            <svg viewBox="0 0 32 14" width={32} height={14} fill="none" strokeLinecap="round">
+              <circle cx="8" cy="7" r="5" stroke="#60a5fa" strokeWidth="1.5" strokeDasharray="2 2"/>
+              <circle cx="24" cy="7" r="5" stroke="#f97316" strokeWidth="1.5"/>
+              <line x1="13" y1="7" x2="19" y2="7" stroke="#60a5fa" strokeWidth="1.5" strokeDasharray="2 2"/>
+            </svg>
+            <span className={`text-[9px] font-medium ${markingsEnabled ? 'text-blue-400' : 'text-slate-400'}`}>{t('toolbar.markingLabel')}</span>
+          </button>
+
+          {activeType && (
+            <button
+              onClick={onCancel}
+              className="ml-2 px-3 py-1.5 rounded-lg bg-red-700 active:bg-red-600 text-white text-xs font-bold shrink-0 transition-colors"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-2 p-2 bg-slate-800 rounded-xl border border-slate-700">
