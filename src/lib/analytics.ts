@@ -1,5 +1,9 @@
 import posthog from 'posthog-js'
 import { getConsent, onConsentChange } from '../components/ui/CookieConsentBanner'
+import { scrubUrl } from './scrubUrl'
+
+// Properties that PostHog auto-captures and may carry sensitive query tokens.
+const URL_PROPS = ['$current_url', '$pathname', '$referrer', '$initial_referrer', '$initial_current_url']
 
 /**
  * Initialize PostHog analytics if a key is provided via VITE_POSTHOG_KEY.
@@ -30,6 +34,15 @@ function actuallyInit() {
     autocapture: true,
     capture_pageview: true,
     capture_pageleave: true,
+    // Strip sensitive query params (?token=, ?code=, etc) from any URL property
+    // before the event leaves the browser — keeps reset/verify tokens out of analytics.
+    sanitize_properties: (properties) => {
+      for (const k of URL_PROPS) {
+        const v = properties[k]
+        if (typeof v === 'string') properties[k] = scrubUrl(v)
+      }
+      return properties
+    },
   })
   initialized = true
 }
