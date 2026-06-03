@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
 import Logo from '../components/ui/Logo'
+import UpgradeModal from '../components/ui/UpgradeModal'
 import { authClient } from '../lib/authClient'
+
+const FREE_PLAY_LIMIT = 10
 
 interface CloudPlay {
   id: string
@@ -21,6 +24,7 @@ export default function HomePage() {
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const editInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -90,6 +94,14 @@ export default function HomePage() {
     setCloudPlays([])
   }
 
+  function handleNewPlay() {
+    if (session && cloudPlays.length >= FREE_PLAY_LIMIT) {
+      setShowUpgradeModal(true)
+      return
+    }
+    navigate('/setup')
+  }
+
   return (
     <div className="min-h-screen p-4 sm:p-8 max-w-4xl mx-auto">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6 sm:mb-8">
@@ -112,7 +124,7 @@ export default function HomePage() {
             </button>
           )}
           <button
-            onClick={() => navigate('/setup')}
+            onClick={handleNewPlay}
             className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-4 sm:px-6 py-2 rounded-lg transition-colors text-sm sm:text-base"
           >
             {t('home.newPlayButton')}
@@ -190,6 +202,23 @@ export default function HomePage() {
           ))}
         </div>
       )}
+
+      {session && cloudPlays.length >= FREE_PLAY_LIMIT && (
+        <div className="mt-6 p-4 bg-orange-500/10 border border-orange-500/30 rounded-xl flex items-center justify-between gap-4">
+          <div>
+            <p className="text-orange-400 font-semibold text-sm">You've reached the 10 play limit</p>
+            <p className="text-slate-400 text-xs mt-0.5">Upgrade to Pro for unlimited saves and no ads.</p>
+          </div>
+          <button
+            onClick={() => setShowUpgradeModal(true)}
+            className="shrink-0 px-4 py-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold rounded-lg transition-colors"
+          >
+            Upgrade →
+          </button>
+        </div>
+      )}
+
+      {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
 
       <footer className="mt-12 pt-6 border-t border-slate-800 text-center text-xs text-slate-500 space-y-2">
         <div>

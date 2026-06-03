@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, count } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { db } from '../db/client'
 import { plays } from '../db/schema'
@@ -34,12 +34,18 @@ router.get('/:id', async (c) => {
   return c.json(play)
 })
 
+const FREE_PLAY_LIMIT = 10
+
 // Create play
 router.post('/', async (c) => {
   const user = c.get('user')
   const body = await c.req.json<{ title: string; data: PlaySet }>()
   if (!body.title || !body.data) {
     return c.json({ error: 'title and data are required' }, 400)
+  }
+  const [{ total }] = await db.select({ total: count() }).from(plays).where(eq(plays.userId, user.id))
+  if (total >= FREE_PLAY_LIMIT) {
+    return c.json({ error: 'PLAY_LIMIT_REACHED', limit: FREE_PLAY_LIMIT }, 402)
   }
   const [play] = await db
     .insert(plays)

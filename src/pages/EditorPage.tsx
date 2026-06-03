@@ -15,6 +15,7 @@ import ExportModal from '../components/export/ExportModal'
 import PlayerEditModal from '../components/players/PlayerEditModal'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
 import UserButton from '../components/ui/UserButton'
+import UpgradeModal from '../components/ui/UpgradeModal'
 import { usePlayStore } from '../store/usePlayStore'
 import { computeStateAtStep } from '../utils/stateEngine'
 import { denormalize } from '../utils/courtCoords'
@@ -136,6 +137,7 @@ export default function EditorPage() {
     (isCloudPlay && setId) ? setId : (activeSet?.cloudPlayId ?? null)
   )
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
 
   function startNameEdit() {
@@ -162,6 +164,7 @@ export default function EditorPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: activeSet.name, data: activeSet }),
       })
+      if (res.status === 402) { setSaveStatus('idle'); setShowUpgradeModal(true); return }
       if (!res.ok) { setSaveStatus('error'); return }
       let persisted = activeSet
       if (method === 'POST') {
@@ -1408,6 +1411,7 @@ export default function EditorPage() {
         )
       })()}
 
+      {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
     </div>
   )
 }
