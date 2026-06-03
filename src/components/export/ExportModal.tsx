@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import type Konva from 'konva'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import { exportVideo, downloadBlob } from '../../utils/exportAnimation'
 import { usePlayStore } from '../../store/usePlayStore'
+import AdSlot from '../ui/AdSlot'
 
 type Phase = 'idle' | 'playing' | 'encoding' | 'done'
 
@@ -14,7 +16,9 @@ interface Props {
 
 export default function ExportModal({ stageRef, stepMs, onClose }: Props) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const { activeSet, activeStep, setActiveStep, setIsPlaying, playbackSpeed, setPlaybackSpeed } = usePlayStore()
+  const [showUpgrade, setShowUpgrade] = useState(false)
 
   const scale = 1
   const [phase, setPhase] = useState<Phase>('idle')
@@ -55,6 +59,7 @@ export default function ExportModal({ stageRef, stepMs, onClose }: Props) {
           downloadBlob(blob, `${baseName}.${ext}`)
           setPhase('done')
           restore()
+          setTimeout(() => setShowUpgrade(true), 800)
         },
       )
       cancelRef.current = handle.cancel
@@ -132,6 +137,7 @@ export default function ExportModal({ stageRef, stepMs, onClose }: Props) {
 
         {phase === 'playing' && (
           <div className="flex flex-col gap-3">
+            <AdSlot className="h-[90px]" />
             <p className="text-slate-300 text-xs">{t('export.capturingStatus')}</p>
             {progressBar(captureProgress, t('export.captureProgressLabel'))}
             <button
@@ -145,6 +151,7 @@ export default function ExportModal({ stageRef, stepMs, onClose }: Props) {
 
         {phase === 'encoding' && (
           <div className="flex flex-col gap-3">
+            <AdSlot className="h-[90px]" />
             <p className="text-slate-300 text-xs">{t('export.encodingStatus')}</p>
             <div className="text-slate-400 text-xs">{t('export.processingStatus')}</div>
           </div>
@@ -152,13 +159,40 @@ export default function ExportModal({ stageRef, stepMs, onClose }: Props) {
 
         {phase === 'done' && (
           <div className="flex flex-col gap-3">
-            <p className="text-green-400 text-sm font-medium">{t('export.downloadSuccess')}</p>
-            <button
-              onClick={onClose}
-              className="py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm transition-colors"
-            >
-              {t('common.closeButton')}
-            </button>
+            <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-lg px-4 py-3">
+              <span className="text-green-400 text-lg">✓</span>
+              <p className="text-green-400 text-sm font-medium">{t('export.downloadSuccess')}</p>
+            </div>
+
+            {showUpgrade ? (
+              <div className="bg-slate-700/60 rounded-xl p-4 flex flex-col gap-3 border border-slate-600">
+                <div>
+                  <p className="text-white font-semibold text-sm">Remove ads?</p>
+                  <p className="text-slate-400 text-xs mt-0.5">Upgrade to Pro — no ads, unlimited plays.</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { onClose(); navigate('/pricing') }}
+                    className="flex-1 py-2 rounded-lg bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold transition-colors"
+                  >
+                    Upgrade to Pro
+                  </button>
+                  <button
+                    onClick={onClose}
+                    className="flex-1 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm transition-colors"
+                  >
+                    No thanks
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={onClose}
+                className="py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm transition-colors"
+              >
+                {t('common.closeButton')}
+              </button>
+            )}
           </div>
         )}
       </div>

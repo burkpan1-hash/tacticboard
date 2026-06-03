@@ -16,6 +16,7 @@ import PlayerEditModal from '../components/players/PlayerEditModal'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
 import UserButton from '../components/ui/UserButton'
 import UpgradeModal from '../components/ui/UpgradeModal'
+import ShareInterstitialModal from '../components/ui/ShareInterstitialModal'
 import { usePlayStore } from '../store/usePlayStore'
 import { computeStateAtStep } from '../utils/stateEngine'
 import { denormalize } from '../utils/courtCoords'
@@ -138,6 +139,7 @@ export default function EditorPage() {
   )
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [showShareInterstitial, setShowShareInterstitial] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
 
   function startNameEdit() {
@@ -183,11 +185,10 @@ export default function EditorPage() {
     }
   }
 
-  async function handleCloudShare() {
-    if (!activeSet) return
+  async function buildShareUrl(): Promise<string> {
+    if (!activeSet) return ''
     let shareToken: string
     if (session) {
-      // Logged-in: save to user's account then share
       const res = await fetch('/api/plays', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -197,7 +198,6 @@ export default function EditorPage() {
       const shareRes = await fetch(`/api/plays/${play.id}/share`, { method: 'POST' })
       shareToken = (await shareRes.json()).shareToken
     } else {
-      // Anonymous: save as guest play
       const res = await fetch('/api/share-public', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -205,9 +205,12 @@ export default function EditorPage() {
       })
       shareToken = (await res.json()).shareToken
     }
-    await navigator.clipboard.writeText(`${window.location.origin}/share/${shareToken}`)
-    setShareCopied(true)
-    setTimeout(() => setShareCopied(false), 2000)
+    return `${window.location.origin}/share/${shareToken}`
+  }
+
+  function handleCloudShare() {
+    if (!activeSet) return
+    setShowShareInterstitial(true)
   }
 
   function handleNavigateHome() {
@@ -1412,6 +1415,13 @@ export default function EditorPage() {
       })()}
 
       {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
+
+      {showShareInterstitial && (
+        <ShareInterstitialModal
+          onShare={buildShareUrl}
+          onClose={() => { setShowShareInterstitial(false); setShareCopied(true); setTimeout(() => setShareCopied(false), 2000) }}
+        />
+      )}
     </div>
   )
 }
