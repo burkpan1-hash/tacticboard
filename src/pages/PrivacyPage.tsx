@@ -151,10 +151,13 @@ export default function PrivacyPage() {
           ))}
         </div>
 
-        <div className="mt-10 pt-6 border-t border-slate-800 text-center text-sm text-slate-500">
-          <Link to="/" className="hover:text-orange-400 transition-colors">← Back to Home</Link>
-          <span className="mx-3">·</span>
-          <Link to="/terms" className="hover:text-orange-400 transition-colors">Terms of Service</Link>
+        <div className="mt-10 pt-6 border-t border-slate-800 text-center text-sm text-slate-500 space-y-2">
+          <div>
+            <Link to="/" className="hover:text-orange-400 transition-colors">← Back to Home</Link>
+            <span className="mx-3">·</span>
+            <Link to="/terms" className="hover:text-orange-400 transition-colors">Terms of Service</Link>
+          </div>
+          <div>Questions? <a href={`mailto:${CONTACT_EMAIL}`} className="text-orange-400 hover:text-orange-300 transition-colors">{CONTACT_EMAIL}</a></div>
         </div>
       </div>
     </div>
