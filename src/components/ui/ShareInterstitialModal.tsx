@@ -36,11 +36,10 @@ export default function ShareInterstitialModal({ onShare, onClose }: Props) {
   useEffect(() => {
     if (!ready) return
     if (shareUrl) {
-      navigator.clipboard.writeText(shareUrl).then(() => {
-        setCopied(true)
-        setTimeout(() => setShowUpgrade(true), 600)
-      })
+      navigator.clipboard.writeText(shareUrl).catch(() => {})
+      setCopied(true)
     }
+    setTimeout(() => setShowUpgrade(true), 600)
   }, [ready, shareUrl])
 
   return (
@@ -82,7 +81,13 @@ export default function ShareInterstitialModal({ onShare, onClose }: Props) {
                 </div>
               </div>
             ) : (
-              <p className="text-red-400 text-sm">Could not generate link. Try again.</p>
+              <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3">
+                <span className="text-red-400 text-lg">✕</span>
+                <div>
+                  <p className="text-red-400 font-semibold text-sm">Could not generate link.</p>
+                  <p className="text-slate-400 text-xs mt-0.5">Save your play first, then share.</p>
+                </div>
+              </div>
             )}
 
             {showUpgrade && (

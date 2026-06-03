@@ -189,13 +189,21 @@ export default function EditorPage() {
     if (!activeSet) return ''
     let shareToken: string
     if (session) {
-      const res = await fetch('/api/plays', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: activeSet.name, data: activeSet }),
-      })
-      const play = await res.json()
-      const shareRes = await fetch(`/api/plays/${play.id}/share`, { method: 'POST' })
+      let playId = cloudPlayId
+      if (!playId) {
+        // Play not yet saved — create it (may hit limit for free users)
+        const res = await fetch('/api/plays', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: activeSet.name, data: activeSet }),
+        })
+        if (!res.ok) return ''
+        const play = await res.json()
+        playId = play.id
+        setCloudPlayId(play.id)
+      }
+      const shareRes = await fetch(`/api/plays/${playId}/share`, { method: 'POST' })
+      if (!shareRes.ok) return ''
       shareToken = (await shareRes.json()).shareToken
     } else {
       const res = await fetch('/api/share-public', {
@@ -203,6 +211,7 @@ export default function EditorPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: activeSet.name, data: activeSet }),
       })
+      if (!res.ok) return ''
       shareToken = (await res.json()).shareToken
     }
     return `${window.location.origin}/share/${shareToken}`
