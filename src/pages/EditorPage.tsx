@@ -15,6 +15,7 @@ import ExportModal from '../components/export/ExportModal'
 import PlayerEditModal from '../components/players/PlayerEditModal'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
 import UserButton from '../components/ui/UserButton'
+import TutorialOverlay from '../components/ui/TutorialOverlay'
 import { usePlayStore } from '../store/usePlayStore'
 import { computeStateAtStep } from '../utils/stateEngine'
 import { denormalize } from '../utils/courtCoords'
@@ -907,7 +908,7 @@ export default function EditorPage() {
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        <div className="hidden md:block p-2 border-r border-slate-700 overflow-y-auto shrink-0">
+        <div id="tutorial-toolbar" className="hidden md:block p-2 border-r border-slate-700 overflow-y-auto shrink-0">
           <ActionToolbar
             activeType={actionCreation.type}
             ballHolderId={currentState.ball.holderId}
@@ -962,7 +963,7 @@ export default function EditorPage() {
               </div>
             )}
           </div>
-          <div ref={courtAreaRef} className="relative flex-1 flex items-center justify-center px-2 sm:px-4 overflow-hidden">
+          <div id="tutorial-court" ref={courtAreaRef} className="relative flex-1 flex items-center justify-center px-2 sm:px-4 overflow-hidden">
           <div className={`flex flex-col md:flex-row gap-2 md:gap-3 items-center ${activeSet.courtType === 'full' ? 'md:items-center' : 'md:items-end'}`}>
           <div
             className="relative"
@@ -1330,7 +1331,7 @@ export default function EditorPage() {
       </div>
 
       {/* Mobile bottom action toolbar — replaces the left sidebar on small screens */}
-      <div className="md:hidden">
+      <div id="tutorial-toolbar-mobile" className="md:hidden">
         <ActionToolbar
           layout="horizontal"
           activeType={actionCreation.type}
@@ -1345,14 +1346,16 @@ export default function EditorPage() {
       </div>
 
 
-      <PlaybackControls
-        onExport={() => setShowExport(true)}
-        onSave={handleSave}
-        canSave={activeSet.actions.length > 0 && isDirty}
-        saveStatus={saveStatus}
-        onShare={handleCloudShare}
-        shareCopied={shareCopied}
-      />
+      <div id="tutorial-playback">
+        <PlaybackControls
+          onExport={() => setShowExport(true)}
+          onSave={handleSave}
+          canSave={activeSet.actions.length > 0 && isDirty}
+          saveStatus={saveStatus}
+          onShare={handleCloudShare}
+          shareCopied={shareCopied}
+        />
+      </div>
 
       {saveDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -1407,6 +1410,8 @@ export default function EditorPage() {
           />
         )
       })()}
+
+      <TutorialOverlay />
     </div>
   )
 }

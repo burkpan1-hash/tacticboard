@@ -229,5 +229,19 @@
     "errorRateLimited": "Trop de tentatives. Attends un instant et réessaie.",
     "errorGoogleUnavailable": "La connexion Google n'est pas configurée.",
     "errorGeneric": "Une erreur est survenue. Réessaie."
+  },
+  "tutorial": {
+    "step0Title": "Bienvenue ! 🏀",
+    "step0Body": "Bienvenue sur Basketball Tactic Board. Voulez-vous une visite guidée ?",
+    "step1Title": "Choisir une Action",
+    "step1Body": "Choisissez un mouvement dans la barre — Passe, Dribble, Coupure et plus.",
+    "step2Title": "Dessinez votre Tactique",
+    "step2Body": "Cliquez sur un joueur, puis sur le point cible. Chaque étape est une action.",
+    "step3Title": "Jouer et Partager",
+    "step3Body": "Appuyez sur ▶ Play pour animer votre jeu. Sauvegardez et partagez le lien.",
+    "startButton": "Commencer",
+    "skipButton": "Passer",
+    "nextButton": "Suivant →",
+    "doneButton": "C'est parti ! ✓"
   }
 }

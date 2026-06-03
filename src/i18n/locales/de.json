@@ -229,5 +229,19 @@
     "errorRateLimited": "Zu viele Versuche. Warte kurz und versuche es erneut.",
     "errorGoogleUnavailable": "Google-Anmeldung ist nicht konfiguriert.",
     "errorGeneric": "Etwas ist schiefgelaufen. Versuche es erneut."
+  },
+  "tutorial": {
+    "step0Title": "Willkommen! 🏀",
+    "step0Body": "Willkommen beim Basketball Tactic Board. Möchtest du eine kurze Tour?",
+    "step1Title": "Aktion auswählen",
+    "step1Body": "Wähle eine Bewegung aus der Leiste — Pass, Dribbling, Cut und mehr.",
+    "step2Title": "Taktik zeichnen",
+    "step2Body": "Klicke auf einen Spieler, dann auf den Zielpunkt. Jeder Schritt wird eine Aktion.",
+    "step3Title": "Abspielen & Teilen",
+    "step3Body": "Drücke ▶ Play, um das Spiel zu animieren. Speichere es und teile den Link.",
+    "startButton": "Tour starten",
+    "skipButton": "Überspringen",
+    "nextButton": "Weiter →",
+    "doneButton": "Fertig! ✓"
   }
 }

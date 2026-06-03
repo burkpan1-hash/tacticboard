@@ -229,5 +229,19 @@
     "errorRateLimited": "Çok fazla deneme. Biraz bekleyip tekrar dene.",
     "errorGoogleUnavailable": "Google girişi henüz kurulu değil.",
     "errorGeneric": "Bir şeyler ters gitti. Lütfen tekrar dene."
+  },
+  "tutorial": {
+    "step0Title": "Hoş Geldin! 🏀",
+    "step0Body": "Basketball Tactic Board'a hoş geldin. Kısa bir tur atalım mı?",
+    "step1Title": "Aksiyon Seç",
+    "step1Body": "Toolbardan bir hareket seç — Pas, Dribble, Cut ve daha fazlası.",
+    "step2Title": "Taktik Çiz",
+    "step2Body": "Oyuncuya tıkla, sonra hedef noktaya tıkla. Her adım bir aksiyon olur.",
+    "step3Title": "Oynat ve Paylaş",
+    "step3Body": "▶ Play'e basarak animasyonu izle. Kaydedip ekibinle link olarak paylaş.",
+    "startButton": "Turu Başlat",
+    "skipButton": "Geç",
+    "nextButton": "İleri →",
+    "doneButton": "Hazırım! ✓"
   }
 }

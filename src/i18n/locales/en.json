@@ -238,5 +238,19 @@
     "errorRateLimited": "Too many attempts. Please wait a moment and try again.",
     "errorGoogleUnavailable": "Google sign-in is not configured.",
     "errorGeneric": "Something went wrong. Please try again."
+  },
+  "tutorial": {
+    "step0Title": "Welcome! 🏀",
+    "step0Body": "Welcome to Basketball Tactic Board. Want a quick tour?",
+    "step1Title": "Select an Action",
+    "step1Body": "Choose a move from the toolbar — Pass, Dribble, Cut and more.",
+    "step2Title": "Draw Your Tactic",
+    "step2Body": "Click a player, then click the target spot. Each step becomes an action.",
+    "step3Title": "Play & Share",
+    "step3Body": "Hit ▶ Play to animate your play. Save it and share a link with your team.",
+    "startButton": "Start Tour",
+    "skipButton": "Skip",
+    "nextButton": "Next →",
+    "doneButton": "Got it! ✓"
   }
 }
