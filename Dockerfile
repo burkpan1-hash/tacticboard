@@ -6,6 +6,17 @@ RUN npm ci
 
 COPY . .
 
+# VITE_* env vars are baked into the client bundle at build time. Sentry DSN
+# and PostHog key are designed to be public (they identify the project, they
+# are not credentials) — safe to bake in. Fly secrets won't help here since
+# they're runtime-only and `npm run build` runs in this image stage.
+ARG VITE_SENTRY_DSN=""
+ARG VITE_POSTHOG_KEY=""
+ARG VITE_POSTHOG_HOST="https://us.i.posthog.com"
+ENV VITE_SENTRY_DSN=$VITE_SENTRY_DSN
+ENV VITE_POSTHOG_KEY=$VITE_POSTHOG_KEY
+ENV VITE_POSTHOG_HOST=$VITE_POSTHOG_HOST
+
 RUN npm run build
 
 FROM node:22-alpine
