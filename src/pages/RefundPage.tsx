@@ -18,40 +18,31 @@ const COPY: Record<'tr' | 'en', { title: string; sections: Array<{ heading: stri
           'ticaret adı görünebilir.',
       },
       {
-        heading: '14 Günlük Para İade Garantisi',
+        heading: 'İade Politikası',
         body:
-          'Pro aboneliğinizin ilk ödemesinden itibaren 14 gün içinde memnun kalmazsanız tam iade talep ' +
-          'edebilirsiniz. İade talebinde bulunmak için support@basketballtacticboard.com adresine e-posta ' +
-          'gönderin veya Paddle\'ın müşteri portalından talep oluşturun. İade, orijinal ödeme yönteminize ' +
-          '5–10 iş günü içinde yansır.',
+          'Pro aboneliği dijital bir hizmettir ve satın alma anında tam erişim sağlanır. Bu nedenle ' +
+          'tamamlanmış ödemeler için iade yapılmamaktadır. Aboneliğinizi istediğiniz zaman iptal edebilirsiniz; ' +
+          'mevcut fatura döneminin sonuna kadar Pro özelliklerini kullanmaya devam edersiniz, sonrasında ' +
+          'ücretsiz katmana geçilir.',
       },
       {
-        heading: 'Kısmi İade Yapılmaz',
+        heading: 'Yenileme Hatası İstisnası',
         body:
-          'Mevcut fatura döneminin ortasında yapılan iptaller için kısmi iade yapılmaz. Aboneliğinizi iptal ' +
-          'ettiğinizde, mevcut ödeme dönemi sonuna kadar Pro özelliklerine erişiminiz devam eder; sonrasında ' +
-          'hesabınız otomatik olarak ücretsiz katmana geçer.',
+          'Aboneliğinizi iptal etmeyi unutup istemediğiniz bir yenileme ücreti tahsil edilirse, yenileme ' +
+          'tarihinden itibaren 7 gün içinde support@basketballtacticboard.com adresine yazmanız halinde ' +
+          'tam iade yapılır. Bu istisna yalnızca bir kez geçerlidir.',
       },
       {
         heading: 'İptal',
         body:
           'Aboneliğinizi istediğiniz zaman hesap ayarlarınızdan veya Paddle müşteri portalından iptal ' +
-          'edebilirsiniz. İptal sonrasında tekrar ücret alınmaz. İptal etmeyi unutur ve istemediğiniz bir ' +
-          'yenileme ücreti tahsil edilirse, yenileme tarihinden itibaren 7 gün içinde başvurmanız halinde ' +
-          'tam iade yaparız.',
+          'edebilirsiniz. İptal işleminden sonra tekrar ücret alınmaz.',
       },
       {
-        heading: 'İstisna Durumlar',
+        heading: 'Teknik Sorun Durumu',
         body:
-          'Teknik bir hata veya hizmet kesintisi nedeniyle Pro özelliklerini kullanamadığınız kanıtlanabilir ' +
-          'durumlarda, etkilenen süreyle orantılı bir iade değerlendirilebilir. Her talep ayrı incelenir.',
-      },
-      {
-        heading: 'İade Nasıl Talep Edilir',
-        body:
-          'support@basketballtacticboard.com adresine "İade Talebi" konusuyla e-posta gönderin. E-postanıza ' +
-          'kayıtlı e-posta adresinizi, satın alma tarihini ve iade nedeninizi ekleyin. 2 iş günü içinde ' +
-          'dönüş yaparız.',
+          'Tarafımızdaki kanıtlanabilir bir teknik hata nedeniyle Pro özelliklerine hiç erişemediyseniz, ' +
+          'bu durum ayrıca değerlendirilir. Destek için support@basketballtacticboard.com adresine yazın.',
       },
       {
         heading: 'İletişim',
@@ -70,41 +61,30 @@ const COPY: Record<'tr' | 'en', { title: string; sections: Array<{ heading: stri
           'Paddle\'s name on your payment statement.',
       },
       {
-        heading: '14-Day Money-Back Guarantee',
+        heading: 'No Refunds',
         body:
-          'If you are not satisfied with your Pro subscription, you may request a full refund within ' +
-          '14 days of your first payment. To request a refund, email support@basketballtacticboard.com ' +
-          'or submit a request through Paddle\'s customer portal. Refunds are returned to your original ' +
-          'payment method within 5–10 business days.',
+          'Pro is a digital service with immediate full access upon purchase. Because of this, completed ' +
+          'payments are non-refundable. You may cancel at any time — you keep Pro features until the end ' +
+          'of your current billing period, then your account reverts to the free tier.',
       },
       {
-        heading: 'No Partial Refunds',
+        heading: 'Accidental Renewal Exception',
         body:
-          'We do not issue partial refunds for cancellations made mid-billing-period. When you cancel, ' +
-          'you retain access to Pro features until the end of your current paid period, after which your ' +
-          'account automatically downgrades to the free tier.',
+          'If you forgot to cancel and were charged for an unwanted renewal, email ' +
+          'support@basketballtacticboard.com within 7 days of the renewal date and we will issue a full ' +
+          'refund. This exception applies once per account.',
       },
       {
         heading: 'Cancellation',
         body:
           'You may cancel your subscription at any time from your account settings or Paddle\'s customer ' +
-          'portal. No further charges will be made after cancellation. If you forget to cancel and are ' +
-          'charged for an unwanted renewal, we will issue a full refund if you contact us within 7 days ' +
-          'of the renewal date.',
+          'portal. No further charges will be made after cancellation.',
       },
       {
-        heading: 'Exceptional Cases',
+        heading: 'Technical Issues',
         body:
-          'If you were unable to access Pro features due to a verifiable technical error or service ' +
-          'outage on our end, a pro-rated refund for the affected period may be considered. Each case ' +
-          'is reviewed individually.',
-      },
-      {
-        heading: 'How to Request a Refund',
-        body:
-          'Email support@basketballtacticboard.com with the subject "Refund Request". Include your ' +
-          'registered email address, purchase date, and reason for the refund. We will respond within ' +
-          '2 business days.',
+          'If a verifiable technical error on our end prevented you from accessing Pro features entirely, ' +
+          'we will review the case individually. Contact support@basketballtacticboard.com with details.',
       },
       {
         heading: 'Contact',
