@@ -135,25 +135,31 @@ export function applyAction(
     }
   }
 
-  if (markings) {
-    const BASKET = { x: 0.5, y: 0.1128 }
-    const OFFSET = 0.12
-    for (const [defId, offId] of Object.entries(markings)) {
-      const op = positions[offId]
-      if (!op) continue
-      const dx = BASKET.x - op.x
-      const dy = BASKET.y - op.y
-      const len = Math.sqrt(dx * dx + dy * dy)
-      const ux = len < 0.05 ? 0 : dx / len
-      const uy = len < 0.05 ? 1 : dy / len
-      positions[defId] = {
-        x: Math.max(0.02, Math.min(0.98, op.x + ux * OFFSET)),
-        y: Math.max(0.02, Math.min(0.98, op.y + uy * OFFSET)),
-      }
+  const baseState = { positions, ball }
+  return markings ? applyMarkingsToState(baseState, markings) : baseState
+}
+
+function applyMarkingsToState(
+  state: GameState,
+  markings: Record<string, string>,
+): GameState {
+  const positions = { ...state.positions }
+  const BASKET = { x: 0.5, y: 0.1128 }
+  const OFFSET = 0.12
+  for (const [defId, offId] of Object.entries(markings)) {
+    const op = positions[offId]
+    if (!op) continue
+    const dx = BASKET.x - op.x
+    const dy = BASKET.y - op.y
+    const len = Math.sqrt(dx * dx + dy * dy)
+    const ux = len < 0.05 ? 0 : dx / len
+    const uy = len < 0.05 ? 1 : dy / len
+    positions[defId] = {
+      x: Math.max(0.02, Math.min(0.98, op.x + ux * OFFSET)),
+      y: Math.max(0.02, Math.min(0.98, op.y + uy * OFFSET)),
     }
   }
-
-  return { positions, ball }
+  return { ...state, positions }
 }
 
 export function computeStateAtStep(
@@ -169,6 +175,10 @@ export function computeStateAtStep(
   let state: GameState = {
     positions: { ...initialPositions },
     ball: { ...initialBall },
+  }
+  // Apply markings to initial state so defenders are positioned at step 0
+  if (markings && Object.keys(markings).length > 0) {
+    state = applyMarkingsToState(state, markings)
   }
   const limit = Math.min(step, actions.length)
   for (let i = 0; i < limit; i++) {
