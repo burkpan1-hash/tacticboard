@@ -224,6 +224,8 @@ export default function HomePage() {
         <div>
           <a href="/pricing" className="hover:text-orange-400 transition-colors">Pricing</a>
           <span className="mx-3">·</span>
+          <a href="/refund" className="hover:text-orange-400 transition-colors">Refunds</a>
+          <span className="mx-3">·</span>
           <a href="/privacy" className="hover:text-orange-400 transition-colors">Privacy</a>
           <span className="mx-3">·</span>
           <a href="/terms" className="hover:text-orange-400 transition-colors">Terms</a>

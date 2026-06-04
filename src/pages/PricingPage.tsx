@@ -71,7 +71,10 @@ export default function PricingPage() {
       </div>
 
       <p className="text-center text-slate-500 text-xs mt-10">
-        Cancel anytime. No hidden fees. Questions? <a href="mailto:support@basketballtacticboard.com" className="text-orange-400 hover:text-orange-300">support@basketballtacticboard.com</a>
+        Cancel anytime. No hidden fees.{' '}
+        <a href="/refund" className="hover:text-orange-400 transition-colors">Refund policy</a>
+        {' · '}
+        Questions? <a href="mailto:support@basketballtacticboard.com" className="text-orange-400 hover:text-orange-300">support@basketballtacticboard.com</a>
       </p>
     </div>
   )

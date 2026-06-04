@@ -11,6 +11,7 @@ import SharePage from './pages/SharePage'
 import PrivacyPage from './pages/PrivacyPage'
 import TermsPage from './pages/TermsPage'
 import PricingPage from './pages/PricingPage'
+import RefundPage from './pages/RefundPage'
 import NotFoundPage from './pages/NotFoundPage'
 import CookieConsentBanner from './components/ui/CookieConsentBanner'
 
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/refund" element={<RefundPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <CookieConsentBanner />
