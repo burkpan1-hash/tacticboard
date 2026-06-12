@@ -25,7 +25,29 @@
     "shareButton": "Partager",
     "copiedButton": "Copié !",
     "loginButton": "Connexion",
-    "logoutButton": "Déconnexion"
+    "logoutButton": "Déconnexion",
+    "landing": {
+      "heroHeadline": "Concevez, Animez et Partagez vos Jeux de Basket",
+      "heroSubtitle": "Le tableau tactique de basketball gratuit et basé sur navigateur pour les entraîneurs et joueurs. Dessinez des jeux, animez-les étape par étape et partagez-les par lien. Aucun téléchargement nécessaire.",
+      "startFreeButton": "Commencer gratuitement",
+      "feature1Title": "Dessinez n'importe quel jeu",
+      "feature1Desc": "Placez des joueurs offensifs et défensifs sur un terrain complet ou à mi-terrain. Choisissez parmi des formations courantes comme 5-Out, Horns, Zone 2-3 ou construisez une configuration personnalisée. Faites glisser les joueurs partout.",
+      "feature2Title": "Animez les actions étape par étape",
+      "feature2Desc": "Ajoutez des passes, des dribbles, des coupes, des écrans, des remises en main, des tirs et des mouvements défensifs. Chaque action devient une étape de l'animation. Lisez-la pour voir le flux du jeu.",
+      "feature3Title": "Partagez avec un lien",
+      "feature3Desc": "Générez un lien partageable en un seul clic. Envoyez-le à votre équipe, vos assistants entraîneurs ou vos joueurs. Aucun compte nécessaire pour visualiser.",
+      "howTitle": "Comment ça marche",
+      "step1": "Choisissez le type de terrain et configurez votre formation de départ",
+      "step2": "Ajoutez des actions — passes, coupes, écrans, tirs — étape par étape",
+      "step3": "Lisez l'animation pour prévisualiser, puis partagez le lien",
+      "useCasesTitle": "Pour les entraîneurs et joueurs",
+      "useCase1": "Expliquez les jeux préparés à votre équipe avant un match",
+      "useCase2": "Analysez les tendances adverses pour le scouting",
+      "useCase3": "Concevez des jeux hors limites et des actions en ligne de fond",
+      "useCase4": "Enseignez les rotations défensives et le positionnement d'aide",
+      "useCase5": "Partagez des concepts de salle vidéo sans logiciel de montage",
+      "freeTierNote": "Plan gratuit : jusqu'à 10 jeux sauvegardés. Passez à Pro pour des sauvegardes illimitées, sans publicités et avec export vidéo."
+    }
   },
   "setup": {
     "newPlayTitle": "Nouveau Jeu",
@@ -110,7 +132,22 @@
     "actionsTitle": "Actions",
     "emptyState": "Sélectionnez un type d'action dans la barre gauche",
     "clearAllButton": "Tout Effacer",
-    "confirmClear": "Sûr ?"
+    "confirmClear": "Sûr ?",
+    "recordGroupButton": "⏺ Groupe",
+    "stopGroupButton": "⏹ Arrêter",
+    "groupButton": "Grouper",
+    "groupingCount": "{{count}} sélectionné(s)",
+    "groupConfirmButton": "Grouper ✓",
+    "recordingBanner": "Enregistrement du groupe — les nouvelles actions iront dans ce groupe",
+    "conflictShotInGroup": "Un tir ne peut pas faire partie d'un groupe",
+    "conflictBallAction": "Il y a déjà une action avec ballon (passe / dribble / handoff) dans ce groupe",
+    "conflictPlayerBusy": "Ce joueur est déjà dans une action de ce groupe",
+    "groupCard": {
+      "title": "Groupe d'actions",
+      "ungroup": "Dissoudre",
+      "namePlaceholder": "Nom du groupe…",
+      "addLabel": "Ajouter une étiquette"
+    }
   },
   "export": {
     "title": "Exporter la Vidéo",

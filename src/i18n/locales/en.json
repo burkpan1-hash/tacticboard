@@ -25,7 +25,29 @@
     "shareButton": "Share",
     "copiedButton": "Copied!",
     "loginButton": "Log In",
-    "logoutButton": "Log Out"
+    "logoutButton": "Log Out",
+    "landing": {
+      "heroHeadline": "Design, Animate & Share Basketball Plays",
+      "heroSubtitle": "The free browser-based basketball tactics board for coaches and players. Draw plays, animate them step by step, and share via a link. No download or installation required.",
+      "startFreeButton": "Start Drawing — It's Free",
+      "feature1Title": "Draw Any Play",
+      "feature1Desc": "Place offensive and defensive players on a full or half court. Choose from common formations like 5-Out, Horns, 2-3 Zone, or build a custom setup from scratch. Drag players anywhere on the court.",
+      "feature2Title": "Animate Actions Step by Step",
+      "feature2Desc": "Add passes, dribbles, cuts, screens, handoffs, shots, and defensive movements. Each action becomes a step in the animation. Play it back to see the flow of the play at full speed.",
+      "feature3Title": "Share With One Link",
+      "feature3Desc": "Generate a shareable link with a single click. Send it to your team, assistant coaches, or players. No account needed to view — they open the link and watch the play.",
+      "howTitle": "How It Works",
+      "step1": "Choose court type and set up your starting formation",
+      "step2": "Add actions — passes, cuts, screens, shots — step by step",
+      "step3": "Hit play to preview the animation, then share the link",
+      "useCasesTitle": "Built for Coaches & Players",
+      "useCase1": "Explain set plays to your team before a game",
+      "useCase2": "Break down opponent tendencies for scouting",
+      "useCase3": "Design out-of-bounds plays and baseline actions",
+      "useCase4": "Teach defensive rotations and help-side positioning",
+      "useCase5": "Share film-room concepts without video software",
+      "freeTierNote": "Free tier: up to 10 saved plays. Upgrade to Pro for unlimited saves, no ads, and video export."
+    }
   },
   "setup": {
     "newPlayTitle": "New Play",
@@ -110,7 +132,22 @@
     "actionsTitle": "Actions",
     "emptyState": "Select an action type from the left toolbar",
     "clearAllButton": "Clear All",
-    "confirmClear": "Sure?"
+    "confirmClear": "Sure?",
+    "recordGroupButton": "⏺ Group",
+    "stopGroupButton": "⏹ Stop",
+    "groupButton": "Group",
+    "groupingCount": "{{count}} selected",
+    "groupConfirmButton": "Group ✓",
+    "recordingBanner": "Recording group — new actions go into this group",
+    "conflictShotInGroup": "Shot can't be part of a group",
+    "conflictBallAction": "A ball action (pass / dribble / handoff) already exists in this group",
+    "conflictPlayerBusy": "This player is already in an action in this group",
+    "groupCard": {
+      "title": "Group of Actions",
+      "ungroup": "Ungroup",
+      "namePlaceholder": "Group name…",
+      "addLabel": "Add label"
+    }
   },
   "export": {
     "title": "Export Video",

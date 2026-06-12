@@ -25,7 +25,29 @@
     "shareButton": "Compartir",
     "copiedButton": "¡Copiado!",
     "loginButton": "Iniciar Sesión",
-    "logoutButton": "Cerrar Sesión"
+    "logoutButton": "Cerrar Sesión",
+    "landing": {
+      "heroHeadline": "Diseña, Anima y Comparte Jugadas de Baloncesto",
+      "heroSubtitle": "El tablero de tácticas de baloncesto gratuito y basado en navegador para entrenadores y jugadores. Dibuja jugadas, anímalas paso a paso y compártelas por enlace. No requiere descarga.",
+      "startFreeButton": "Empezar gratis",
+      "feature1Title": "Dibuja cualquier jugada",
+      "feature1Desc": "Coloca jugadores de ataque y defensa en una pista completa o media pista. Elige entre formaciones comunes como 5-Out, Horns, Zona 2-3 o construye una configuración personalizada. Arrastra jugadores a cualquier lugar.",
+      "feature2Title": "Anima acciones paso a paso",
+      "feature2Desc": "Añade pases, dribblings, cortes, bloqueos, entregas, tiros y movimientos defensivos. Cada acción se convierte en un paso de la animación. Reprodúcela para ver el flujo de la jugada.",
+      "feature3Title": "Comparte con un enlace",
+      "feature3Desc": "Genera un enlace compartible con un solo clic. Envíalo a tu equipo, entrenadores asistentes o jugadores. No se necesita cuenta para verlo.",
+      "howTitle": "Cómo funciona",
+      "step1": "Elige el tipo de pista y configura tu formación inicial",
+      "step2": "Añade acciones — pases, cortes, bloqueos, tiros — paso a paso",
+      "step3": "Reproduce la animación para previsualizar, luego comparte el enlace",
+      "useCasesTitle": "Para entrenadores y jugadores",
+      "useCase1": "Explica jugadas fijas a tu equipo antes de un partido",
+      "useCase2": "Analiza tendencias del rival para el scouting",
+      "useCase3": "Diseña jugadas de banda y acciones desde la línea de fondo",
+      "useCase4": "Enseña rotaciones defensivas y posicionamiento de ayuda",
+      "useCase5": "Comparte conceptos de sala de video sin software de edición",
+      "freeTierNote": "Plan gratuito: hasta 10 jugadas guardadas. Actualiza a Pro para guardado ilimitado, sin anuncios y exportación de video."
+    }
   },
   "setup": {
     "newPlayTitle": "Nueva Jugada",
@@ -110,7 +132,22 @@
     "actionsTitle": "Acciones",
     "emptyState": "Selecciona un tipo de acción de la barra izquierda",
     "clearAllButton": "Limpiar Todo",
-    "confirmClear": "¿Seguro?"
+    "confirmClear": "¿Seguro?",
+    "recordGroupButton": "⏺ Grupo",
+    "stopGroupButton": "⏹ Detener",
+    "groupButton": "Agrupar",
+    "groupingCount": "{{count}} seleccionado(s)",
+    "groupConfirmButton": "Agrupar ✓",
+    "recordingBanner": "Grabando grupo — las nuevas acciones irán a este grupo",
+    "conflictShotInGroup": "El tiro no puede ser parte de un grupo",
+    "conflictBallAction": "Ya existe una acción con balón (pase / dribble / handoff) en este grupo",
+    "conflictPlayerBusy": "Este jugador ya está en una acción de este grupo",
+    "groupCard": {
+      "title": "Grupo de acciones",
+      "ungroup": "Desagrupar",
+      "namePlaceholder": "Nombre del grupo…",
+      "addLabel": "Añadir etiqueta"
+    }
   },
   "export": {
     "title": "Exportar Video",

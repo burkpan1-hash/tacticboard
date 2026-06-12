@@ -82,9 +82,11 @@ interface Props {
   onToggleMarkings: () => void
   gameOver?: boolean
   layout?: 'vertical' | 'horizontal'
+  isRecordingGroup?: boolean
+  onRecordGroupToggle?: () => void
 }
 
-export default function ActionToolbar({ activeType, ballHolderId, hasDefenders, onSelect, onCancel, markingsEnabled, onToggleMarkings, gameOver, layout = 'vertical' }: Props) {
+export default function ActionToolbar({ activeType, ballHolderId, hasDefenders, onSelect, onCancel, markingsEnabled, onToggleMarkings, gameOver, layout = 'vertical', isRecordingGroup, onRecordGroupToggle }: Props) {
   const { t } = useTranslation()
 
   if (layout === 'horizontal') {
@@ -156,6 +158,25 @@ export default function ActionToolbar({ activeType, ballHolderId, hasDefenders, 
             <span className={`text-[9px] font-medium ${markingsEnabled ? 'text-blue-400' : 'text-slate-400'}`}>{t('toolbar.markingLabel')}</span>
           </button>
 
+          {onRecordGroupToggle && (
+            <>
+              <div className="w-px h-8 bg-slate-600 mx-1 shrink-0" />
+              <button
+                onClick={onRecordGroupToggle}
+                className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg shrink-0 transition-colors ${
+                  isRecordingGroup
+                    ? 'bg-red-800/70 ring-1 ring-red-500/60 animate-pulse'
+                    : 'bg-slate-700'
+                }`}
+              >
+                <span className="text-base leading-none">{isRecordingGroup ? '⏹' : '⏺'}</span>
+                <span className={`text-[9px] font-medium ${isRecordingGroup ? 'text-red-400' : 'text-slate-400'}`}>
+                  {isRecordingGroup ? 'Stop' : 'Group'}
+                </span>
+              </button>
+            </>
+          )}
+
           {activeType && (
             <button
               onClick={onCancel}
@@ -171,6 +192,22 @@ export default function ActionToolbar({ activeType, ballHolderId, hasDefenders, 
 
   return (
     <div className="flex flex-col gap-2 p-2 bg-slate-800 rounded-xl border border-slate-700">
+
+      {onRecordGroupToggle && (
+        <button
+          onClick={onRecordGroupToggle}
+          className={`relative flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+            isRecordingGroup
+              ? 'bg-red-800/60 ring-1 ring-red-500/60 animate-pulse'
+              : 'bg-slate-700 hover:bg-slate-600 text-slate-200'
+          }`}
+        >
+          <span className="text-sm leading-none">{isRecordingGroup ? '⏹' : '⏺'}</span>
+          <span style={{ color: isRecordingGroup ? '#f87171' : '#fbbf24' }} className="font-medium">
+            {isRecordingGroup ? t('actionPanel.stopGroupButton') : t('actionPanel.recordGroupButton')}
+          </span>
+        </button>
+      )}
 
       {gameOver && (
         <div className="flex flex-col items-center gap-1 px-2 py-2 bg-slate-700/60 rounded-lg border border-slate-600">

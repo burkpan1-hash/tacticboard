@@ -1,8 +1,10 @@
 import { create } from 'zustand'
+import { nanoid } from 'nanoid'
 import type {
   CourtType, PositionMap, BallState,
-  PlaySet, Action, ActionType, Player, NormalizedPosition,
+  PlaySet, Action, ActionItem, ActionGroup, ActionType, Player, NormalizedPosition,
 } from '../models/types'
+import { validateGroupAction, validateGroupActions, validateGroupActionType } from '../utils/groupValidation'
 
 interface SetupDraft {
   name: string
@@ -47,8 +49,22 @@ interface PlayStoreState {
   clearAllActions: () => void
   undoLastAction: () => void
 
+  // ── Group recording ──────────────────────────────────────────
+  isRecordingGroup: boolean
+  currentRecordingGroupId: string | null
+  groupConflictError: string | null
+  startGroupRecording: () => void
+  stopGroupRecording: () => void
+  clearGroupConflictError: () => void
+
+  // ── Post-hoc grouping ────────────────────────────────────────
+  createGroup: (actionIds: string[]) => void
+  ungroupGroup: (groupId: string) => void
+
   // ── Option text ──────────────────────────────────────────────
   setOptionText: (actionId: string, text: string) => void
+  setGroupName: (groupId: string, name: string) => void
+  setGroupOptionText: (groupId: string, text: string) => void
 
   // ── Position edits ───────────────────────────────────────────
   updateInitialPosition: (playerId: string, pos: NormalizedPosition) => void
@@ -86,6 +102,39 @@ const EMPTY_CREATION: ActionCreation = {
 
 function persistSets(sets: PlaySet[]) {
   localStorage.setItem('setplay_sets', JSON.stringify(sets))
+}
+
+// Returns true if the action involves the given player id
+function actionInvolvesPlayer(a: Action, playerId: string): boolean {
+  switch (a.type) {
+    case 'pass':         return a.fromId === playerId || a.toId === playerId
+    case 'dribble':      return a.playerId === playerId
+    case 'cut':          return a.playerId === playerId
+    case 'screen':       return a.screenerId === playerId
+    case 'defense-move': return a.playerId === playerId
+    case 'double-team':  return a.defender1Id === playerId || a.defender2Id === playerId || a.targetId === playerId
+    case 'ball-force':   return a.defenderId === playerId || a.targetId === playerId
+    case 'shot':         return a.shooterId === playerId
+    case 'handoff':      return a.fromId === playerId || a.toId === playerId
+    default: return false
+  }
+}
+
+// Filter actions in an ActionItem[], removing references to a player.
+// Groups with 0 remaining actions are dropped; groups with 1 are collapsed to a plain action.
+function filterItemsForPlayer(items: ActionItem[], playerId: string): ActionItem[] {
+  const result: ActionItem[] = []
+  for (const item of items) {
+    if (item.type === 'group') {
+      const kept = item.actions.filter(a => !actionInvolvesPlayer(a, playerId))
+      if (kept.length === 0) continue
+      if (kept.length === 1) { result.push(kept[0]); continue }
+      result.push({ ...item, actions: kept })
+    } else {
+      if (!actionInvolvesPlayer(item, playerId)) result.push(item)
+    }
+  }
+  return result
 }
 
 export const usePlayStore = create<PlayStoreState>((set, get) => ({
@@ -128,15 +177,46 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   setActiveSet: (newSet) => set(s => ({
     activeSet: newSet,
     activeStep: s.activeSet?.id !== newSet.id ? newSet.actions.length : s.activeStep,
+    isRecordingGroup: false,
+    currentRecordingGroupId: null,
   })),
 
   activeStep: 0,
   setActiveStep: (activeStep) => set({ activeStep }),
 
+  isRecordingGroup: false,
+  currentRecordingGroupId: null,
+  groupConflictError: null,
+
+  clearGroupConflictError: () => set({ groupConflictError: null }),
+
   addAction: (action) => {
     set(s => {
       if (!s.activeSet) return s
-      const updated = { ...s.activeSet, actions: [...s.activeSet.actions, action] }
+      let updated: PlaySet
+      if (s.isRecordingGroup && s.currentRecordingGroupId) {
+        // Validate against existing group actions before appending
+        const group = s.activeSet.actions.find(
+          item => item.type === 'group' && item.id === s.currentRecordingGroupId
+        ) as ActionGroup | undefined
+        const existingGroupActions = group?.actions ?? []
+        const conflict = validateGroupAction(action, existingGroupActions)
+        if (conflict) {
+          setTimeout(() => get().clearGroupConflictError(), 6000)
+          return { groupConflictError: conflict, actionCreation: EMPTY_CREATION }
+        }
+        updated = {
+          ...s.activeSet,
+          actions: s.activeSet.actions.map(item =>
+            item.type === 'group' && item.id === s.currentRecordingGroupId
+              ? { ...item, actions: [...item.actions, action] }
+              : item
+          ),
+        }
+        get().saveSet(updated)
+        return { activeSet: updated, actionCreation: EMPTY_CREATION }
+      }
+      updated = { ...s.activeSet, actions: [...s.activeSet.actions, action] }
       get().saveSet(updated)
       return { activeSet: updated, activeStep: updated.actions.length, actionCreation: EMPTY_CREATION }
     })
@@ -145,7 +225,19 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   deleteAction: (actionId) => {
     set(s => {
       if (!s.activeSet) return s
-      const updated = { ...s.activeSet, actions: s.activeSet.actions.filter(a => a.id !== actionId) }
+      const newActions: ActionItem[] = []
+      for (const item of s.activeSet.actions) {
+        if (item.type === 'group') {
+          // Remove the action from inside the group
+          const kept = item.actions.filter(a => a.id !== actionId)
+          if (kept.length === 0) continue
+          if (kept.length === 1) { newActions.push(kept[0]); continue }
+          newActions.push({ ...item, actions: kept })
+        } else if (item.id !== actionId) {
+          newActions.push(item)
+        }
+      }
+      const updated = { ...s.activeSet, actions: newActions }
       const clampedStep = Math.min(s.activeStep, updated.actions.length)
       get().saveSet(updated)
       return { activeSet: updated, activeStep: clampedStep }
@@ -155,10 +247,13 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   updateAction: (actionId, updatedAction) => {
     set(s => {
       if (!s.activeSet) return s
-      const updated = {
-        ...s.activeSet,
-        actions: s.activeSet.actions.map(a => a.id === actionId ? updatedAction : a),
-      }
+      const newActions: ActionItem[] = s.activeSet.actions.map(item => {
+        if (item.type === 'group') {
+          return { ...item, actions: item.actions.map(a => a.id === actionId ? updatedAction : a) }
+        }
+        return item.id === actionId ? updatedAction : item
+      })
+      const updated = { ...s.activeSet, actions: newActions }
       get().saveSet(updated)
       return { activeSet: updated, actionCreation: EMPTY_CREATION }
     })
@@ -169,13 +264,25 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
       if (!s.activeSet) return s
       const updated = { ...s.activeSet, actions: [] }
       get().saveSet(updated)
-      return { activeSet: updated, activeStep: 0, actionCreation: EMPTY_CREATION }
+      return { activeSet: updated, activeStep: 0, actionCreation: EMPTY_CREATION, isRecordingGroup: false, currentRecordingGroupId: null }
     })
   },
 
   undoLastAction: () => {
     set(s => {
       if (!s.activeSet || s.activeSet.actions.length === 0) return s
+      // If recording, undo the last action inside the group
+      if (s.isRecordingGroup && s.currentRecordingGroupId) {
+        const newActions: ActionItem[] = s.activeSet.actions.map(item => {
+          if (item.type === 'group' && item.id === s.currentRecordingGroupId) {
+            return { ...item, actions: item.actions.slice(0, -1) }
+          }
+          return item
+        })
+        const updated = { ...s.activeSet, actions: newActions }
+        get().saveSet(updated)
+        return { activeSet: updated, actionCreation: EMPTY_CREATION }
+      }
       const updated = { ...s.activeSet, actions: s.activeSet.actions.slice(0, -1) }
       const newStep = Math.min(s.activeStep, updated.actions.length)
       get().saveSet(updated)
@@ -183,15 +290,148 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
     })
   },
 
+  startGroupRecording: () => {
+    set(s => {
+      if (!s.activeSet || s.isRecordingGroup) return s
+      const newGroup: ActionGroup = { id: nanoid(), type: 'group', actions: [] }
+      const updated = { ...s.activeSet, actions: [...s.activeSet.actions, newGroup] }
+      get().saveSet(updated)
+      return {
+        activeSet: updated,
+        activeStep: updated.actions.length,
+        isRecordingGroup: true,
+        currentRecordingGroupId: newGroup.id,
+      }
+    })
+  },
+
+  stopGroupRecording: () => {
+    set(s => {
+      if (!s.activeSet || !s.currentRecordingGroupId) return s
+      const group = s.activeSet.actions.find(
+        item => item.type === 'group' && item.id === s.currentRecordingGroupId
+      ) as ActionGroup | undefined
+
+      let newActions: ActionItem[]
+      if (!group || group.actions.length === 0) {
+        // Empty group — remove it
+        newActions = s.activeSet.actions.filter(item => item.id !== s.currentRecordingGroupId)
+      } else if (group.actions.length === 1) {
+        // Only one action — collapse the group
+        newActions = s.activeSet.actions.flatMap(item =>
+          item.type === 'group' && item.id === s.currentRecordingGroupId
+            ? (item as ActionGroup).actions
+            : [item]
+        )
+      } else {
+        newActions = s.activeSet.actions
+      }
+
+      const updated = { ...s.activeSet, actions: newActions }
+      get().saveSet(updated)
+      return {
+        activeSet: updated,
+        activeStep: updated.actions.length,
+        isRecordingGroup: false,
+        currentRecordingGroupId: null,
+      }
+    })
+  },
+
+  createGroup: (actionIds) => {
+    set(s => {
+      if (!s.activeSet || actionIds.length < 2) return s
+      const idSet = new Set(actionIds)
+      // Only top-level non-group actions can be grouped
+      const selectedActions = s.activeSet.actions
+        .filter(item => item.type !== 'group' && idSet.has(item.id))
+        .map(item => item as Action)
+
+      if (selectedActions.length < 2) return s
+
+      const conflict = validateGroupActions(selectedActions)
+      if (conflict) {
+        setTimeout(() => get().clearGroupConflictError(), 6000)
+        return { groupConflictError: conflict }
+      }
+
+      const newGroup: ActionGroup = { id: nanoid(), type: 'group', actions: selectedActions }
+      let inserted = false
+      const result: ActionItem[] = []
+      for (const item of s.activeSet.actions) {
+        if (item.type !== 'group' && idSet.has(item.id)) {
+          if (!inserted) { result.push(newGroup); inserted = true }
+          // skip — now inside the group
+        } else {
+          result.push(item)
+        }
+      }
+
+      const updated = { ...s.activeSet, actions: result }
+      const newStep = Math.min(s.activeStep, updated.actions.length)
+      get().saveSet(updated)
+      return { activeSet: updated, activeStep: newStep }
+    })
+  },
+
+  ungroupGroup: (groupId) => {
+    set(s => {
+      if (!s.activeSet) return s
+      const newActions: ActionItem[] = []
+      for (const item of s.activeSet.actions) {
+        if (item.type === 'group' && item.id === groupId) {
+          newActions.push(...item.actions)
+        } else {
+          newActions.push(item)
+        }
+      }
+      const updated = { ...s.activeSet, actions: newActions }
+      const newStep = Math.min(s.activeStep, updated.actions.length)
+      get().saveSet(updated)
+      return { activeSet: updated, activeStep: newStep }
+    })
+  },
+
   setOptionText: (actionId, text) => {
     set(s => {
       if (!s.activeSet) return s
-      const updated = {
-        ...s.activeSet,
-        actions: s.activeSet.actions.map(a =>
-          a.id === actionId ? { ...a, optionText: text.trim() || undefined } : a
-        ),
-      }
+      const newActions: ActionItem[] = s.activeSet.actions.map(item => {
+        if (item.type === 'group') {
+          return { ...item, actions: item.actions.map(a =>
+            a.id === actionId ? { ...a, optionText: text.trim() || undefined } : a
+          )}
+        }
+        return item.id === actionId ? { ...item, optionText: text.trim() || undefined } : item
+      })
+      const updated = { ...s.activeSet, actions: newActions }
+      get().saveSet(updated)
+      return { activeSet: updated }
+    })
+  },
+
+  setGroupName: (groupId, name) => {
+    set(s => {
+      if (!s.activeSet) return s
+      const newActions: ActionItem[] = s.activeSet.actions.map(item =>
+        item.type === 'group' && item.id === groupId
+          ? { ...item, name: name.trim() || undefined }
+          : item
+      )
+      const updated = { ...s.activeSet, actions: newActions }
+      get().saveSet(updated)
+      return { activeSet: updated }
+    })
+  },
+
+  setGroupOptionText: (groupId, text) => {
+    set(s => {
+      if (!s.activeSet) return s
+      const newActions: ActionItem[] = s.activeSet.actions.map(item =>
+        item.type === 'group' && item.id === groupId
+          ? { ...item, optionText: text.trim() || undefined }
+          : item
+      )
+      const updated = { ...s.activeSet, actions: newActions }
       get().saveSet(updated)
       return { activeSet: updated }
     })
@@ -232,20 +472,7 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
         players: s.activeSet.players.filter(p => p.id !== playerId),
         initialPositions: positions,
         initialBall: s.activeSet.initialBall.holderId === playerId ? { holderId: '' } : s.activeSet.initialBall,
-        actions: s.activeSet.actions.filter(a => {
-          switch (a.type) {
-            case 'pass':     return a.fromId !== playerId && a.toId !== playerId
-            case 'dribble':  return a.playerId !== playerId
-            case 'cut':      return a.playerId !== playerId
-            case 'screen':   return a.screenerId !== playerId
-            case 'defense-move': return a.playerId !== playerId
-            case 'double-team':  return a.defender1Id !== playerId && a.defender2Id !== playerId && a.targetId !== playerId
-            case 'ball-force':   return a.defenderId !== playerId && a.targetId !== playerId
-            case 'shot':     return a.shooterId !== playerId
-            case 'handoff':  return a.fromId !== playerId
-            default: return true
-          }
-        }),
+        actions: filterItemsForPlayer(s.activeSet.actions, playerId),
       }
       get().saveSet(updated)
       return { activeSet: updated }
@@ -266,8 +493,6 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
       if (!s.activeSet) return s
       const players = s.activeSet.players.map(p => {
         if (p.id !== playerId) return p
-        // Strip blank name so an empty input restores the "number-only" display
-        // instead of persisting a meaningless empty string in the JSON blob.
         const nextName = updates.name === undefined ? p.name : (updates.name.trim() || undefined)
         const nextNum = updates.number === undefined ? p.number : updates.number
         return { ...p, number: nextNum, name: nextName }
@@ -279,7 +504,21 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   },
 
   actionCreation: EMPTY_CREATION,
-  startActionCreation: (type) => set({ actionCreation: { type, pendingSourceId: null, editingActionId: null } }),
+  startActionCreation: (type) => {
+    const s = get()
+    if (s.isRecordingGroup && s.currentRecordingGroupId) {
+      const group = s.activeSet?.actions.find(
+        item => item.type === 'group' && item.id === s.currentRecordingGroupId
+      ) as ActionGroup | undefined
+      const conflict = validateGroupActionType(type, group?.actions ?? [])
+      if (conflict) {
+        set({ groupConflictError: conflict })
+        setTimeout(() => get().clearGroupConflictError(), 6000)
+        return
+      }
+    }
+    set({ actionCreation: { type, pendingSourceId: null, editingActionId: null } })
+  },
   setPendingSource: (playerId) => set(s => ({
     actionCreation: { ...s.actionCreation, pendingSourceId: playerId },
   })),
@@ -320,13 +559,17 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
             return action
         }
       }
+      const mirrorItem = (item: ActionItem): ActionItem => {
+        if (item.type === 'group') return { ...item, actions: item.actions.map(mirrorAction) }
+        return mirrorAction(item)
+      }
       const updated: PlaySet = {
         ...s.activeSet,
         attackBasket: (s.activeSet.attackBasket ?? 'top') === 'top' ? 'bottom' : 'top',
         initialPositions: Object.fromEntries(
           Object.entries(s.activeSet.initialPositions).map(([id, pos]) => [id, mirror(pos)])
         ),
-        actions: s.activeSet.actions.map(mirrorAction),
+        actions: s.activeSet.actions.map(mirrorItem),
       }
       get().saveSet(updated)
       return { activeSet: updated }

@@ -23,20 +23,34 @@ export interface BallState {
 // ── Actions ─────────────────────────────────────────
 // optionText: if set, animation pauses ~2s after this action completes
 // and shows a text badge near the ball holder on the canvas.
-export interface PassAction    { id: string; type: 'pass';    fromId: string; toId: string;                                   optionText?: string }
-export interface CutAction          { id: string; type: 'cut';          playerId: string; toPosition: NormalizedPosition; waypoints?: NormalizedPosition[]; optionText?: string }
-export interface DribbleAction      { id: string; type: 'dribble';      playerId: string; toPosition: NormalizedPosition; waypoints?: NormalizedPosition[]; optionText?: string }
-export interface ScreenAction       { id: string; type: 'screen';       screenerId: string; screenPosition: NormalizedPosition;         optionText?: string }
-export interface ShotAction         { id: string; type: 'shot';         shooterId: string;                                              optionText?: string }
-export interface HandoffAction      { id: string; type: 'handoff';      fromId: string; toId: string; meetPosition: NormalizedPosition; optionText?: string }
-export interface DefenseMoveAction  { id: string; type: 'defense-move'; playerId: string; toPosition: NormalizedPosition; waypoints?: NormalizedPosition[]; optionText?: string }
-export interface DoubleTeamAction   { id: string; type: 'double-team';  defender1Id: string; defender2Id: string; targetId: string;  optionText?: string }
-export interface BallForceAction    { id: string; type: 'ball-force';   defenderId: string; targetId: string; angle: number;          optionText?: string }
+interface ActionBase { id: string; optionText?: string }
+
+export interface PassAction         extends ActionBase { type: 'pass';         fromId: string; toId: string }
+export interface CutAction          extends ActionBase { type: 'cut';          playerId: string; toPosition: NormalizedPosition; waypoints?: NormalizedPosition[] }
+export interface DribbleAction      extends ActionBase { type: 'dribble';      playerId: string; toPosition: NormalizedPosition; waypoints?: NormalizedPosition[] }
+export interface ScreenAction       extends ActionBase { type: 'screen';       screenerId: string; screenPosition: NormalizedPosition }
+export interface ShotAction         extends ActionBase { type: 'shot';         shooterId: string }
+export interface HandoffAction      extends ActionBase { type: 'handoff';      fromId: string; toId: string; meetPosition: NormalizedPosition }
+export interface DefenseMoveAction  extends ActionBase { type: 'defense-move'; playerId: string; toPosition: NormalizedPosition; waypoints?: NormalizedPosition[] }
+export interface DoubleTeamAction   extends ActionBase { type: 'double-team';  defender1Id: string; defender2Id: string; targetId: string }
+export interface BallForceAction    extends ActionBase { type: 'ball-force';   defenderId: string; targetId: string; angle: number }
 
 export type Action =
   | PassAction | CutAction | DribbleAction
   | ScreenAction | ShotAction | HandoffAction | DefenseMoveAction
   | DoubleTeamAction | BallForceAction
+
+// ── Action Group ─────────────────────────────────────────────────────────────
+// A group of actions that all animate simultaneously in a single step.
+export interface ActionGroup {
+  id: string
+  type: 'group'
+  name?: string
+  optionText?: string
+  actions: Action[]
+}
+
+export type ActionItem = Action | ActionGroup
 
 export interface PlaySet {
   id: string
@@ -46,7 +60,7 @@ export interface PlaySet {
   players: Player[]
   initialPositions: PositionMap
   initialBall: BallState
-  actions: Action[]
+  actions: ActionItem[]
   markings?: Record<string, string>  // defenderId → offensePlayerId
   cloudPlayId?: string  // server-side play id once persisted — drives PUT-vs-POST in handleSave
 }

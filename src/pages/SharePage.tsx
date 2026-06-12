@@ -15,7 +15,7 @@ import {
   COURT_PADDING_X, COURT_PADDING_Y, HALF_COURT_PADDING_TOP,
   HALF_COURT,
 } from '../utils/courtCoords'
-import type { Action, NormalizedPosition, PlaySet, PositionMap } from '../models/types'
+import type { Action, ActionItem, NormalizedPosition, PlaySet, PositionMap } from '../models/types'
 import UserButton from '../components/ui/UserButton'
 
 const STAGE_W = HALF_COURT_W + 2 * COURT_PADDING_X
@@ -212,17 +212,18 @@ export default function SharePage() {
       undefined, basketY, HALF_COURT_W, cH,
     )
     const t = animFraction
-    const currentAction = activeSet.actions[activeStep]
+    const currentItem = activeSet.actions[activeStep] as ActionItem | undefined
+    const currentStepActions: Action[] = !currentItem ? [] : currentItem.type === 'group' ? currentItem.actions : [currentItem]
     return Object.fromEntries(
       Object.keys(currentState.positions).map(id => {
         const from = currentState.positions[id] ?? { x: 0.5, y: 0.5 }
         const to = toState.positions[id] ?? from
-        if (
-          (currentAction?.type === 'dribble' || currentAction?.type === 'cut' || currentAction?.type === 'defense-move') &&
-          currentAction.playerId === id &&
-          currentAction.waypoints && currentAction.waypoints.length > 1
-        ) {
-          const path = [from, ...currentAction.waypoints]
+        const moverAction = currentStepActions.find(a =>
+          (a.type === 'dribble' || a.type === 'cut' || a.type === 'defense-move') &&
+          a.playerId === id && a.waypoints && a.waypoints.length > 1
+        )
+        if (moverAction && (moverAction.type === 'dribble' || moverAction.type === 'cut' || moverAction.type === 'defense-move') && moverAction.waypoints) {
+          const path = [from, ...moverAction.waypoints]
           const lens: number[] = []
           let pathTotal = 0
           for (let i = 1; i < path.length; i++) {
@@ -278,37 +279,40 @@ export default function SharePage() {
             attackBasket={activeSet.attackBasket}
           />
 
-          {/* Growing pass arrow during animation */}
-          {(() => {
-            if (!isPlaying || activeStep >= total) return null
-            const action = activeSet.actions[activeStep]
-            if (action?.type !== 'pass') return null
-            const fromPos = currentState.positions[action.fromId]
-            const toPos = currentState.positions[action.toId]
-            if (!fromPos || !toPos) return null
-            const from = denormalize(fromPos.x, fromPos.y, HALF_COURT_W, cH)
-            const to   = denormalize(toPos.x, toPos.y, HALF_COURT_W, cH)
-            const PLAYER_R = Math.round(20 * 1.4)
-            const ARROW_G  = Math.round(6 * 1.4)
-            const gap = PLAYER_R + ARROW_G
-            const dxF = to.x - from.x, dyF = to.y - from.y
-            const lenF = Math.sqrt(dxF * dxF + dyF * dyF) || 1
-            const finalEnd = { x: to.x - (dxF / lenF) * gap, y: to.y - (dyF / lenF) * gap }
-            const rawTipX  = from.x + (to.x - from.x) * animFraction
-            const rawTipY  = from.y + (to.y - from.y) * animFraction
-            const rawDist   = Math.hypot(rawTipX - from.x, rawTipY - from.y)
-            const finalDist = Math.hypot(finalEnd.x - from.x, finalEnd.y - from.y)
-            const end = rawDist < finalDist ? { x: rawTipX, y: rawTipY } : finalEnd
-            const color = ACTION_COLORS['pass']
-            return (
-              <Arrow
-                points={[from.x, from.y, end.x, end.y]}
-                stroke={color} fill={color}
-                strokeWidth={2.5} dash={[10, 6]}
-                pointerLength={10} pointerWidth={8}
-                listening={false}
-              />
-            )
+          {/* Growing pass arrows during animation — supports groups */}
+          {isPlaying && activeStep < total && (() => {
+            const ci = activeSet.actions[activeStep] as ActionItem | undefined
+            const stepActions: Action[] = !ci ? [] : ci.type === 'group' ? ci.actions : [ci]
+            return stepActions.filter(a => a.type === 'pass').map(action => {
+              if (action.type !== 'pass') return null
+              const fromPos = currentState.positions[action.fromId]
+              const toPos = currentState.positions[action.toId]
+              if (!fromPos || !toPos) return null
+              const from = denormalize(fromPos.x, fromPos.y, HALF_COURT_W, cH)
+              const to   = denormalize(toPos.x, toPos.y, HALF_COURT_W, cH)
+              const PLAYER_R = Math.round(20 * 1.4)
+              const ARROW_G  = Math.round(6 * 1.4)
+              const gap = PLAYER_R + ARROW_G
+              const dxF = to.x - from.x, dyF = to.y - from.y
+              const lenF = Math.sqrt(dxF * dxF + dyF * dyF) || 1
+              const finalEnd = { x: to.x - (dxF / lenF) * gap, y: to.y - (dyF / lenF) * gap }
+              const rawTipX  = from.x + (to.x - from.x) * animFraction
+              const rawTipY  = from.y + (to.y - from.y) * animFraction
+              const rawDist   = Math.hypot(rawTipX - from.x, rawTipY - from.y)
+              const finalDist = Math.hypot(finalEnd.x - from.x, finalEnd.y - from.y)
+              const end = rawDist < finalDist ? { x: rawTipX, y: rawTipY } : finalEnd
+              const color = ACTION_COLORS['pass']
+              return (
+                <Arrow
+                  key={action.id + '-anim'}
+                  points={[from.x, from.y, end.x, end.y]}
+                  stroke={color} fill={color}
+                  strokeWidth={2.5} dash={[10, 6]}
+                  pointerLength={10} pointerWidth={8}
+                  listening={false}
+                />
+              )
+            })
           })()}
 
           {/* Players */}
@@ -328,39 +332,43 @@ export default function SharePage() {
             )
           })}
 
-          {/* Action type labels */}
-          {activeSet.actions.slice(0, isPlaying ? activeStep + 1 : activeStep).map((action, i) => {
+          {/* Action type labels — flattens groups */}
+          {activeSet.actions.slice(0, isPlaying ? activeStep + 1 : activeStep).flatMap((item, i) => {
             const stateBefore = computeStateAtStep(
               activeSet.actions, i, activeSet.initialPositions, activeSet.initialBall,
               undefined, basketY, HALF_COURT_W, cH,
             )
-            const line = arrowLine(action, stateBefore.positions, cH, basketY * cH)
-            if (!line) return null
-            const playersPx = Object.values(stateBefore.positions).map(p =>
-              denormalize(p.x, p.y, HALF_COURT_W, cH)
-            )
-            const { cx, cy } = smartLabelCenter(line.x1, line.y1, line.x2, line.y2, playersPx)
             const isLatest = isPlaying ? i === activeStep : i === activeStep - 1
-            return (
-              <Text
-                key={action.id + '-lbl'}
-                x={cx} y={cy}
-                offsetX={25} offsetY={5}
-                width={50}
-                rotation={isLandscape ? 90 : 0}
-                text={t(ACTION_LABEL_KEYS[action.type])}
-                fontSize={10} fontStyle="bold"
-                fill={ACTION_COLORS[action.type]}
-                align="center"
-                opacity={isLatest ? 1 : 0.45}
-                listening={false}
-              />
-            )
+            const actionList = item.type === 'group' ? item.actions : [item]
+            return actionList.map(action => {
+              const line = arrowLine(action, stateBefore.positions, cH, basketY * cH)
+              if (!line) return null
+              const playersPx = Object.values(stateBefore.positions).map(p =>
+                denormalize(p.x, p.y, HALF_COURT_W, cH)
+              )
+              const { cx, cy } = smartLabelCenter(line.x1, line.y1, line.x2, line.y2, playersPx)
+              return (
+                <Text
+                  key={action.id + '-lbl'}
+                  x={cx} y={cy}
+                  offsetX={25} offsetY={5}
+                  width={50}
+                  rotation={isLandscape ? 90 : 0}
+                  text={t(ACTION_LABEL_KEYS[action.type])}
+                  fontSize={10} fontStyle="bold"
+                  fill={ACTION_COLORS[action.type]}
+                  align="center"
+                  opacity={isLatest ? 1 : 0.45}
+                  listening={false}
+                />
+              )
+            })
           })}
 
           {/* optionText badge — anchored to the action's primary player, not the ball holder */}
           {(() => {
-            const action = activeSet.actions[activeStep - 1]
+            const item = activeSet.actions[activeStep - 1]
+            const action = item && item.type !== 'group' ? item : null
             if (!action?.optionText) return null
             const anchorId = actionLabelPlayerId(action)
             const anchor = displayPositions[anchorId]

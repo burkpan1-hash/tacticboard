@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import AdSlot from './AdSlot'
 
 const COUNTDOWN_SEC = 5
 
@@ -53,11 +52,6 @@ export default function ShareInterstitialModal({ onShare, onClose }: Props) {
             <button onClick={onClose} className="text-slate-400 hover:text-white text-lg leading-none">×</button>
           )}
         </div>
-
-        {/* Ad slot */}
-        {!ready && (
-          <AdSlot className="h-[100px]" />
-        )}
 
         {/* Countdown */}
         {!ready && (

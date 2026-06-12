@@ -1,5 +1,5 @@
 # SetPlay — Basketball Tactical Board
-## Design Spec (güncel: 2026-05-28 — v4)
+## Design Spec (güncel: 2026-06-12 — v5)
 
 **App name:** SetPlay  
 **Tagline:** Create. Animate. Share your plays.
@@ -18,14 +18,21 @@ Working directory: `/Users/burakbozkurt/Desktop/basketball board tactics`
 
 | Layer | Choice |
 |---|---|
-| Framework | React 18 + TypeScript |
+| Framework | React 19 + TypeScript |
 | Build | Vite |
 | Canvas | react-konva (Konva.js) |
 | State | Zustand |
 | Styling | Tailwind CSS v4 |
-| Export | PNG (Konva `toDataURL`), GIF (gif.js), Video (MediaRecorder) |
-| Storage | localStorage |
-| Dev env | Docker (`setplay.sh start/stop`) or plain `npm run dev` |
+| Routing | react-router-dom v7 (client-side SPA, no SSR/prerender yet) |
+| i18n | i18next + react-i18next (6 languages: en, tr, de, es, fr, it) |
+| Export | Video (mp4-muxer + MediaRecorder, 30 fps) |
+| Backend | Hono (`server/index.ts`) on `@hono/node-server` |
+| Auth | better-auth (email/password + Google OAuth), email via Resend |
+| Database | PostgreSQL + drizzle-orm |
+| Storage | Cloud (Postgres) for signed-in users; localStorage for crash recovery / guests |
+| Analytics | Sentry (errors) + PostHog (product) |
+| Monetization | Google AdSense (free tier) + Pro subscription |
+| Dev env | Docker (`setplay.sh start/stop`) or plain `npm run dev`; API via `npm run server:dev` |
 
 ---
 
@@ -145,6 +152,34 @@ Exported from `stateEngine.ts`. Accepts `basketY` (normalized y of the attack ba
 
 ---
 
+## Action Groups
+
+A **group** bundles multiple actions that animate **simultaneously in a single playback step** (e.g. a pass + a cut + a screen all happening together). Rendered by `src/components/actions/GroupCard.tsx`; validation in `src/utils/groupValidation.ts`.
+
+### Two ways to create a group
+
+- **Recording mode** (`startGroupRecording` / `stopGroupRecording` in the store): toolbar "⏺ Group" starts recording; every new action created goes into the open group until "⏹ Stop". Each appended action is validated immediately.
+- **Post-hoc grouping** (`createGroup(actionIds)`): select existing actions in the panel, then "Group ✓" bundles them.
+
+### Group rules (`groupValidation.ts` — offense only; defense unrestricted)
+
+1. **Shot can never be in a group** (`SHOT_IN_GROUP`).
+2. **At most one ball action** (pass / dribble / handoff) per group (`BALL_ACTION_CONFLICT`).
+3. **Each offense player appears in at most one action** per group (`PLAYER_ALREADY_IN_GROUP`).
+
+- `validateGroupActionType(type, existing)`: cheap pre-check the moment a tool is selected (catches shot + ball-action conflict before the user wastes clicks).
+- `validateGroupAction(newAction, existing)`: full check including player-occupancy once the action is complete.
+- `validateGroupActions(actions)`: batch validation for post-hoc grouping.
+- Conflicts surface as `groupConflictError` in the store and auto-clear after ~6s.
+
+### Lifecycle
+
+- `ungroupGroup(groupId)`: dissolves a group back into individual actions.
+- `setGroupName` / `setGroupOptionText`: editable group label + step badge.
+- **Normalization**: groups left with **0** actions are dropped; groups left with **1** action collapse back to a plain action.
+
+---
+
 ## Data Model (`src/models/types.ts`)
 
 ```typescript
@@ -180,6 +215,20 @@ type Action =
   | PassAction | CutAction | DribbleAction | ScreenAction | ShotAction
   | HandoffAction | DefenseMoveAction | DoubleTeamAction | BallForceAction
 
+// All concrete action interfaces now extend `ActionBase { id; optionText? }`.
+
+// ── Action Group ──
+// A group of actions that all animate simultaneously in a single step.
+interface ActionGroup {
+  id: string
+  type: 'group'
+  name?: string
+  optionText?: string
+  actions: Action[]
+}
+
+type ActionItem = Action | ActionGroup   // a timeline entry: a single action OR a group
+
 interface PlaySet {
   id: string
   name: string
@@ -188,8 +237,9 @@ interface PlaySet {
   players: Player[]
   initialPositions: PositionMap
   initialBall: BallState
-  actions: Action[]                    // event sourcing — replayed in order to compute any state
+  actions: ActionItem[]                // event sourcing — replayed in order; entries may be single actions or groups
   markings?: Record<string, string>    // defenderId → offensePlayerId (man-to-man assignment)
+  cloudPlayId?: string                 // server-side play id once persisted — drives PUT-vs-POST in handleSave
 }
 ```
 
@@ -321,6 +371,36 @@ computeDoubleTeamPositions(d1Id, d2Id, targetId, positions, basketY?) → { p1, 
 
 ---
 
+## Backend, Auth & Cloud (`server/`)
+
+Hono API (`server/index.ts`) served by `@hono/node-server`; in production it also static-serves the built `dist/` with an SPA fallback.
+
+- **Auth**: better-auth handles `/api/auth/**` (email/password + Google OAuth). `/api/auth-config` tells the frontend which providers are wired (hides the Google button when unconfigured). Email (verification / password reset) via Resend. Client wrapper: `src/lib/authClient.ts` (`authClient.useSession()`).
+- **Plays API** (`server/routes/plays.ts`, mounted at `/api/plays`): authenticated CRUD for a user's saved plays. Free tier capped at **10 saved plays** (`FREE_PLAY_LIMIT` in HomePage); exceeding it opens the upgrade modal.
+- **Cloud save**: `PlaySet.cloudPlayId` drives PUT-vs-POST on save — first save POSTs (creates), subsequent saves PUT (update) the same server record.
+- **Sharing**: `POST /api/plays/:id/share` mints a `shareToken`; public read at `/share/:token`. Anonymous users can publish via `POST /api/share-public` → stored in a separate `guestPlays` table. Public viewer is `src/pages/SharePage.tsx` (read-only playback). `ShareInterstitialModal` shows a countdown while the link is generated.
+- **DB**: PostgreSQL via drizzle-orm (`server/db/`); `npm run db:push` syncs schema.
+
+---
+
+## Internationalization
+
+- i18next + react-i18next, browser language detection. Locale files: `src/i18n/locales/{en,tr,de,es,fr,it}.json` (6 languages).
+- All user-facing UI strings are keyed (e.g. `home.*`, `setup.*`, `editor.*`, `actionPanel.*`, `export.*`). Action/formation **type labels** stay English (source of truth: `actionColors.ts` / `formations.ts`).
+- `LanguageSwitcher` component lets users change language at runtime.
+
+---
+
+## Monetization & Landing
+
+Freemium model (decision 2026-06-03): free tier with ads, paid **Pro** subscription (unlimited saves, no ads, video export).
+
+- **AdSense**: `src/components/ui/AdSlot.tsx` renders display units; the loader script is injected only on content pages (currently HomePage). **Policy note**: ads must appear only on content-rich pages, never on tool/auth/dead-end screens — see the AdSense compliance plan in `.claude/plans/`. Site is a client-rendered SPA, so crawler-visible content / prerendering is the key open item for AdSense approval.
+- **Landing page**: logged-out HomePage shows a content-rich landing (hero, feature grid, "how it works", use cases) so the homepage carries real publisher content; logged-in users see their cloud plays dashboard.
+- **Content pages**: `PricingPage`, `PrivacyPage`, `TermsPage`, `RefundPage` (all i18n, legal/credibility + conversion content). No-refund policy with accidental-renewal exception; Paddle as Merchant of Record.
+
+---
+
 ## Folder Structure
 
 ```
@@ -330,12 +410,14 @@ src/
   store/
     usePlayStore.ts           ✅  full CRUD + flipAttackBasket, updateInitialPosition, addPlayerToCourt
   utils/
-    stateEngine.ts            ✅  applyAction, computeStateAtStep, computeDoubleTeamPositions (exported)
+    stateEngine.ts            ✅  applyAction, computeStateAtStep, computeDoubleTeamPositions (group-aware)
     stateEngine.test.ts       ✅  state engine tests
+    groupValidation.ts        ✅  group conflict rules (shot / ball-action / player-occupancy)
     formations.ts             ✅  6 offense + 8 defense formations
     courtCoords.ts            ✅  COURT_SCALE=1.4, normalize/denormalize, HALF_COURT constants
     arrowGeometry.ts          ✅  wavyPoints, wavyAlongPath, perpendicularBar
     actionColors.ts           ✅  ACTION_COLORS + ACTION_LABELS for 9 action types
+    exportAnimation.ts        ✅  video export (mp4-muxer + MediaRecorder)
   components/
     court/
       CourtCanvas.tsx         ✅  Stage + Layer, landscape mode, event handlers
@@ -347,8 +429,9 @@ src/
       ActionArrow.tsx         ✅  9 visual styles; double-team arrows go to trap positions; basketY prop
       ActionOverlay.tsx       ✅  renders arrows up to activeStep; passes attackBasket → basketY
       ActionPreview.tsx       ✅  ghost cursor preview; dribble/cut waypoint paths
-      ActionPanel.tsx         ✅  right panel: action list + Clear All; auto-scrolls to bottom on new action
-      ActionCard.tsx          ✅  delete confirm, player description, optionText badge
+      ActionPanel.tsx         ✅  right panel: action list + Clear All; group record/stop, post-hoc grouping, conflict banner
+      ActionCard.tsx          ✅  delete confirm, player description, optionText badge, group-select checkbox
+      GroupCard.tsx           ✅  renders an ActionGroup (header, nested actions, name + optionText edit, ungroup)
       OptionBadge.tsx         ✅  inline add/edit for step label
     toolbar/
       ActionToolbar.tsx       ✅  ATK/DEF tabs; 6 offense tools + 3 defense tools; `hasDefenders` prop disables DEF tools when no defenders on court; markings toggle
@@ -358,13 +441,29 @@ src/
     playback/
       PlaybackControls.tsx    ✅  ◀ ▶ play/pause, speed, Undo, Save + Export buttons (both orange)
     export/
-      ExportModal.tsx         ✅  PNG / GIF / Video export
+      ExportModal.tsx         ✅  video export (mp4-muxer, 30 fps)
+    ui/
+      AdSlot.tsx              ✅  AdSense display unit (content pages only)
+      ShareInterstitialModal.tsx ✅  share-link generation + countdown
+      LanguageSwitcher.tsx    ✅  runtime language switch
+      UpgradeModal.tsx / CookieConsentBanner.tsx ✅
   pages/
-    HomePage.tsx              ✅
-    EditorPage.tsx            ✅  full editor; positionOverrides, player-drag auto-action, ATK bar
+    HomePage.tsx              ✅  logged-out landing (content) + logged-in cloud dashboard
+    EditorPage.tsx            ✅  full editor; positionOverrides, player-drag auto-action, ATK bar, groups
     SetupPage.tsx             ✅  Flip button in formation + ball steps (full court only); "← Back" to home on info step
-  App.tsx                     ✅
+    SharePage.tsx             ✅  public read-only play viewer
+    PricingPage / PrivacyPage / TermsPage / RefundPage  ✅  content + legal (i18n)
+    LoginPage / RegisterPage / VerifyEmailPage / ForgotPasswordPage / ResetPasswordPage  ✅  auth flow
+    NotFoundPage.tsx          ✅
+  lib/
+    authClient.ts             ✅  better-auth React client (useSession)
+  i18n/
+    locales/{en,tr,de,es,fr,it}.json  ✅  6 languages
+  App.tsx                     ✅  routes (14)
   main.tsx                    ✅
+server/
+  index.ts                    ✅  Hono API + static serve; auth, share, plays
+  auth.ts / db/ / routes/plays.ts   ✅  better-auth, drizzle schema/client, plays CRUD
 setplay.sh                    ✅  Docker/npm start+stop
 Dockerfile                    ✅
 docker-compose.yml            ✅
@@ -404,6 +503,13 @@ App: `http://localhost:5173`
 | Post-plan | OOB drag fix: `dragBoundFunc` + explicit Konva position reset; prevents player disappearing on repeated OOB drags | ✅ |
 | Post-plan | Setup info step: "← Back" navigation to home | ✅ |
 | Post-plan | DEF toolbar disabled (`hasDefenders`) when no defenders on court | ✅ |
+| Phase 2 | Auth (better-auth, Google OAuth, email verify/reset via Resend) + cloud save (Hono + Postgres) | ✅ |
+| Post-plan | Public sharing: share tokens, guest plays, read-only SharePage, interstitial modal | ✅ |
+| Post-plan | i18n: 6 languages (en, tr, de, es, fr, it) | ✅ |
+| Post-plan | Video export reworked to mp4-muxer (30 fps) | ✅ |
+| Post-plan | Monetization: AdSense + Pro tier, content landing page, pricing/legal pages | ✅ |
+| Post-plan | **Action groups**: record/post-hoc grouping, conflict validation, simultaneous playback | ✅ |
+| Open | AdSense approval: SSR/prerender + per-route meta + content/blog layer (see `.claude/plans/`) | ⏳ |
 
 ---
 
@@ -423,8 +529,11 @@ The store's `addAction` / `updateAction` etc. auto-persist changes to localStora
 
 ---
 
-## Out of Scope for MVP
+## Out of Scope (current)
 
-- User accounts / cloud storage
-- Community / Publish feature
+- Community / public play library / Publish feature
 - Real-time collaboration
+- Native mobile app (mobile web layout was reverted — see backlog)
+- Multi-language prerendering + hreflang (English prerender first for AdSense)
+
+> Shipped since MVP: user accounts, cloud storage, and public link sharing are now live (see Backend, Auth & Cloud).

@@ -1,4 +1,4 @@
-import type { Action, PositionMap, BallState, NormalizedPosition } from '../models/types'
+import type { Action, ActionItem, PositionMap, BallState, NormalizedPosition } from '../models/types'
 
 export interface GameState {
   positions: PositionMap
@@ -162,8 +162,95 @@ function applyMarkingsToState(
   return { ...state, positions }
 }
 
+function applyStep(
+  item: ActionItem,
+  state: GameState,
+  markings?: Record<string, string>,
+  basketY: number = DEFAULT_BASKET_Y,
+  courtW = 700,
+  courtH = 658,
+): GameState {
+  if (item.type === 'group') {
+    let s = state
+    for (const action of item.actions) {
+      s = applyAction(action, s, markings, basketY, courtW, courtH)
+    }
+    return s
+  }
+  return applyAction(item, state, markings, basketY, courtW, courtH)
+}
+
+// ── Duration computation ─────────────────────────────────────────────────────
+
+function ndist(a: NormalizedPosition, b: NormalizedPosition): number {
+  return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2)
+}
+
+function pathLen(start: NormalizedPosition, waypoints: NormalizedPosition[] | undefined, end: NormalizedPosition): number {
+  const pts = [start, ...(waypoints ?? []), end]
+  let d = 0
+  for (let i = 1; i < pts.length; i++) d += ndist(pts[i - 1], pts[i])
+  return d
+}
+
+function singleActionDist(action: Action, positions: PositionMap, ball: BallState, basketY: number): number {
+  switch (action.type) {
+    case 'cut':
+    case 'dribble':
+    case 'defense-move': {
+      const from = positions[action.playerId]
+      return from ? pathLen(from, action.waypoints, action.toPosition) : 0.15
+    }
+    case 'pass': {
+      const from = positions[ball.holderId] ?? positions[action.fromId]
+      const to = positions[action.toId]
+      return (from && to) ? ndist(from, to) : 0.20
+    }
+    case 'shot': {
+      const from = positions[action.shooterId]
+      return from ? ndist(from, { x: 0.5, y: basketY }) : 0.20
+    }
+    case 'screen': {
+      const from = positions[action.screenerId]
+      return from ? ndist(from, action.screenPosition) : 0.10
+    }
+    case 'handoff': {
+      const from = positions[action.fromId]
+      return from ? ndist(from, action.meetPosition) : 0.15
+    }
+    case 'double-team': return 0.15
+    case 'ball-force':  return 0.12
+    default: return 0.15
+  }
+}
+
+const STEP_MS_MIN   = 600
+const STEP_MS_MAX   = 2400
+const STEP_MS_SCALE = 4500
+
+function computeStepMsForItem(item: ActionItem, positions: PositionMap, ball: BallState, basketY: number): number {
+  const d = item.type === 'group'
+    ? Math.max(0.05, ...item.actions.map(a => singleActionDist(a, positions, ball, basketY)))
+    : singleActionDist(item, positions, ball, basketY)
+  return Math.round(Math.min(STEP_MS_MAX, Math.max(STEP_MS_MIN, d * STEP_MS_SCALE)))
+}
+
+export function computeAllStepMs(
+  actions: ActionItem[],
+  initialPositions: PositionMap,
+  initialBall: BallState,
+  basketY: number,
+): number[] {
+  let state: GameState = { positions: { ...initialPositions }, ball: { ...initialBall } }
+  return actions.map(item => {
+    const ms = computeStepMsForItem(item, state.positions, state.ball, basketY)
+    state = applyStep(item, state, undefined, basketY)
+    return ms
+  })
+}
+
 export function computeStateAtStep(
-  actions: Action[],
+  actions: ActionItem[],
   step: number,
   initialPositions: PositionMap,
   initialBall: BallState,
@@ -182,7 +269,7 @@ export function computeStateAtStep(
   }
   const limit = Math.min(step, actions.length)
   for (let i = 0; i < limit; i++) {
-    state = applyAction(actions[i], state, markings, basketY, courtW, courtH)
+    state = applyStep(actions[i], state, markings, basketY, courtW, courtH)
   }
   return state
 }

@@ -24,16 +24,22 @@ function describeAction(action: Action, players: Player[]): string {
 }
 
 interface Props {
-  index: number
+  stepNum: number
   action: Action
   players: Player[]
   isActive: boolean
+  /** If true renders without step number — used for actions inside a group during selection mode */
+  compact?: boolean
+  /** If true renders a checkbox for selection mode */
+  checked?: boolean
+  onCheckChange?: (checked: boolean) => void
   onClick: () => void
   onOptionTextChange: (text: string) => void
 }
 
 export default function ActionCard({
-  index, action, players, isActive,
+  stepNum, action, players, isActive, compact,
+  checked, onCheckChange,
   onClick, onOptionTextChange,
 }: Props) {
   return (
@@ -42,9 +48,18 @@ export default function ActionCard({
       style={{ borderLeftColor: ACTION_COLORS[action.type] }}
       onClick={onClick}
     >
-      <div className="flex items-center px-3 py-2">
-        <span className="text-sm font-medium" style={{ color: ACTION_COLORS[action.type] }}>
-          <span className="text-slate-400 text-xs mr-2">{index + 1}.</span>
+      <div className="flex items-center px-3 py-2 gap-2">
+        {onCheckChange !== undefined && (
+          <input
+            type="checkbox"
+            checked={checked ?? false}
+            onChange={e => { e.stopPropagation(); onCheckChange(e.target.checked) }}
+            onClick={e => e.stopPropagation()}
+            className="w-3.5 h-3.5 accent-violet-500 shrink-0 cursor-pointer"
+          />
+        )}
+        <span className="text-sm font-medium flex-1" style={{ color: ACTION_COLORS[action.type] }}>
+          {!compact && <span className="text-slate-400 text-xs mr-2">{stepNum}.</span>}
           {ACTION_LABELS[action.type]}
           <span className="text-slate-400 font-normal ml-1 text-xs">{describeAction(action, players)}</span>
         </span>

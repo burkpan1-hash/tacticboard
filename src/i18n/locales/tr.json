@@ -25,7 +25,29 @@
     "shareButton": "Paylaş",
     "copiedButton": "Kopyalandı!",
     "loginButton": "Giriş Yap",
-    "logoutButton": "Çıkış"
+    "logoutButton": "Çıkış",
+    "landing": {
+      "heroHeadline": "Basketbol Oyunlarını Çiz, Canlandır ve Paylaş",
+      "heroSubtitle": "Antrenörler ve oyuncular için ücretsiz, tarayıcı tabanlı basketbol taktik tahtası. Oyunları çiz, adım adım canlandır ve link ile paylaş. İndirme veya kurulum gerekmez.",
+      "startFreeButton": "Ücretsiz Başla",
+      "feature1Title": "Her Oyunu Çiz",
+      "feature1Desc": "Tam saha veya yarı sahada hücum ve savunma oyuncularını yerleştir. 5-Out, Horns, 2-3 Bölge gibi yaygın dizilimlerden seç veya sıfırdan özel bir kurulum oluştur. Oyuncuları sahada sürükleyerek istediğin yere taşı.",
+      "feature2Title": "Adım Adım Hareketleri Canlandır",
+      "feature2Desc": "Paslar, driblingler, kesimler, ekranlar, el değiştirmeler, şutlar ve savunma hareketleri ekle. Her hareket animasyonda bir adım olur. Oyunun akışını gerçek hızda görmek için geri oynat.",
+      "feature3Title": "Tek Linkle Paylaş",
+      "feature3Desc": "Tek tıklamayla paylaşılabilir bir link oluştur. Takımına, yardımcı antrenörlerine veya oyuncularına gönder. Görüntülemek için hesap gerekmez — linki açıp oyunu izliyorlar.",
+      "howTitle": "Nasıl Çalışır",
+      "step1": "Saha tipini seç ve başlangıç dizilimini ayarla",
+      "step2": "Adım adım hareketler ekle — paslar, kesimler, ekranlar, şutlar",
+      "step3": "Animasyonu önizlemek için oynat, ardından linki paylaş",
+      "useCasesTitle": "Antrenörler ve Oyuncular İçin",
+      "useCase1": "Maç öncesi takımına set oyunlarını anlat",
+      "useCase2": "Keşif için rakip eğilimlerini analiz et",
+      "useCase3": "Sınır dışı oyunlarını ve alt hat hareketlerini tasarla",
+      "useCase4": "Savunma rotasyonlarını ve yardım pozisyonlarını öğret",
+      "useCase5": "Video yazılımı olmadan film odası kavramlarını paylaş",
+      "freeTierNote": "Ücretsiz plan: 10 kayıtlı oyuna kadar. Sınırsız kayıt, reklamsız deneyim ve video dışa aktarım için Pro'ya geç."
+    }
   },
   "setup": {
     "newPlayTitle": "Yeni Oyun",
@@ -110,7 +132,22 @@
     "actionsTitle": "Hareketler",
     "emptyState": "Sol araç çubuğundan bir hareket tipi seçin",
     "clearAllButton": "Tümünü Temizle",
-    "confirmClear": "Emin misin?"
+    "confirmClear": "Emin misin?",
+    "recordGroupButton": "⏺ Grup",
+    "stopGroupButton": "⏹ Durdur",
+    "groupButton": "Grupla",
+    "groupingCount": "{{count}} seçildi",
+    "groupConfirmButton": "Grupla ✓",
+    "recordingBanner": "Grup kaydediliyor — yeni hareketler bu gruba eklenir",
+    "conflictShotInGroup": "Atış grup içinde olamaz",
+    "conflictBallAction": "Bu grupta zaten bir top aksiyonu (pas / dribble / handoff) var",
+    "conflictPlayerBusy": "Bu oyuncu bu grupta zaten başka bir aksiyonda",
+    "groupCard": {
+      "title": "Grup Hareketi",
+      "ungroup": "Çöz",
+      "namePlaceholder": "Grup adı…",
+      "addLabel": "Etiket ekle"
+    }
   },
   "export": {
     "title": "Video Dışa Aktar",

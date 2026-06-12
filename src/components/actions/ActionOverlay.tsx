@@ -1,7 +1,7 @@
 import { Group } from 'react-konva'
 import ActionArrow from './ActionArrow'
 import { computeStateAtStep } from '../../utils/stateEngine'
-import type { Action, PositionMap, BallState, CourtType } from '../../models/types'
+import type { ActionItem, PositionMap, BallState, CourtType } from '../../models/types'
 import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H } from '../../utils/courtCoords'
 
 const BASKET_PX = 42
@@ -12,7 +12,7 @@ function getBasketY(courtType: CourtType, attackBasket?: 'top' | 'bottom'): numb
 }
 
 interface Props {
-  actions: Action[]
+  actions: ActionItem[]
   initialPositions: PositionMap
   initialBall: BallState
   activeStep: number
@@ -26,11 +26,13 @@ export default function ActionOverlay({ actions, initialPositions, initialBall, 
   const courtH = courtType === 'half' ? HALF_COURT_H : FULL_COURT_H
   return (
     <Group>
-      {actions.slice(0, activeStep).map((action, i) => {
-        const stateBefore = computeStateAtStep(actions, i, initialPositions, initialBall, markings, basketY, HALF_COURT_W, courtH)
-        const isLatest = i === activeStep - 1
-        return (
-          <Group key={action.id} opacity={isLatest ? 1 : 0.45}>
+      {actions.slice(Math.max(0, activeStep - 2), activeStep).flatMap((item, localIdx) => {
+        const globalIdx = Math.max(0, activeStep - 2) + localIdx
+        const stateBefore = computeStateAtStep(actions, globalIdx, initialPositions, initialBall, markings, basketY, HALF_COURT_W, courtH)
+        const isLatest = globalIdx === activeStep - 1
+        const actionList = item.type === 'group' ? item.actions : [item]
+        return actionList.map(action => (
+          <Group key={action.id} opacity={isLatest ? 1 : 0.25}>
             <ActionArrow
               action={action}
               positions={stateBefore.positions}
@@ -38,7 +40,7 @@ export default function ActionOverlay({ actions, initialPositions, initialBall, 
               basketY={basketY}
             />
           </Group>
-        )
+        ))
       })}
     </Group>
   )

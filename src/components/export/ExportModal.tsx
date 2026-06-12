@@ -4,23 +4,23 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { exportVideo, downloadBlob } from '../../utils/exportAnimation'
 import { usePlayStore } from '../../store/usePlayStore'
-import AdSlot from '../ui/AdSlot'
+import { computeAllStepMs } from '../../utils/stateEngine'
+import { FULL_COURT_H, HALF_COURT_H } from '../../utils/courtCoords'
 
 type Phase = 'idle' | 'playing' | 'encoding' | 'done'
 
 interface Props {
   stageRef: React.RefObject<Konva.Stage | null>
-  stepMs: number
   onClose: () => void
 }
 
-export default function ExportModal({ stageRef, stepMs, onClose }: Props) {
+export default function ExportModal({ stageRef, onClose }: Props) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { activeSet, activeStep, setActiveStep, setIsPlaying, playbackSpeed, setPlaybackSpeed } = usePlayStore()
   const [showUpgrade, setShowUpgrade] = useState(false)
 
-  const scale = 1
+  const [exportScale, setExportScale] = useState(2)
   const [phase, setPhase] = useState<Phase>('idle')
   const [captureProgress, setCaptureProgress] = useState(0)
   const cancelRef = useRef<(() => void) | null>(null)
@@ -28,7 +28,14 @@ export default function ExportModal({ stageRef, stepMs, onClose }: Props) {
   const savedStep = useRef(activeStep)
 
   const total = activeSet?.actions.length ?? 0
-  const durationMs = total * stepMs
+  const durationMs = (() => {
+    if (!activeSet || total === 0) return 0
+    const bY = activeSet.courtType === 'full'
+      ? (activeSet.attackBasket === 'bottom' ? 1 - 42 / FULL_COURT_H : 42 / FULL_COURT_H)
+      : 42 / HALF_COURT_H
+    const durations = computeAllStepMs(activeSet.actions, activeSet.initialPositions, activeSet.initialBall, bY)
+    return durations.reduce((a, b) => a + b, 0)
+  })()
 
   function startExport() {
     if (!stageRef.current || !activeSet || total === 0) return
@@ -49,10 +56,10 @@ export default function ExportModal({ stageRef, stepMs, onClose }: Props) {
       const handle = exportVideo(
         stage,
         durationMs,
-        scale,
+        exportScale,
         (p) => {
           setCaptureProgress(p)
-          if (p >= 1) setPhase('encoding')
+          if (p >= 0.99) setPhase('encoding')
         },
         (blob) => {
           const ext = blob.type.includes('mp4') ? 'mp4' : 'webm'
@@ -113,11 +120,34 @@ export default function ExportModal({ stageRef, stepMs, onClose }: Props) {
               {t('export.description')}
             </p>
 
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs text-slate-400 font-medium">Kalite</span>
+              <div className="flex gap-2">
+                {([
+                  { label: 'Standard', sub: '1×', scale: 1 },
+                  { label: 'HD', sub: '2× — Sosyal medya', scale: 2 },
+                ] as const).map(opt => (
+                  <button
+                    key={opt.scale}
+                    onClick={() => setExportScale(opt.scale)}
+                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium border transition-colors text-left ${
+                      exportScale === opt.scale
+                        ? 'bg-orange-600/20 border-orange-500 text-orange-300'
+                        : 'bg-slate-700/50 border-slate-600 text-slate-400 hover:border-slate-500'
+                    }`}
+                  >
+                    <div className="font-semibold">{opt.label}</div>
+                    <div className="opacity-70 text-[10px]">{opt.sub}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {total === 0 && (
               <p className="text-red-400 text-xs">{t('export.noActionsError')}</p>
             )}
 
-            <div className="flex gap-2 mt-1">
+            <div className="flex gap-2">
               <button
                 onClick={startExport}
                 disabled={total === 0}
@@ -137,7 +167,6 @@ export default function ExportModal({ stageRef, stepMs, onClose }: Props) {
 
         {phase === 'playing' && (
           <div className="flex flex-col gap-3">
-            <AdSlot className="h-[90px]" />
             <p className="text-slate-300 text-xs">{t('export.capturingStatus')}</p>
             {progressBar(captureProgress, t('export.captureProgressLabel'))}
             <button
@@ -151,7 +180,6 @@ export default function ExportModal({ stageRef, stepMs, onClose }: Props) {
 
         {phase === 'encoding' && (
           <div className="flex flex-col gap-3">
-            <AdSlot className="h-[90px]" />
             <p className="text-slate-300 text-xs">{t('export.encodingStatus')}</p>
             <div className="text-slate-400 text-xs">{t('export.processingStatus')}</div>
           </div>

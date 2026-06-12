@@ -14,8 +14,6 @@
     "start": "tsx server/index.ts"
   },
   "dependencies": {
-    "@ffmpeg/ffmpeg": "^0.12.15",
-    "@ffmpeg/util": "^0.12.2",
     "@hono/node-server": "^2.0.4",
     "@sentry/react": "^10.56.0",
     "better-auth": "^1.6.11",
@@ -24,6 +22,7 @@
     "i18next": "^26.3.0",
     "i18next-browser-languagedetector": "^8.2.1",
     "konva": "^10.3.0",
+    "mp4-muxer": "^5.2.2",
     "nanoid": "^5.1.11",
     "postgres": "^3.4.9",
     "posthog-js": "^1.379.0",

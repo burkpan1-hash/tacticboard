@@ -25,7 +25,29 @@
     "shareButton": "Teilen",
     "copiedButton": "Kopiert!",
     "loginButton": "Anmelden",
-    "logoutButton": "Abmelden"
+    "logoutButton": "Abmelden",
+    "landing": {
+      "heroHeadline": "Basketball-Spielzüge Zeichnen, Animieren & Teilen",
+      "heroSubtitle": "Das kostenlose, browserbasierte Basketball-Taktikboard für Trainer und Spieler. Zeichne Spielzüge, animiere sie Schritt für Schritt und teile sie per Link. Kein Download erforderlich.",
+      "startFreeButton": "Kostenlos starten",
+      "feature1Title": "Jeden Spielzug zeichnen",
+      "feature1Desc": "Platziere Angriffs- und Verteidigungsspieler auf einem vollen oder halben Spielfeld. Wähle aus gängigen Formationen wie 5-Out, Horns, 2-3 Zone oder erstelle ein individuelles Setup. Schiebe Spieler überall auf dem Feld.",
+      "feature2Title": "Aktionen Schritt für Schritt animieren",
+      "feature2Desc": "Füge Pässe, Dribblings, Schnitte, Blocks, Übergaben, Würfe und Verteidigungsbewegungen hinzu. Jede Aktion wird zu einem Schritt in der Animation. Spiele sie ab, um den Spielfluss in Echtzeit zu sehen.",
+      "feature3Title": "Mit einem Link teilen",
+      "feature3Desc": "Erstelle mit einem Klick einen teilbaren Link. Schicke ihn an dein Team, Co-Trainer oder Spieler. Zum Ansehen ist kein Konto erforderlich.",
+      "howTitle": "So funktioniert es",
+      "step1": "Feldtyp wählen und Startaufstellung einrichten",
+      "step2": "Aktionen hinzufügen — Pässe, Schnitte, Blocks, Würfe — Schritt für Schritt",
+      "step3": "Animation in der Vorschau abspielen, dann Link teilen",
+      "useCasesTitle": "Für Trainer und Spieler",
+      "useCase1": "Erkläre deinem Team vor dem Spiel feste Spielzüge",
+      "useCase2": "Analysiere Gegnertendenzen für das Scouting",
+      "useCase3": "Entwirf Einwurfspielzüge und Grundlinienaktionen",
+      "useCase4": "Lehr Verteidigungsrotationen und Hilfsposition",
+      "useCase5": "Teile Filmraum-Konzepte ohne Videosoftware",
+      "freeTierNote": "Kostenloser Plan: bis zu 10 gespeicherte Spielzüge. Upgrade auf Pro für unbegrenzte Speicherung, keine Werbung und Videoexport."
+    }
   },
   "setup": {
     "newPlayTitle": "Neues Spiel",
@@ -110,7 +132,22 @@
     "actionsTitle": "Aktionen",
     "emptyState": "Wähle einen Aktionstyp aus der linken Leiste",
     "clearAllButton": "Alle Löschen",
-    "confirmClear": "Sicher?"
+    "confirmClear": "Sicher?",
+    "recordGroupButton": "⏺ Gruppe",
+    "stopGroupButton": "⏹ Stopp",
+    "groupButton": "Gruppieren",
+    "groupingCount": "{{count}} ausgewählt",
+    "groupConfirmButton": "Gruppieren ✓",
+    "recordingBanner": "Gruppe wird aufgezeichnet — neue Aktionen gehen in diese Gruppe",
+    "conflictShotInGroup": "Ein Wurf kann nicht Teil einer Gruppe sein",
+    "conflictBallAction": "In dieser Gruppe gibt es bereits eine Ballaktion (Pass / Dribbling / Handoff)",
+    "conflictPlayerBusy": "Dieser Spieler ist bereits in einer Aktion dieser Gruppe",
+    "groupCard": {
+      "title": "Aktionsgruppe",
+      "ungroup": "Auflösen",
+      "namePlaceholder": "Gruppenname…",
+      "addLabel": "Beschriftung hinzufügen"
+    }
   },
   "export": {
     "title": "Video Exportieren",

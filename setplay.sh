@@ -216,13 +216,15 @@ cmd_deploy() {
 
   # Uygulama deploy et
   log_info "Uygulama deploy ediliyor ($APP)..."
-  if fly deploy --app "$APP" 2>&1 | tail -5; then
+  fly deploy --app "$APP"
+  DEPLOY_EXIT=$?
+  if [ $DEPLOY_EXIT -eq 0 ]; then
     log_ok "Deploy tamamlandı!"
     echo ""
     echo -e "  ${G}▶  https://$APP.fly.dev${N}"
     echo ""
   else
-    log_err "Deploy başarısız."
+    log_err "Deploy başarısız. (exit code: $DEPLOY_EXIT)"
     exit 1
   fi
 }

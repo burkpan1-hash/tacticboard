@@ -7,6 +7,7 @@ import UpgradeModal from '../components/ui/UpgradeModal'
 import { authClient } from '../lib/authClient'
 
 const FREE_PLAY_LIMIT = 10
+const ADSENSE_CLIENT = 'ca-pub-6965917095403868'
 
 interface CloudPlay {
   id: string
@@ -26,6 +27,18 @@ export default function HomePage() {
   const [editingTitle, setEditingTitle] = useState('')
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const editInputRef = useRef<HTMLInputElement>(null)
+
+  // Load AdSense only on this content-rich page to comply with AdSense policies
+  useEffect(() => {
+    const existing = document.querySelector(`script[src*="${ADSENSE_CLIENT}"]`)
+    if (existing) return
+    const script = document.createElement('script')
+    script.async = true
+    script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`
+    script.crossOrigin = 'anonymous'
+    document.head.appendChild(script)
+    return () => { document.head.removeChild(script) }
+  }, [])
 
   useEffect(() => {
     if (!session) { setCloudPlays([]); return }
@@ -132,12 +145,79 @@ export default function HomePage() {
         </div>
       </div>
 
-      {cloudPlays.length === 0 ? (
+      {!session && (
+        <div className="mb-12">
+          <div className="text-center mb-10">
+            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight">
+              {t('home.landing.heroHeadline')}
+            </h1>
+            <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto mb-6">
+              {t('home.landing.heroSubtitle')}
+            </p>
+            <button
+              onClick={handleNewPlay}
+              className="bg-orange-500 hover:bg-orange-400 text-white font-bold px-8 py-3 rounded-xl transition-colors text-base shadow-lg shadow-orange-500/30"
+            >
+              {t('home.landing.startFreeButton')}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+            {[
+              { title: t('home.landing.feature1Title'), desc: t('home.landing.feature1Desc') },
+              { title: t('home.landing.feature2Title'), desc: t('home.landing.feature2Desc') },
+              { title: t('home.landing.feature3Title'), desc: t('home.landing.feature3Desc') },
+            ].map(f => (
+              <div key={f.title} className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-5">
+                <h2 className="text-white font-semibold text-sm mb-2">{f.title}</h2>
+                <p className="text-slate-400 text-xs leading-relaxed">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-6 mb-6">
+            <h2 className="text-white font-semibold text-sm mb-4">{t('home.landing.howTitle')}</h2>
+            <ol className="space-y-2">
+              {[t('home.landing.step1'), t('home.landing.step2'), t('home.landing.step3')].map((step, i) => (
+                <li key={i} className="flex items-start gap-3 text-slate-400 text-xs">
+                  <span className="shrink-0 w-5 h-5 rounded-full bg-orange-500/20 text-orange-400 text-xs font-bold flex items-center justify-center">{i + 1}</span>
+                  {step}
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-6">
+            <h2 className="text-white font-semibold text-sm mb-4">{t('home.landing.useCasesTitle')}</h2>
+            <ul className="space-y-2">
+              {[
+                t('home.landing.useCase1'),
+                t('home.landing.useCase2'),
+                t('home.landing.useCase3'),
+                t('home.landing.useCase4'),
+                t('home.landing.useCase5'),
+              ].map((uc, i) => (
+                <li key={i} className="flex items-start gap-2 text-slate-400 text-xs">
+                  <span className="text-orange-400 shrink-0">→</span>
+                  {uc}
+                </li>
+              ))}
+            </ul>
+            <p className="text-slate-500 text-xs mt-4 pt-4 border-t border-slate-700/40">
+              {t('home.landing.freeTierNote')}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {session && cloudPlays.length === 0 && (
         <div className="text-center py-24 text-slate-400">
           <div className="text-5xl mb-4">🏀</div>
           <p className="text-lg">{t('home.emptyState')}</p>
         </div>
-      ) : (
+      )}
+
+      {session && cloudPlays.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {cloudPlays.map((p) => (
             <div key={p.id} className="bg-slate-800 rounded-xl p-5 flex items-center justify-between">

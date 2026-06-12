@@ -25,7 +25,29 @@
     "shareButton": "Condividi",
     "copiedButton": "Copiato!",
     "loginButton": "Accedi",
-    "logoutButton": "Esci"
+    "logoutButton": "Esci",
+    "landing": {
+      "heroHeadline": "Progetta, Anima e Condividi Schemi di Basket",
+      "heroSubtitle": "Il tabellone tattico di pallacanestro gratuito e basato su browser per allenatori e giocatori. Disegna schemi, animali passo dopo passo e condividili tramite link. Nessun download necessario.",
+      "startFreeButton": "Inizia gratuitamente",
+      "feature1Title": "Disegna qualsiasi schema",
+      "feature1Desc": "Posiziona giocatori in attacco e difesa su un campo intero o a metà campo. Scegli tra formazioni comuni come 5-Out, Horns, Zona 2-3 o crea una configurazione personalizzata. Trascina i giocatori ovunque sul campo.",
+      "feature2Title": "Anima le azioni passo dopo passo",
+      "feature2Desc": "Aggiungi passaggi, palleggi, tagli, blocchi, consegne, tiri e movimenti difensivi. Ogni azione diventa un passo nell'animazione. Riproducila per vedere il flusso dello schema.",
+      "feature3Title": "Condividi con un link",
+      "feature3Desc": "Genera un link condivisibile con un solo clic. Invialo alla tua squadra, agli assistenti allenatori o ai giocatori. Non è necessario un account per visualizzarlo.",
+      "howTitle": "Come funziona",
+      "step1": "Scegli il tipo di campo e imposta la formazione iniziale",
+      "step2": "Aggiungi azioni — passaggi, tagli, blocchi, tiri — passo dopo passo",
+      "step3": "Riproduci l'animazione per l'anteprima, poi condividi il link",
+      "useCasesTitle": "Per allenatori e giocatori",
+      "useCase1": "Spiega gli schemi fissi alla tua squadra prima di una partita",
+      "useCase2": "Analizza le tendenze avversarie per lo scouting",
+      "useCase3": "Progetta rimesse laterali e azioni dalla linea di fondo",
+      "useCase4": "Insegna le rotazioni difensive e il posizionamento di aiuto",
+      "useCase5": "Condividi concetti da sala video senza software di editing",
+      "freeTierNote": "Piano gratuito: fino a 10 schemi salvati. Passa a Pro per salvataggi illimitati, senza pubblicità e con esportazione video."
+    }
   },
   "setup": {
     "newPlayTitle": "Nuovo Schema",
@@ -110,7 +132,22 @@
     "actionsTitle": "Azioni",
     "emptyState": "Seleziona un tipo di azione dalla barra sinistra",
     "clearAllButton": "Cancella Tutto",
-    "confirmClear": "Sicuro?"
+    "confirmClear": "Sicuro?",
+    "recordGroupButton": "⏺ Gruppo",
+    "stopGroupButton": "⏹ Ferma",
+    "groupButton": "Raggruppa",
+    "groupingCount": "{{count}} selezionato/i",
+    "groupConfirmButton": "Raggruppa ✓",
+    "recordingBanner": "Registrazione gruppo — le nuove azioni vanno in questo gruppo",
+    "conflictShotInGroup": "Il tiro non può far parte di un gruppo",
+    "conflictBallAction": "Esiste già un'azione con palla (passaggio / dribbling / handoff) in questo gruppo",
+    "conflictPlayerBusy": "Questo giocatore è già in un'azione di questo gruppo",
+    "groupCard": {
+      "title": "Gruppo di azioni",
+      "ungroup": "Separa",
+      "namePlaceholder": "Nome del gruppo…",
+      "addLabel": "Aggiungi etichetta"
+    }
   },
   "export": {
     "title": "Esporta Video",
