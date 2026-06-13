@@ -35,4 +35,6 @@ USER appuser
 ENV NODE_ENV=production
 EXPOSE 3000
 
-CMD ["npx", "tsx", "server/index.ts"]
+# tsx binary'sini doğrudan çağır — 'npx tsx' her boot'ta paket çözümlemesi
+# yapıp portu geç bind ediyordu, bu da Fly'da "not listening" uyarısı veriyordu.
+CMD ["node_modules/.bin/tsx", "server/index.ts"]

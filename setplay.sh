@@ -190,29 +190,67 @@ cmd_deploy() {
   fi
   log_ok "Fly kullanıcısı: $(fly auth whoami)"
 
-  # DB makinesini başlat
-  log_info "Veritabanı makinesi başlatılıyor ($DB_APP)..."
-  fly machines start --app "$DB_APP" 2>/dev/null | grep -v "^$" || true
-  sleep 3
+  # Script erken çıksa bile arkada kalan proxy'yi temizle
+  PROXY_PID=""
+  cleanup_proxy() { [ -n "$PROXY_PID" ] && kill "$PROXY_PID" 2>/dev/null; PROXY_PID=""; }
+  trap cleanup_proxy EXIT
 
-  # Proxy aç
-  log_info "DB proxy açılıyor (localhost:$PROXY_PORT → $DB_APP:5432)..."
-  pkill -f "fly proxy.*$PROXY_PORT" 2>/dev/null || true
-  fly proxy "$PROXY_PORT":5432 -a "$DB_APP" &
-  PROXY_PID=$!
-  sleep 5
+  # Schema push'u en iyi çabayla dene; herhangi bir adımda takılırsa atla.
+  # ('fly machine start' bir makine ID'si ister — ID'siz çağrı no-op'tur.)
+  log_info "Veritabanı makine ID'si alınıyor ($DB_APP)..."
+  DB_MACHINE_ID=$(fly machine list --app "$DB_APP" --json 2>/dev/null \
+    | grep -m1 '"id"' | sed -E 's/.*"id"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/')
 
-  # Schema push
-  log_info "Veritabanı schema push yapılıyor..."
-  if DATABASE_URL="postgresql://$DB_USER:$DB_PASS@localhost:$PROXY_PORT/$DB_NAME" \
-     npx --prefix "$SCRIPT_DIR" drizzle-kit push --force 2>&1 | grep -E "✓|Error|error"; then
-    log_ok "Schema güncel"
+  if [ -z "$DB_MACHINE_ID" ]; then
+    log_warn "DB makinesi bulunamadı ($DB_APP) — schema push atlanıyor."
   else
-    log_warn "Schema push başarısız olabilir, devam ediliyor..."
-  fi
+    log_info "DB makinesi başlatılıyor ($DB_MACHINE_ID)..."
+    fly machine start "$DB_MACHINE_ID" --app "$DB_APP" > /dev/null 2>&1 || true
 
-  # Proxy kapat
-  kill $PROXY_PID 2>/dev/null || true
+    # 'started' state'ine geçmesini bekle (sabit sleep yerine poll)
+    log_info "DB makinesinin başlaması bekleniyor..."
+    db_state=""
+    for _ in $(seq 1 30); do
+      db_state=$(fly machine list --app "$DB_APP" --json 2>/dev/null \
+        | grep -m1 '"state"' | sed -E 's/.*"state"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/')
+      [ "$db_state" = "started" ] && break
+      sleep 2
+    done
+
+    if [ "$db_state" != "started" ]; then
+      log_warn "DB makinesi 'started' durumuna geçmedi (son: ${db_state:-bilinmiyor}) — schema push atlanıyor."
+    else
+      log_ok "DB makinesi hazır"
+
+      # Proxy aç ve portun gerçekten dinlemeye başlamasını bekle
+      log_info "DB proxy açılıyor (localhost:$PROXY_PORT → $DB_APP:5432)..."
+      pkill -f "fly proxy.*$PROXY_PORT" 2>/dev/null || true
+      fly proxy "$PROXY_PORT":5432 -a "$DB_APP" > /dev/null 2>&1 &
+      PROXY_PID=$!
+
+      proxy_ready=0
+      for _ in $(seq 1 20); do
+        if lsof -ti tcp:"$PROXY_PORT" > /dev/null 2>&1; then proxy_ready=1; break; fi
+        sleep 1
+      done
+
+      if [ "$proxy_ready" -ne 1 ]; then
+        log_warn "DB proxy ($PROXY_PORT) açılamadı — schema push atlanıyor."
+      else
+        log_info "Veritabanı schema push yapılıyor..."
+        # drizzle-kit, drizzle.config.ts'yi cwd'den okur; npx --prefix desteklemez.
+        if ( cd "$SCRIPT_DIR" && \
+             DATABASE_URL="postgresql://$DB_USER:$DB_PASS@localhost:$PROXY_PORT/$DB_NAME" \
+             npx drizzle-kit push --force ); then
+          log_ok "Schema güncel"
+        else
+          log_warn "Schema push başarısız oldu — devam ediliyor."
+        fi
+      fi
+
+      cleanup_proxy
+    fi
+  fi
 
   # Uygulama deploy et
   log_info "Uygulama deploy ediliyor ($APP)..."
