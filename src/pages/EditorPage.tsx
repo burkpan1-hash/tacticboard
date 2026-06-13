@@ -19,6 +19,7 @@ import UpgradeModal from '../components/ui/UpgradeModal'
 import ShareInterstitialModal from '../components/ui/ShareInterstitialModal'
 import { usePlayStore } from '../store/usePlayStore'
 import { computeStateAtStep, computeAllStepMs } from '../utils/stateEngine'
+import { computeFrameState } from '../utils/frameState'
 import { denormalize } from '../utils/courtCoords'
 import type { Action, ActionItem, ActionType, NormalizedPosition, Player, PlaySet, PositionMap } from '../models/types'
 import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_PADDING_X, COURT_PADDING_Y, HALF_COURT_PADDING_TOP } from '../utils/courtCoords'
@@ -458,9 +459,10 @@ export default function EditorPage() {
 
   const activeMarkings = markingsEnabled ? (activeSet.markings ?? {}) : undefined
   const total = activeSet.actions.length
-  const currentState = computeStateAtStep(
-    activeSet.actions, activeStep, activeSet.initialPositions, activeSet.initialBall, activeMarkings, basketY, HALF_COURT_W, cH
+  const frame = computeFrameState(
+    activeSet, activeStep, animFraction, isPlaying, basketY, cH, activeMarkings,
   )
+  const currentState = frame.currentState
   const hasShotAction = activeSet.actions.some(item =>
     item.type === 'shot' ||
     (item.type === 'group' && item.actions.some(a => a.type === 'shot'))
@@ -468,62 +470,10 @@ export default function EditorPage() {
 
   const effectivePositions: PositionMap = { ...currentState.positions, ...positionOverrides }
 
-  const displayPositions = (() => {
-    if (!isPlaying || activeStep >= total) return effectivePositions
-    const toState = computeStateAtStep(
-      activeSet.actions, activeStep + 1, activeSet.initialPositions, activeSet.initialBall, activeMarkings, basketY, HALF_COURT_W, cH
-    )
-    const t = animFraction
-    // Flatten current step's actions — could be a group or a single action
-    const currentItem = activeSet.actions[activeStep] as ActionItem | undefined
-    const currentStepActions: Action[] = !currentItem
-      ? []
-      : currentItem.type === 'group'
-        ? currentItem.actions
-        : [currentItem]
-
-    return Object.fromEntries(
-      Object.keys(currentState.positions).map(id => {
-        const from = currentState.positions[id] ?? { x: 0.5, y: 0.5 }
-        const to = toState.positions[id] ?? from
-
-        // Follow drawn waypoint path for any mover in the current step
-        const moverAction = currentStepActions.find(a =>
-          (a.type === 'dribble' || a.type === 'cut' || a.type === 'defense-move') &&
-          a.playerId === id &&
-          a.waypoints && a.waypoints.length > 1
-        )
-        if (moverAction && (moverAction.type === 'dribble' || moverAction.type === 'cut' || moverAction.type === 'defense-move') && moverAction.waypoints) {
-          const path = [from, ...moverAction.waypoints]
-          const lens: number[] = []
-          let totalLen = 0
-          for (let i = 1; i < path.length; i++) {
-            const dx = path[i].x - path[i - 1].x
-            const dy = path[i].y - path[i - 1].y
-            const l = Math.sqrt(dx * dx + dy * dy)
-            lens.push(l)
-            totalLen += l
-          }
-          if (totalLen === 0) return [id, from]
-          const target = t * totalLen
-          let acc = 0
-          for (let i = 0; i < lens.length; i++) {
-            if (acc + lens[i] >= target) {
-              const localT = lens[i] === 0 ? 0 : (target - acc) / lens[i]
-              return [id, {
-                x: path[i].x + (path[i + 1].x - path[i].x) * localT,
-                y: path[i].y + (path[i + 1].y - path[i].y) * localT,
-              }]
-            }
-            acc += lens[i]
-          }
-          return [id, path[path.length - 1]]
-        }
-
-        return [id, { x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t }]
-      })
-    )
-  })()
+  // Re-apply positionOverrides to the interpolated positions so action-creation drag previews remain correct.
+  const displayPositions = isPlaying && activeStep < total
+    ? frame.displayPositions
+    : { ...frame.displayPositions, ...positionOverrides }
 
   const inPlayIds = new Set(activeSet.players.map(p => p.id))
   const allBenchPlayers: Player[] = []

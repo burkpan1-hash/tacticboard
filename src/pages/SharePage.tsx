@@ -8,6 +8,7 @@ import ActionOverlay from '../components/actions/ActionOverlay'
 import PlayerNode from '../components/players/PlayerNode'
 import PlaybackControls from '../components/playback/PlaybackControls'
 import { computeStateAtStep } from '../utils/stateEngine'
+import { computeFrameState } from '../utils/frameState'
 import { denormalize } from '../utils/courtCoords'
 import { ACTION_COLORS, ACTION_LABEL_KEYS, actionLabelPlayerId } from '../utils/actionColors'
 import {
@@ -147,59 +148,11 @@ export default function SharePage() {
   const total = activeSet.actions.length
   const isLandscape = activeSet.courtType === 'full'
 
-  const currentState = computeStateAtStep(
-    activeSet.actions, activeStep, activeSet.initialPositions, activeSet.initialBall,
-    undefined, basketY, HALF_COURT_W, cH,
+  const frame = computeFrameState(
+    activeSet, activeStep, animFraction, isPlaying, basketY, cH,
   )
-
-  // Interpolated display positions (identical to EditorPage)
-  const displayPositions: PositionMap = (() => {
-    if (!isPlaying || activeStep >= total) return currentState.positions
-    const toState = computeStateAtStep(
-      activeSet.actions, activeStep + 1, activeSet.initialPositions, activeSet.initialBall,
-      undefined, basketY, HALF_COURT_W, cH,
-    )
-    const t = animFraction
-    const currentItem = activeSet.actions[activeStep] as ActionItem | undefined
-    const currentStepActions: Action[] = !currentItem ? [] : currentItem.type === 'group' ? currentItem.actions : [currentItem]
-    return Object.fromEntries(
-      Object.keys(currentState.positions).map(id => {
-        const from = currentState.positions[id] ?? { x: 0.5, y: 0.5 }
-        const to = toState.positions[id] ?? from
-        const moverAction = currentStepActions.find(a =>
-          (a.type === 'dribble' || a.type === 'cut' || a.type === 'defense-move') &&
-          a.playerId === id && a.waypoints && a.waypoints.length > 1
-        )
-        if (moverAction && (moverAction.type === 'dribble' || moverAction.type === 'cut' || moverAction.type === 'defense-move') && moverAction.waypoints) {
-          const path = [from, ...moverAction.waypoints]
-          const lens: number[] = []
-          let pathTotal = 0
-          for (let i = 1; i < path.length; i++) {
-            const dx = path[i].x - path[i - 1].x
-            const dy = path[i].y - path[i - 1].y
-            const l = Math.sqrt(dx * dx + dy * dy)
-            lens.push(l)
-            pathTotal += l
-          }
-          if (pathTotal === 0) return [id, from]
-          const target = t * pathTotal
-          let acc = 0
-          for (let i = 0; i < lens.length; i++) {
-            if (acc + lens[i] >= target) {
-              const localT = lens[i] === 0 ? 0 : (target - acc) / lens[i]
-              return [id, {
-                x: path[i].x + (path[i + 1].x - path[i].x) * localT,
-                y: path[i].y + (path[i + 1].y - path[i].y) * localT,
-              }]
-            }
-            acc += lens[i]
-          }
-          return [id, path[path.length - 1]]
-        }
-        return [id, { x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t }]
-      })
-    )
-  })()
+  const currentState = frame.currentState
+  const displayPositions = frame.displayPositions
 
   return (
     <div className="h-screen flex flex-col bg-slate-900 overflow-hidden">
