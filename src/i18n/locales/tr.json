@@ -151,14 +151,22 @@
   },
   "export": {
     "title": "Video Dışa Aktar",
-    "description": "30 fps WebM video. 1× hızda animasyon oynatılarak kaydedilir.",
+    "description": "30 fps MP4 video. Paylaşacağın platforma göre en-boy oranını seç.",
+    "aspectLabel": "En-boy oranı",
+    "aspectVertical": "TikTok / Reels",
+    "aspectSquare": "IG akışı",
+    "aspectWide": "X / YouTube",
     "noActionsError": "Dışa aktarılacak hareket yok.",
     "exportButton": "Dışa Aktar",
-    "capturingStatus": "Animasyon oynatılıyor ve kareler kaydediliyor…",
-    "captureProgressLabel": "Kayıt",
-    "encodingStatus": "Video tamamlanıyor…",
-    "processingStatus": "İşleniyor…",
-    "downloadSuccess": "İndirme başladı!"
+    "encodingStatus": "Video oluşturuluyor…",
+    "progressLabel": "İlerleme",
+    "downloadSuccess": "İndirme başladı!",
+    "unsupportedError": "Video dışa aktarma için Chrome, Edge veya Safari 16.4+ gerekir.",
+    "genericError": "Dışa aktarma başarısız. Lütfen tekrar dene.",
+    "upsellTitle": "Reklamları kaldır?",
+    "upsellBody": "Pro'ya geç — reklam yok, sınırsız taktik.",
+    "upsellCta": "Pro'ya Geç",
+    "upsellDismiss": "Hayır, teşekkürler"
   },
   "action": {
     "pass": "Pass",

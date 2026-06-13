@@ -151,14 +151,22 @@
   },
   "export": {
     "title": "Export Video",
-    "description": "WebM video at 30 fps. Animation plays once at 1× speed during capture.",
+    "description": "MP4 video at 30 fps. Pick an aspect ratio for the platform you'll post to.",
+    "aspectLabel": "Aspect ratio",
+    "aspectVertical": "TikTok / Reels",
+    "aspectSquare": "IG feed",
+    "aspectWide": "X / YouTube",
     "noActionsError": "No actions to export.",
     "exportButton": "Export",
-    "capturingStatus": "Playing animation and capturing frames…",
-    "captureProgressLabel": "Capture",
-    "encodingStatus": "Finalizing video…",
-    "processingStatus": "Processing…",
-    "downloadSuccess": "Download started!"
+    "encodingStatus": "Rendering video…",
+    "progressLabel": "Progress",
+    "downloadSuccess": "Download started!",
+    "unsupportedError": "Video export needs Chrome, Edge, or Safari 16.4+.",
+    "genericError": "Export failed. Please try again.",
+    "upsellTitle": "Remove ads?",
+    "upsellBody": "Upgrade to Pro — no ads, unlimited plays.",
+    "upsellCta": "Upgrade to Pro",
+    "upsellDismiss": "No thanks"
   },
   "action": {
     "pass": "Pass",

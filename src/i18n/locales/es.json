@@ -150,15 +150,23 @@
     }
   },
   "export": {
-    "title": "Exportar Video",
-    "description": "Video WebM a 30 fps. La animación se reproduce una vez a 1× velocidad.",
+    "title": "Exportar vídeo",
+    "description": "Vídeo MP4 a 30 fps. Elige la relación de aspecto para tu plataforma.",
+    "aspectLabel": "Relación de aspecto",
+    "aspectVertical": "TikTok / Reels",
+    "aspectSquare": "Feed de IG",
+    "aspectWide": "X / YouTube",
     "noActionsError": "No hay acciones para exportar.",
     "exportButton": "Exportar",
-    "capturingStatus": "Reproduciendo animación y capturando fotogramas…",
-    "captureProgressLabel": "Captura",
-    "encodingStatus": "Finalizando video…",
-    "processingStatus": "Procesando…",
-    "downloadSuccess": "¡Descarga iniciada!"
+    "encodingStatus": "Renderizando vídeo…",
+    "progressLabel": "Progreso",
+    "downloadSuccess": "¡Descarga iniciada!",
+    "unsupportedError": "La exportación de vídeo requiere Chrome, Edge o Safari 16.4+.",
+    "genericError": "La exportación falló. Inténtalo de nuevo.",
+    "upsellTitle": "¿Quitar anuncios?",
+    "upsellBody": "Pásate a Pro: sin anuncios, jugadas ilimitadas.",
+    "upsellCta": "Pasar a Pro",
+    "upsellDismiss": "No, gracias"
   },
   "action": {
     "pass": "Pass",

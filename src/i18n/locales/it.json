@@ -150,15 +150,23 @@
     }
   },
   "export": {
-    "title": "Esporta Video",
-    "description": "Video WebM a 30 fps. L'animazione viene riprodotta una volta a velocità 1×.",
+    "title": "Esporta video",
+    "description": "Video MP4 a 30 fps. Scegli il formato per la tua piattaforma.",
+    "aspectLabel": "Formato",
+    "aspectVertical": "TikTok / Reels",
+    "aspectSquare": "Feed IG",
+    "aspectWide": "X / YouTube",
     "noActionsError": "Nessuna azione da esportare.",
     "exportButton": "Esporta",
-    "capturingStatus": "Riproduzione e acquisizione fotogrammi…",
-    "captureProgressLabel": "Acquisizione",
-    "encodingStatus": "Finalizzazione video…",
-    "processingStatus": "Elaborazione…",
-    "downloadSuccess": "Download avviato!"
+    "encodingStatus": "Rendering del video…",
+    "progressLabel": "Avanzamento",
+    "downloadSuccess": "Download avviato!",
+    "unsupportedError": "L'esportazione video richiede Chrome, Edge o Safari 16.4+.",
+    "genericError": "Esportazione non riuscita. Riprova.",
+    "upsellTitle": "Rimuovere gli annunci?",
+    "upsellBody": "Passa a Pro: niente annunci, schemi illimitati.",
+    "upsellCta": "Passa a Pro",
+    "upsellDismiss": "No, grazie"
   },
   "action": {
     "pass": "Pass",

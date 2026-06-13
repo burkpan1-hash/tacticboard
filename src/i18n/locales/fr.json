@@ -150,15 +150,23 @@
     }
   },
   "export": {
-    "title": "Exporter la Vidéo",
-    "description": "Vidéo WebM à 30 fps. L'animation est lue une fois à la vitesse 1×.",
+    "title": "Exporter la vidéo",
+    "description": "Vidéo MP4 à 30 fps. Choisis le format pour ta plateforme.",
+    "aspectLabel": "Format",
+    "aspectVertical": "TikTok / Reels",
+    "aspectSquare": "Fil IG",
+    "aspectWide": "X / YouTube",
     "noActionsError": "Aucune action à exporter.",
     "exportButton": "Exporter",
-    "capturingStatus": "Lecture de l'animation et capture des images…",
-    "captureProgressLabel": "Capture",
-    "encodingStatus": "Finalisation de la vidéo…",
-    "processingStatus": "Traitement…",
-    "downloadSuccess": "Téléchargement démarré !"
+    "encodingStatus": "Rendu de la vidéo…",
+    "progressLabel": "Progression",
+    "downloadSuccess": "Téléchargement lancé !",
+    "unsupportedError": "L'export vidéo nécessite Chrome, Edge ou Safari 16.4+.",
+    "genericError": "Échec de l'export. Réessaie.",
+    "upsellTitle": "Supprimer les pubs ?",
+    "upsellBody": "Passe à Pro — sans pub, schémas illimités.",
+    "upsellCta": "Passer à Pro",
+    "upsellDismiss": "Non merci"
   },
   "action": {
     "pass": "Pass",

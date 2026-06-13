@@ -150,15 +150,23 @@
     }
   },
   "export": {
-    "title": "Video Exportieren",
-    "description": "WebM-Video mit 30 fps. Animation wird einmal mit 1× Geschwindigkeit aufgenommen.",
+    "title": "Video exportieren",
+    "description": "MP4-Video mit 30 fps. Wähle das Seitenverhältnis für deine Plattform.",
+    "aspectLabel": "Seitenverhältnis",
+    "aspectVertical": "TikTok / Reels",
+    "aspectSquare": "IG-Feed",
+    "aspectWide": "X / YouTube",
     "noActionsError": "Keine Aktionen zum Exportieren.",
     "exportButton": "Exportieren",
-    "capturingStatus": "Animation abspielen und Frames aufnehmen…",
-    "captureProgressLabel": "Aufnahme",
-    "encodingStatus": "Video wird fertiggestellt…",
-    "processingStatus": "Verarbeitung…",
-    "downloadSuccess": "Download gestartet!"
+    "encodingStatus": "Video wird gerendert…",
+    "progressLabel": "Fortschritt",
+    "downloadSuccess": "Download gestartet!",
+    "unsupportedError": "Video-Export benötigt Chrome, Edge oder Safari 16.4+.",
+    "genericError": "Export fehlgeschlagen. Bitte erneut versuchen.",
+    "upsellTitle": "Werbung entfernen?",
+    "upsellBody": "Upgrade auf Pro — keine Werbung, unbegrenzte Spielzüge.",
+    "upsellCta": "Auf Pro upgraden",
+    "upsellDismiss": "Nein danke"
   },
   "action": {
     "pass": "Pass",
