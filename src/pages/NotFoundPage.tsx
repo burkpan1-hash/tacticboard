@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import Logo from '../components/ui/Logo'
+import { useNoIndex } from '../hooks/useNoIndex'
 
 const COPY: Record<'tr' | 'en', { title: string; subtitle: string; cta: string }> = {
   tr: {
@@ -18,6 +19,7 @@ const COPY: Record<'tr' | 'en', { title: string; subtitle: string; cta: string }
 export default function NotFoundPage() {
   const { i18n } = useTranslation()
   const copy = i18n.language === 'tr' ? COPY.tr : COPY.en
+  useNoIndex()
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-slate-100 p-6">

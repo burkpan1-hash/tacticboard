@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { nanoid } from 'nanoid'
 import { useTranslation } from 'react-i18next'
+import { useNoIndex } from '../hooks/useNoIndex'
 import CourtCanvas from '../components/court/CourtCanvas'
 import PlayerNode from '../components/players/PlayerNode'
 import PlayerSetup from '../components/setup/PlayerSetup'
@@ -38,6 +39,7 @@ function defaultPositions(players: Player[]): PositionMap {
 }
 
 export default function SetupPage() {
+  useNoIndex()
   const { t } = useTranslation()
   const navigate = useNavigate()
   const {

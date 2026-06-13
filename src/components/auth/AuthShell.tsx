@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import LanguageSwitcher from '../ui/LanguageSwitcher'
 import Logo from '../ui/Logo'
+import { useNoIndex } from '../../hooks/useNoIndex'
 
 interface Props {
   title: string
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function AuthShell({ title, subtitle, children, footer }: Props) {
+  useNoIndex()
   return (
     <div className="min-h-screen flex flex-col bg-slate-900">
       <div className="flex justify-end p-4">

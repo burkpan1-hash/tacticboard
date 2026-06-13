@@ -28,16 +28,21 @@ export default function HomePage() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const editInputRef = useRef<HTMLInputElement>(null)
 
-  // Load AdSense only on this content-rich page to comply with AdSense policies
+  // Load AdSense script only on this content-rich page.
+  // IMPORTANT: Auto Ads must be disabled in the AdSense console so that the
+  // script does not inject ads on pages it has already loaded into (e.g. auth
+  // pages reached via SPA navigation). window.adsbygoogle persists in memory
+  // even after the script tag is removed, so console-level control is required.
   useEffect(() => {
     const existing = document.querySelector(`script[src*="${ADSENSE_CLIENT}"]`)
-    if (existing) return
+    if (existing) return  // script already in DOM; don't add a second copy
     const script = document.createElement('script')
     script.async = true
     script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`
     script.crossOrigin = 'anonymous'
+    script.setAttribute('data-adsense-managed', 'true')
     document.head.appendChild(script)
-    return () => { document.head.removeChild(script) }
+    return () => { script.remove() }
   }, [])
 
   useEffect(() => {
