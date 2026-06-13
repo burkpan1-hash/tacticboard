@@ -417,11 +417,18 @@ src/
     courtCoords.ts            ✅  COURT_SCALE=1.4, normalize/denormalize, HALF_COURT constants
     arrowGeometry.ts          ✅  wavyPoints, wavyAlongPath, perpendicularBar
     actionColors.ts           ✅  ACTION_COLORS + ACTION_LABELS for 9 action types
-    exportAnimation.ts        ✅  video export (mp4-muxer + MediaRecorder)
+    frameState.ts             ✅  pure computeFrameState (interpolated positions per instant; shared by SharePage + export)
+    actionArrows.ts           ✅  shared arrowLine + smartLabelCenter geometry
+    export/
+      composite.ts            ✅  letterbox fit + dark bg + watermark
+      encodeMp4.ts            ✅  WebCodecs VideoEncoder + mp4-muxer, monotonic timestamps
+      exportVideo.ts          ✅  deterministic off-DOM frame loop (9:16 / 1:1 / 16:9)
+      downloadBlob.ts         ✅  File System Access API + anchor fallback
   components/
     court/
       CourtCanvas.tsx         ✅  Stage + Layer, landscape mode, event handlers
       HalfCourt.tsx           ✅  1.4× scaled court lines
+      PlayScene.tsx           ✅  read-only scene (arrows + players + labels) from a FrameState; shared by SharePage + export
       FullCourt.tsx           ✅  two half-courts stacked, attackBasket rotation
     players/
       PlayerNode.tsx          ✅  onDragStart/onDragMove/onDragEnd + landscape rotation fix; dragBoundFunc (scale-aware logical bounds); explicit position reset in onDragEnd to prevent stale-state OOB disappear
@@ -441,7 +448,8 @@ src/
     playback/
       PlaybackControls.tsx    ✅  ◀ ▶ play/pause, speed, Undo, Save + Export buttons (both orange)
     export/
-      ExportModal.tsx         ✅  video export (mp4-muxer, 30 fps)
+      ExportModal.tsx         ✅  aspect selector (9:16/1:1/16:9), real progress, mp4 30 fps
+      ExportStage.tsx         ✅  off-DOM CourtCanvas + PlayScene at 2× for frame capture
     ui/
       AdSlot.tsx              ✅  AdSense display unit (content pages only)
       ShareInterstitialModal.tsx ✅  share-link generation + countdown
