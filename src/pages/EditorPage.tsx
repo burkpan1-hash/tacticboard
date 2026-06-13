@@ -1335,7 +1335,6 @@ export default function EditorPage() {
 
       {showExport && (
         <ExportModal
-          stageRef={stageRef}
           onClose={() => setShowExport(false)}
         />
       )}
