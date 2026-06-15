@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { Circle, Text, Group } from 'react-konva'
 import type Konva from 'konva'
-import type { Player, NormalizedPosition } from '../../models/types'
+import type { Player, NormalizedPosition, PositionMap } from '../../models/types'
 import { denormalize, HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_SCALE, COURT_PADDING_X, COURT_PADDING_Y, HALF_COURT_PADDING_TOP } from '../../utils/courtCoords'
 
 interface Props {
@@ -10,6 +10,8 @@ interface Props {
   courtType: 'half' | 'full'
   landscape?: boolean
   hasBall?: boolean
+  /** Normalized positions of all players (incl. self); lets the name avoid sitting on another player. */
+  allPositions?: PositionMap
   showBallDrop?: boolean
   isSelected?: boolean
   draggable?: boolean
@@ -23,7 +25,7 @@ interface Props {
 const OFFENSE_COLOR = '#f97316'
 const DEFENSE_COLOR = '#1d4ed8'
 
-export default function PlayerNode({ player, position, courtType, landscape, hasBall, showBallDrop, isSelected, draggable = true, onDragStart, onDragMove, onDragEnd, onClick, onDblClick }: Props) {
+export default function PlayerNode({ player, position, courtType, landscape, hasBall, allPositions, showBallDrop, isSelected, draggable = true, onDragStart, onDragMove, onDragEnd, onClick, onDblClick }: Props) {
   const canvasH = courtType === 'half' ? HALF_COURT_H : FULL_COURT_H
   const RADIUS = Math.round((courtType === 'half' ? 17 : 20) * COURT_SCALE)
   const FONT_SIZE = courtType === 'half' ? 12 : 14
@@ -75,6 +77,51 @@ export default function PlayerNode({ player, position, courtType, landscape, has
     }
   }
 
+  // ── Name label placement ────────────────────────────────────────────────────
+  // Pick the freest cardinal side so the name doesn't sit on top of another player.
+  // Computed in the shared (pre-rotation) court pixel frame, so it's correct for both
+  // half-court and the rotated full-court view (overlap is rotation-invariant).
+  const NAME_FONT = 13
+  const NAME_W = 80
+  const NAME_H = 18
+  const ringExtra = hasBall ? 8 : 0            // ball ring outer radius ≈ RADIUS + 8.5
+  const vDist = RADIUS + ringExtra + 4 + NAME_H / 2
+  const hDist = RADIUS + ringExtra + 4 + NAME_W / 2
+  const nameSides = [
+    { cx: 0,      cy: vDist,  align: 'center' as const }, // below (default)
+    { cx: 0,      cy: -vDist, align: 'center' as const }, // above
+    { cx: hDist,  cy: 0,      align: 'left'   as const }, // right
+    { cx: -hDist, cy: 0,      align: 'right'  as const }, // left
+  ]
+  const otherCenters = allPositions
+    ? Object.entries(allPositions)
+        .filter(([id]) => id !== player.id)
+        .map(([, p]) => {
+          const o = denormalize(p.x, p.y, HALF_COURT_W, canvasH)
+          return { dx: o.x - x, dy: o.y - y }
+        })
+    : []
+  const sideClearance = (side: { cx: number; cy: number }) => {
+    let minD = Infinity
+    for (const o of otherCenters) {
+      const d = Math.hypot(side.cx - o.dx, side.cy - o.dy)
+      if (d < minD) minD = d
+    }
+    return minD
+  }
+  // Default is always "below" (the original spot). Only relocate when the name would
+  // overlap another player there; then move to whichever side has the most room
+  // (iteration order keeps the below > above > right > left preference on ties).
+  const SAFE_DIST = RADIUS + NAME_H / 2 + 2
+  let namePos = nameSides[0]
+  if (sideClearance(nameSides[0]) < SAFE_DIST) {
+    let bestClear = sideClearance(nameSides[0])
+    for (const side of nameSides) {
+      const c = sideClearance(side)
+      if (c > bestClear) { bestClear = c; namePos = side }
+    }
+  }
+
   return (
     <Group
       ref={groupRef}
@@ -101,54 +148,38 @@ export default function PlayerNode({ player, position, courtType, landscape, has
       <Circle radius={RADIUS} fill={fill} stroke="white" strokeWidth={2} />
       {landscape ? (
         // Counter-rotate +90° to cancel the parent Group's -90° rotation — net 0° (upright)
-        <>
-          <Text
-            text={String(player.number)}
-            fontSize={FONT_SIZE} fontStyle="bold"
-            fill="white" align="center" verticalAlign="middle"
-            x={0} y={0}
-            offsetX={RADIUS} offsetY={RADIUS}
-            width={RADIUS * 2} height={RADIUS * 2}
-            rotation={90}
-          />
-          {player.name && (
-            <Text
-              text={player.name}
-              fontSize={11} fontStyle="bold"
-              fill="white"
-              stroke="#0f172a" strokeWidth={3}
-              fillAfterStrokeEnabled
-              align="center"
-              x={RADIUS + 5} y={-40}
-              width={80} height={14}
-              rotation={90}
-              listening={false}
-            />
-          )}
-        </>
+        <Text
+          text={String(player.number)}
+          fontSize={FONT_SIZE} fontStyle="bold"
+          fill="white" align="center" verticalAlign="middle"
+          x={0} y={0}
+          offsetX={RADIUS} offsetY={RADIUS}
+          width={RADIUS * 2} height={RADIUS * 2}
+          rotation={90}
+        />
       ) : (
-        <>
-          <Text
-            text={String(player.number)}
-            fontSize={FONT_SIZE} fontStyle="bold"
-            fill="white" align="center" verticalAlign="middle"
-            x={-RADIUS} y={-RADIUS}
-            width={RADIUS * 2} height={RADIUS * 2}
-          />
-          {player.name && (
-            <Text
-              text={player.name}
-              fontSize={11} fontStyle="bold"
-              fill="white"
-              stroke="#0f172a" strokeWidth={3}
-              fillAfterStrokeEnabled
-              align="center"
-              x={-40} y={RADIUS + 3}
-              width={80} height={14}
-              listening={false}
-            />
-          )}
-        </>
+        <Text
+          text={String(player.number)}
+          fontSize={FONT_SIZE} fontStyle="bold"
+          fill="white" align="center" verticalAlign="middle"
+          x={-RADIUS} y={-RADIUS}
+          width={RADIUS * 2} height={RADIUS * 2}
+        />
+      )}
+      {player.name && (
+        <Text
+          text={player.name}
+          fontSize={NAME_FONT} fontStyle="bold"
+          fill="white"
+          stroke="#0f172a" strokeWidth={3}
+          fillAfterStrokeEnabled
+          align={namePos.align} verticalAlign="middle"
+          width={NAME_W} height={NAME_H}
+          offsetX={NAME_W / 2} offsetY={NAME_H / 2}
+          x={namePos.cx} y={namePos.cy}
+          rotation={landscape ? 90 : 0}
+          listening={false}
+        />
       )}
       {hasBall && (
         <>

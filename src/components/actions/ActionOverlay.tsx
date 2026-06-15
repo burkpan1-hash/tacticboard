@@ -19,15 +19,18 @@ interface Props {
   courtType: CourtType
   markings?: Record<string, string>
   attackBasket?: 'top' | 'bottom'
+  /** How many recent actions' arrows to keep on the court (default 2). */
+  historyDepth?: number
 }
 
-export default function ActionOverlay({ actions, initialPositions, initialBall, activeStep, courtType, markings, attackBasket }: Props) {
+export default function ActionOverlay({ actions, initialPositions, initialBall, activeStep, courtType, markings, attackBasket, historyDepth = 2 }: Props) {
   const basketY = getBasketY(courtType, attackBasket)
   const courtH = courtType === 'half' ? HALF_COURT_H : FULL_COURT_H
+  const start = Math.max(0, activeStep - historyDepth)
   return (
     <Group>
-      {actions.slice(Math.max(0, activeStep - 2), activeStep).flatMap((item, localIdx) => {
-        const globalIdx = Math.max(0, activeStep - 2) + localIdx
+      {actions.slice(start, activeStep).flatMap((item, localIdx) => {
+        const globalIdx = start + localIdx
         const stateBefore = computeStateAtStep(actions, globalIdx, initialPositions, initialBall, markings, basketY, HALF_COURT_W, courtH)
         const isLatest = globalIdx === activeStep - 1
         const actionList = item.type === 'group' ? item.actions : [item]

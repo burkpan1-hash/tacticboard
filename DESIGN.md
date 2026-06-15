@@ -419,6 +419,8 @@ src/
     actionColors.ts           ✅  ACTION_COLORS + ACTION_LABELS for 9 action types
     frameState.ts             ✅  pure computeFrameState (interpolated positions per instant; shared by SharePage + export)
     actionArrows.ts           ✅  shared arrowLine + smartLabelCenter geometry
+    labelPlacement.ts         ✅  collision-aware action-label placement (off the arrow; dodges players + other arrows; editor)
+    growArrow.ts              ✅  path truncate/shorten helpers for growing action arrows
     export/
       composite.ts            ✅  letterbox fit + dark bg + watermark
       encodeMp4.ts            ✅  WebCodecs VideoEncoder + mp4-muxer, monotonic timestamps
@@ -431,10 +433,11 @@ src/
       PlayScene.tsx           ✅  read-only scene (arrows + players + labels) from a FrameState; shared by SharePage + export
       FullCourt.tsx           ✅  two half-courts stacked, attackBasket rotation
     players/
-      PlayerNode.tsx          ✅  onDragStart/onDragMove/onDragEnd + landscape rotation fix; dragBoundFunc (scale-aware logical bounds); explicit position reset in onDragEnd to prevent stale-state OOB disappear
+      PlayerNode.tsx          ✅  drag handlers + landscape rotation fix; dragBoundFunc (scale-aware logical bounds); name label auto-placed on a free side (below by default, dodges the ball ring + other players)
     actions/
       ActionArrow.tsx         ✅  9 visual styles; double-team arrows go to trap positions; basketY prop
-      ActionOverlay.tsx       ✅  renders arrows up to activeStep; passes attackBasket → basketY
+      ActionOverlay.tsx       ✅  renders recent arrows up to activeStep (historyDepth: editor=1, share/export=2); passes attackBasket → basketY
+      GrowingActionArrow.tsx  ✅  current action's arrow growing along its path during playback (editor); keeps each type's characteristic shape
       ActionPreview.tsx       ✅  ghost cursor preview; dribble/cut waypoint paths
       ActionPanel.tsx         ✅  right panel: action list + Clear All; group record/stop, post-hoc grouping, conflict banner
       ActionCard.tsx          ✅  delete confirm, player description, optionText badge, group-select checkbox
@@ -457,7 +460,8 @@ src/
       UpgradeModal.tsx / CookieConsentBanner.tsx ✅
   pages/
     HomePage.tsx              ✅  logged-out landing (content) + logged-in cloud dashboard
-    EditorPage.tsx            ✅  full editor; positionOverrides, player-drag auto-action, ATK bar, groups
+    GuidesPage.tsx / GuideArticlePage.tsx  ✅  coaching guides (SEO content); gated by GUIDES_ENABLED feature flag
+    EditorPage.tsx            ✅  full editor; positionOverrides, player-drag auto-action, ATK bar, groups; dirty state requires a server id (no false "saved" after login bailout); action labels + growing arrows
     SetupPage.tsx             ✅  Flip button in formation + ball steps (full court only); "← Back" to home on info step
     SharePage.tsx             ✅  public read-only play viewer
     PricingPage / PrivacyPage / TermsPage / RefundPage  ✅  content + legal (i18n)
@@ -465,6 +469,10 @@ src/
     NotFoundPage.tsx          ✅
   lib/
     authClient.ts             ✅  better-auth React client (useSession)
+  config/
+    features.ts               ✅  feature flags (GUIDES_ENABLED)
+  data/
+    guides.ts                 ✅  coaching guide articles (content for GuidesPage)
   i18n/
     locales/{en,tr,de,es,fr,it}.json  ✅  6 languages
   App.tsx                     ✅  routes (14)
@@ -475,6 +483,7 @@ server/
 setplay.sh                    ✅  Docker/npm start+stop
 Dockerfile                    ✅
 docker-compose.yml            ✅
+scripts/                      ✅  split-screen social-video production (ffmpeg + python); generated content/ media is gitignored
 ```
 
 ---

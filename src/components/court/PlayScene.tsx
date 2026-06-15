@@ -80,6 +80,7 @@ export default function PlayScene({ set, frame, basketY, cH }: Props) {
             courtType={set.courtType}
             landscape={isLandscape}
             hasBall={currentState.ball.holderId === player.id}
+            allPositions={displayPositions}
             draggable={false}
             onDragEnd={() => {}}
           />

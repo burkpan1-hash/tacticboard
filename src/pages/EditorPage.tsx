@@ -3,7 +3,7 @@ import type Konva from 'konva'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { nanoid } from 'nanoid'
 import { useTranslation } from 'react-i18next'
-import { Line, Group, Rect, Text, Arrow } from 'react-konva'
+import { Line, Group, Rect, Text } from 'react-konva'
 import CourtCanvas from '../components/court/CourtCanvas'
 import PlayerNode from '../components/players/PlayerNode'
 import ActionOverlay from '../components/actions/ActionOverlay'
@@ -24,7 +24,9 @@ import { denormalize } from '../utils/courtCoords'
 import type { Action, ActionItem, ActionType, NormalizedPosition, Player, PlaySet, PositionMap } from '../models/types'
 import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_PADDING_X, COURT_PADDING_Y, HALF_COURT_PADDING_TOP } from '../utils/courtCoords'
 import { ACTION_COLORS, ACTION_LABEL_KEYS, actionLabelPlayerId } from '../utils/actionColors'
-import { arrowLine, smartLabelCenter } from '../utils/actionArrows'
+import { arrowLine } from '../utils/actionArrows'
+import { placeActionLabel, type Segment } from '../utils/labelPlacement'
+import GrowingActionArrow from '../components/actions/GrowingActionArrow'
 import { authClient } from '../lib/authClient'
 import { useEditorShortcuts } from '../hooks/useEditorShortcuts'
 
@@ -94,7 +96,17 @@ export default function EditorPage() {
     setTimeout(() => nameInputRef.current?.select(), 0)
   }
 
-  const isDirty = !!activeSet && playSignature(activeSet) !== savedSignature
+  // A play counts as "saved" only once it has a server id (cloudPlayId). Until then —
+  // including after the user bailed out of the login/register redirect — any play with
+  // content is unsaved, so it must stay dirty (Save stays active, the exit guard still
+  // warns). The savedSignature baseline can re-snap to the current content on remount, so
+  // it alone cannot be trusted for never-persisted plays. Once saved, dirtiness tracks
+  // content changes against the persisted signature.
+  const isDirty = !!activeSet && (
+    cloudPlayId
+      ? playSignature(activeSet) !== savedSignature
+      : activeSet.actions.length > 0
+  )
 
   async function handleSave() {
     if (!session) {
@@ -945,6 +957,7 @@ export default function EditorPage() {
                 courtType={activeSet.courtType}
                 markings={activeMarkings}
                 attackBasket={activeSet.attackBasket}
+                historyDepth={1}
               />
               <ActionPreview
                 actionType={actionCreation.type}
@@ -975,42 +988,22 @@ export default function EditorPage() {
                 )
               })}
 
-              {/* Growing pass arrows during animation — one per pass in current step (supports groups) */}
+              {/* Growing action arrows during animation — drawn behind the moving player, every action type */}
               {isPlaying && activeStep < total && (() => {
                 const currentItem = activeSet.actions[activeStep] as ActionItem | undefined
                 const stepActions: Action[] = !currentItem
                   ? []
                   : currentItem.type === 'group' ? currentItem.actions : [currentItem]
-                return stepActions.filter(a => a.type === 'pass').map(action => {
-                  if (action.type !== 'pass') return null
-                  const fromPos = currentState.positions[action.fromId]
-                  const toPos = currentState.positions[action.toId]
-                  if (!fromPos || !toPos) return null
-                  const from = denormalize(fromPos.x, fromPos.y, HALF_COURT_W, cH)
-                  const to   = denormalize(toPos.x, toPos.y, HALF_COURT_W, cH)
-                  const PLAYER_R = Math.round(20 * 1.4)
-                  const ARROW_G  = Math.round(6 * 1.4)
-                  const gap = PLAYER_R + ARROW_G
-                  const dxF = to.x - from.x, dyF = to.y - from.y
-                  const lenF = Math.sqrt(dxF * dxF + dyF * dyF) || 1
-                  const finalEnd = { x: to.x - (dxF / lenF) * gap, y: to.y - (dyF / lenF) * gap }
-                  const rawTipX  = from.x + (to.x - from.x) * animFraction
-                  const rawTipY  = from.y + (to.y - from.y) * animFraction
-                  const rawDist   = Math.hypot(rawTipX - from.x, rawTipY - from.y)
-                  const finalDist = Math.hypot(finalEnd.x - from.x, finalEnd.y - from.y)
-                  const end = rawDist < finalDist ? { x: rawTipX, y: rawTipY } : finalEnd
-                  const color = ACTION_COLORS['pass']
-                  return (
-                    <Arrow
-                      key={action.id + '-anim'}
-                      points={[from.x, from.y, end.x, end.y]}
-                      stroke={color} fill={color}
-                      strokeWidth={2.5} dash={[10, 6]}
-                      pointerLength={10} pointerWidth={8}
-                      listening={false}
-                    />
-                  )
-                })
+                return stepActions.map(action => (
+                  <GrowingActionArrow
+                    key={action.id + '-anim'}
+                    action={action}
+                    positions={currentState.positions}
+                    courtType={activeSet.courtType}
+                    basketY={basketY}
+                    progress={animFraction}
+                  />
+                ))
               })()}
 
               {/* Players — rendered above arrows */}
@@ -1024,6 +1017,7 @@ export default function EditorPage() {
                     courtType={activeSet.courtType}
                     landscape={activeSet.courtType === 'full'}
                     hasBall={currentState.ball.holderId === player.id}
+                    allPositions={displayPositions}
                     showBallDrop={ballDragHoverId === player.id}
                     isSelected={actionCreation.pendingSourceId === player.id}
                     draggable={!(actionCreation.type && player.team === 'defense')}
@@ -1103,14 +1097,29 @@ export default function EditorPage() {
               {/* Action type labels — rendered last (above players) with smart placement */}
               {(() => {
                 const sliceEnd = isPlaying ? activeStep + 1 : activeStep
-                const sliceStart = Math.max(0, sliceEnd - 2)
-                return activeSet.actions.slice(sliceStart, sliceEnd).flatMap((item, localIdx) => {
+                const sliceStart = Math.max(0, sliceEnd - 1)
+                const isLandscape = activeSet.courtType === 'full'
+                const playerR = Math.round((activeSet.courtType === 'half' ? 17 : 20) * 1.4)
+                const visible = activeSet.actions.slice(sliceStart, sliceEnd)
+                // Collect every visible arrow segment so each label can dodge them (incl. its own).
+                const allArrows: Segment[] = []
+                visible.forEach((item, localIdx) => {
+                  const gi = sliceStart + localIdx
+                  const sb = computeStateAtStep(
+                    activeSet.actions, gi, activeSet.initialPositions, activeSet.initialBall, activeMarkings, basketY, HALF_COURT_W, cH
+                  )
+                  const al = item.type === 'group' ? item.actions : [item]
+                  al.forEach(a => {
+                    const l = arrowLine(a, sb.positions, cH, basketY * cH)
+                    if (l) allArrows.push(l)
+                  })
+                })
+                return visible.flatMap((item, localIdx) => {
                   const globalIdx = sliceStart + localIdx
                   const stateBefore = computeStateAtStep(
                     activeSet.actions, globalIdx, activeSet.initialPositions, activeSet.initialBall, activeMarkings, basketY, HALF_COURT_W, cH
                   )
                   const isLatest = isPlaying ? globalIdx === activeStep : globalIdx === activeStep - 1
-                  const isLandscape = activeSet.courtType === 'full'
                   const actionList = item.type === 'group' ? item.actions : [item]
                   return actionList.map(action => {
                     const line = arrowLine(action, stateBefore.positions, cH, basketY * cH)
@@ -1118,19 +1127,21 @@ export default function EditorPage() {
                     const playersPx = Object.values(stateBefore.positions).map(p =>
                       denormalize(p.x, p.y, HALF_COURT_W, cH)
                     )
-                    const { cx, cy } = smartLabelCenter(line.x1, line.y1, line.x2, line.y2, playersPx)
+                    const { cx, cy } = placeActionLabel(line, playersPx, allArrows, playerR)
                     return (
                       <Text
                         key={action.id + '-lbl'}
                         x={cx} y={cy}
-                        offsetX={25} offsetY={5}
-                        width={50}
+                        offsetX={32} offsetY={8}
+                        width={64}
                         rotation={isLandscape ? 90 : 0}
                         text={t(ACTION_LABEL_KEYS[action.type])}
-                        fontSize={10} fontStyle="bold"
+                        fontSize={13} fontStyle="bold"
                         fill={ACTION_COLORS[action.type]}
+                        stroke="#0f172a" strokeWidth={2.5}
+                        fillAfterStrokeEnabled
                         align="center"
-                        opacity={isLatest ? 1 : 0.25}
+                        opacity={isLatest ? 1 : 0.85}
                         listening={false}
                       />
                     )

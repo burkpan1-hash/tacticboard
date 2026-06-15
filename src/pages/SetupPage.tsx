@@ -218,9 +218,9 @@ export default function SetupPage() {
   if (step === 'positions') {
     return (
       <div className="h-screen flex flex-col bg-slate-900 overflow-hidden">
-        <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-slate-800 border-b border-slate-700">
+        <div className="relative flex items-center justify-between min-h-[3.5rem] px-3 sm:px-4 py-2 bg-slate-800 border-b border-slate-700">
           <button onClick={() => setStep('info')} className="text-slate-400 hover:text-white transition-colors text-sm shrink-0">{t('common.backButton')}</button>
-          <div className="flex items-center gap-2">
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2">
             <span className="hidden sm:block text-white font-semibold text-sm">{t('setup.startingFormationTitle')}</span>
             <FlipButton />
           </div>
@@ -232,7 +232,7 @@ export default function SetupPage() {
                 if (!draftBall) setDraftBall({ holderId: 'o1' })
                 setStep('ball')
               }}
-              className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-3 sm:px-4 py-1.5 rounded-lg text-sm transition-colors"
+              className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-5 sm:px-6 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base transition-colors"
             >
               {t('common.nextButton')}
             </button>
@@ -277,6 +277,7 @@ export default function SetupPage() {
                     position={pos}
                     courtType={setupDraft.courtType}
                     landscape={isLandscape}
+                    allPositions={draftPositions}
                     onDragEnd={(id, newPos) => updateDraftPosition(id, newPos.x, newPos.y)}
                   />
                 )
@@ -294,9 +295,9 @@ export default function SetupPage() {
 
   return (
     <div className="h-screen flex flex-col bg-slate-900 overflow-hidden">
-      <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-slate-800 border-b border-slate-700">
+      <div className="relative flex items-center justify-between min-h-[3.5rem] px-3 sm:px-4 py-2 bg-slate-800 border-b border-slate-700">
         <button onClick={() => setStep('positions')} className="text-slate-400 hover:text-white transition-colors text-sm shrink-0">{t('common.backButton')}</button>
-        <div className="flex flex-col items-center gap-0.5">
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-0.5">
           <div className="flex items-center gap-2">
             <div className="text-white font-semibold text-sm">{t('setup.assignBallTitle')}</div>
             <FlipButton />
@@ -336,6 +337,7 @@ export default function SetupPage() {
                 courtType={setupDraft.courtType}
                 landscape={isLandscape}
                 hasBall={draftBall?.holderId === p.id}
+                allPositions={draftPositions}
                 isSelected={draftBall?.holderId === p.id}
                 onDragEnd={() => {}}
                 onClick={p.team === 'offense' ? (id) => setDraftBall({ holderId: id }) : undefined}
