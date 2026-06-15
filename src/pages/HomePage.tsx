@@ -5,6 +5,7 @@ import LanguageSwitcher from '../components/ui/LanguageSwitcher'
 import Logo from '../components/ui/Logo'
 import UpgradeModal from '../components/ui/UpgradeModal'
 import { authClient } from '../lib/authClient'
+import { GUIDES_ENABLED } from '../config/features'
 
 const FREE_PLAY_LIMIT = 10
 const ADSENSE_CLIENT = 'ca-pub-6965917095403868'
@@ -125,6 +126,9 @@ export default function HomePage() {
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6 sm:mb-8">
         <Logo />
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          {GUIDES_ENABLED && (
+            <a href="/guides" className="text-slate-300 hover:text-orange-400 text-sm font-medium px-2 py-2 transition-colors">Guides</a>
+          )}
           <LanguageSwitcher />
           {session ? (
             <button
@@ -307,6 +311,12 @@ export default function HomePage() {
 
       <footer className="mt-12 pt-6 border-t border-slate-800 text-center text-xs text-slate-500 space-y-2">
         <div>
+          {GUIDES_ENABLED && (
+            <>
+              <a href="/guides" className="hover:text-orange-400 transition-colors">Guides</a>
+              <span className="mx-3">·</span>
+            </>
+          )}
           <a href="/pricing" className="hover:text-orange-400 transition-colors">Pricing</a>
           <span className="mx-3">·</span>
           <a href="/refund" className="hover:text-orange-400 transition-colors">Refunds</a>

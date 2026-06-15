@@ -12,8 +12,11 @@ import PrivacyPage from './pages/PrivacyPage'
 import TermsPage from './pages/TermsPage'
 import PricingPage from './pages/PricingPage'
 import RefundPage from './pages/RefundPage'
+import GuidesPage from './pages/GuidesPage'
+import GuideArticlePage from './pages/GuideArticlePage'
 import NotFoundPage from './pages/NotFoundPage'
 import CookieConsentBanner from './components/ui/CookieConsentBanner'
+import { GUIDES_ENABLED } from './config/features'
 
 export default function App() {
   return (
@@ -32,6 +35,12 @@ export default function App() {
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/refund" element={<RefundPage />} />
+        {GUIDES_ENABLED && (
+          <>
+            <Route path="/guides" element={<GuidesPage />} />
+            <Route path="/guides/:slug" element={<GuideArticlePage />} />
+          </>
+        )}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <CookieConsentBanner />
