@@ -25,8 +25,10 @@ export function wavyPoints(
 }
 
 // Applies a continuous wavy effect along an arbitrary multi-point path.
-// Unlike multiWavyPoints (segment-by-segment), this sweeps one smooth sine
-// wave along the full arc so short segments don't create cramped zigzags.
+// The path is RESAMPLED at a fixed fine step before the sine is applied, so the
+// wave never aliases to the input point spacing. (Dribble waypoints are recorded
+// every 15px; with the old per-input-point sampling and a 30px wave period, a
+// straight drag landed every point on a sine zero-crossing → a dead-straight line.)
 export function wavyAlongPath(
   pts: { x: number; y: number }[],
   amplitude = 8,
@@ -34,7 +36,7 @@ export function wavyAlongPath(
 ): number[] {
   if (pts.length < 2) return []
 
-  // Cumulative arc lengths
+  // Cumulative arc lengths of the input polyline.
   const arc: number[] = [0]
   for (let i = 1; i < pts.length; i++) {
     const dx = pts[i].x - pts[i - 1].x
@@ -42,21 +44,29 @@ export function wavyAlongPath(
     arc.push(arc[i - 1] + Math.sqrt(dx * dx + dy * dy))
   }
   const total = arc[arc.length - 1]
+  if (total === 0) return [pts[0].x, pts[0].y, pts[pts.length - 1].x, pts[pts.length - 1].y]
 
+  // Resample along the arc at a fine fixed step, independent of input density.
+  const STEP = 4
+  const samples = Math.max(2, Math.round(total / STEP))
   const result: number[] = []
-  for (let i = 0; i < pts.length; i++) {
-    // Local tangent (forward difference, clamp at end)
-    const j = Math.min(i + 1, pts.length - 1)
-    const k = i > 0 ? i - 1 : 0
-    const tx = pts[j].x - pts[k].x
-    const ty = pts[j].y - pts[k].y
+  let seg = 1
+  for (let s = 0; s <= samples; s++) {
+    const d = (s / samples) * total
+    while (seg < pts.length - 1 && arc[seg] < d) seg++
+    const segLen = (arc[seg] - arc[seg - 1]) || 1
+    const localT = Math.max(0, Math.min(1, (d - arc[seg - 1]) / segLen))
+    const x = pts[seg - 1].x + (pts[seg].x - pts[seg - 1].x) * localT
+    const y = pts[seg - 1].y + (pts[seg].y - pts[seg - 1].y) * localT
+    // Perpendicular to this segment's direction.
+    const tx = pts[seg].x - pts[seg - 1].x
+    const ty = pts[seg].y - pts[seg - 1].y
     const tLen = Math.sqrt(tx * tx + ty * ty) || 1
-    const nx = -ty / tLen   // perpendicular to tangent
+    const nx = -ty / tLen
     const ny =  tx / tLen
-
-    const t = arc[i] / total
-    const wave = t < 0.85 ? amplitude * Math.sin((arc[i] / wavePeriod) * 2 * Math.PI) : 0
-    result.push(pts[i].x + wave * nx, pts[i].y + wave * ny)
+    const frac = d / total
+    const wave = frac < 0.85 ? amplitude * Math.sin((d / wavePeriod) * 2 * Math.PI) : 0
+    result.push(x + wave * nx, y + wave * ny)
   }
   return result
 }
