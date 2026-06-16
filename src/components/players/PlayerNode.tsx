@@ -30,7 +30,7 @@ export default function PlayerNode({ player, position, courtType, landscape, has
   const RADIUS = Math.round((courtType === 'half' ? 17 : 20) * COURT_SCALE)
   const FONT_SIZE = courtType === 'half' ? 12 : 14
   const { x, y } = denormalize(position.x, position.y, HALF_COURT_W, canvasH)
-  const fill = player.team === 'offense' ? OFFENSE_COLOR : DEFENSE_COLOR
+  const fill = player.color ?? (player.team === 'offense' ? OFFENSE_COLOR : DEFENSE_COLOR)
   const groupRef = useRef<Konva.Group | null>(null)
 
   // Allow the player to roam the entire faded OOB padding zone around the court.

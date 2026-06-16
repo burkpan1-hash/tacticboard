@@ -14,6 +14,7 @@ export interface Player {
   number: number      // jersey number (0–99); default derived from id suffix at setup
   team: Team
   name?: string       // optional jersey name shown under the circle (e.g. "Jordan"); blank ⇒ only number shown
+  color?: string      // optional marker fill override (hex); blank ⇒ team default (offense orange / defense blue)
 }
 
 export interface BallState {
@@ -62,5 +63,6 @@ export interface PlaySet {
   initialBall: BallState
   actions: ActionItem[]
   markings?: Record<string, string>  // defenderId → offensePlayerId
+  hiddenArrowTeams?: Team[]  // teams whose action arrows + labels are hidden (players still move)
   cloudPlayId?: string  // server-side play id once persisted — drives PUT-vs-POST in handleSave
 }

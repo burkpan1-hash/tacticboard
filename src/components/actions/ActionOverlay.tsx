@@ -1,7 +1,8 @@
 import { Group } from 'react-konva'
 import ActionArrow from './ActionArrow'
 import { computeStateAtStep } from '../../utils/stateEngine'
-import type { ActionItem, PositionMap, BallState, CourtType } from '../../models/types'
+import { actionTeam } from '../../utils/actionColors'
+import type { ActionItem, PositionMap, BallState, CourtType, Team } from '../../models/types'
 import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H } from '../../utils/courtCoords'
 
 const BASKET_PX = 42
@@ -21,9 +22,11 @@ interface Props {
   attackBasket?: 'top' | 'bottom'
   /** How many recent actions' arrows to keep on the court (default 2). */
   historyDepth?: number
+  /** Teams whose arrows are hidden (players still move; just no arrows). */
+  hiddenTeams?: Team[]
 }
 
-export default function ActionOverlay({ actions, initialPositions, initialBall, activeStep, courtType, markings, attackBasket, historyDepth = 2 }: Props) {
+export default function ActionOverlay({ actions, initialPositions, initialBall, activeStep, courtType, markings, attackBasket, historyDepth = 2, hiddenTeams }: Props) {
   const basketY = getBasketY(courtType, attackBasket)
   const courtH = courtType === 'half' ? HALF_COURT_H : FULL_COURT_H
   const start = Math.max(0, activeStep - historyDepth)
@@ -34,7 +37,7 @@ export default function ActionOverlay({ actions, initialPositions, initialBall, 
         const stateBefore = computeStateAtStep(actions, globalIdx, initialPositions, initialBall, markings, basketY, HALF_COURT_W, courtH)
         const isLatest = globalIdx === activeStep - 1
         const actionList = item.type === 'group' ? item.actions : [item]
-        return actionList.map(action => (
+        return actionList.filter(action => !hiddenTeams?.includes(actionTeam(action))).map(action => (
           <Group key={action.id} opacity={isLatest ? 1 : 0.25}>
             <ActionArrow
               action={action}

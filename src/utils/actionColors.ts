@@ -1,4 +1,11 @@
-import type { Action, ActionType } from '../models/types'
+import type { Action, ActionType, Team } from '../models/types'
+
+const DEFENSE_ACTION_TYPES: ReadonlySet<ActionType> = new Set(['defense-move', 'double-team', 'ball-force'])
+
+/** Which team an action belongs to (drives per-team arrow/label visibility). */
+export function actionTeam(action: Action): Team {
+  return DEFENSE_ACTION_TYPES.has(action.type) ? 'defense' : 'offense'
+}
 
 /**
  * Returns the player most semantically tied to an action — used to anchor the

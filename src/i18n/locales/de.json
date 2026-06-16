@@ -97,6 +97,8 @@
     "shotTaken": "WURF AUSGEFÜHRT",
     "playEnded": "Spiel beendet",
     "markingLabel": "Deckung",
+    "toggleArrowsOffense": "Angriffspfeile ein-/ausblenden",
+    "toggleArrowsDefense": "Verteidigungspfeile ein-/ausblenden",
     "markingStateOn": "AN",
     "markingStateOff": "AUS",
     "cancelButton": "✕ Abbrechen",
@@ -203,6 +205,8 @@
     "nameLabel": "Name",
     "namePlaceholder": "Trikotname (optional)",
     "numberLabel": "Trikotnummer",
+    "colorLabel": "Farbe",
+    "teamDefault": "Teamfarbe",
     "saveButton": "Speichern",
     "tooltip": "Doppelklick zum Bearbeiten von Name / Nummer"
   },

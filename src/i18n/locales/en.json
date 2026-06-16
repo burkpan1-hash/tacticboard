@@ -97,6 +97,8 @@
     "shotTaken": "SHOT TAKEN",
     "playEnded": "Play ended",
     "markingLabel": "Marking",
+    "toggleArrowsOffense": "Show/hide offense arrows",
+    "toggleArrowsDefense": "Show/hide defense arrows",
     "markingStateOn": "ON",
     "markingStateOff": "OFF",
     "cancelButton": "✕ Cancel",
@@ -203,6 +205,8 @@
     "nameLabel": "Name",
     "namePlaceholder": "Jersey name (optional)",
     "numberLabel": "Jersey Number",
+    "colorLabel": "Color",
+    "teamDefault": "Team color",
     "saveButton": "Save",
     "tooltip": "Double-click to edit name / number"
   },

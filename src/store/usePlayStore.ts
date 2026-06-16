@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { nanoid } from 'nanoid'
 import type {
   CourtType, PositionMap, BallState,
-  PlaySet, Action, ActionItem, ActionGroup, ActionType, Player, NormalizedPosition,
+  PlaySet, Action, ActionItem, ActionGroup, ActionType, Player, NormalizedPosition, Team,
 } from '../models/types'
 import { validateGroupAction, validateGroupActions, validateGroupActionType } from '../utils/groupValidation'
 
@@ -75,10 +75,11 @@ interface PlayStoreState {
   setInitialBall: (playerId: string) => void
 
   // ── Player metadata (jersey number, name) ────────────────────
-  updatePlayer: (playerId: string, updates: Partial<Pick<Player, 'number' | 'name'>>) => void
+  updatePlayer: (playerId: string, updates: Partial<Pick<Player, 'number' | 'name' | 'color'>>) => void
 
   // ── Markings ─────────────────────────────────────────────────
   updateMarkings: (markings: Record<string, string>) => void
+  toggleArrowTeam: (team: Team) => void
 
   // ── Action creation UI state ─────────────────────────────────
   actionCreation: ActionCreation
@@ -491,11 +492,17 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   updatePlayer: (playerId, updates) => {
     set(s => {
       if (!s.activeSet) return s
+      const target = s.activeSet.players.find(p => p.id === playerId)
+      if (!target) return s
+      // Color is a team-wide setting: changing one player recolors the whole team
+      // (offense or defense). Name/number stay per-player.
+      const teamColor = updates.color === undefined ? undefined : (updates.color || undefined)
       const players = s.activeSet.players.map(p => {
-        if (p.id !== playerId) return p
+        const color = (updates.color !== undefined && p.team === target.team) ? teamColor : p.color
+        if (p.id !== playerId) return { ...p, color }
         const nextName = updates.name === undefined ? p.name : (updates.name.trim() || undefined)
         const nextNum = updates.number === undefined ? p.number : updates.number
-        return { ...p, number: nextNum, name: nextName }
+        return { ...p, number: nextNum, name: nextName, color }
       })
       const updated: PlaySet = { ...s.activeSet, players }
       get().saveSet(updated)
@@ -533,6 +540,17 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
     set(s => {
       if (!s.activeSet) return s
       const updated: PlaySet = { ...s.activeSet, markings }
+      get().saveSet(updated)
+      return { activeSet: updated }
+    })
+  },
+
+  toggleArrowTeam: (team) => {
+    set(s => {
+      if (!s.activeSet) return s
+      const current = s.activeSet.hiddenArrowTeams ?? []
+      const next = current.includes(team) ? current.filter(t => t !== team) : [...current, team]
+      const updated: PlaySet = { ...s.activeSet, hiddenArrowTeams: next.length ? next : undefined }
       get().saveSet(updated)
       return { activeSet: updated }
     })

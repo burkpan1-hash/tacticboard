@@ -97,6 +97,8 @@
     "shotTaken": "LANZAMIENTO",
     "playEnded": "Jugada terminada",
     "markingLabel": "Marcaje",
+    "toggleArrowsOffense": "Mostrar/ocultar flechas de ataque",
+    "toggleArrowsDefense": "Mostrar/ocultar flechas de defensa",
     "markingStateOn": "ON",
     "markingStateOff": "OFF",
     "cancelButton": "✕ Cancelar",
@@ -203,6 +205,8 @@
     "nameLabel": "Nombre",
     "namePlaceholder": "Nombre de camiseta (opcional)",
     "numberLabel": "Número de Camiseta",
+    "colorLabel": "Color",
+    "teamDefault": "Color del equipo",
     "saveButton": "Guardar",
     "tooltip": "Doble clic para editar nombre / número"
   },

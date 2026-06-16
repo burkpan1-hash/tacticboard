@@ -97,6 +97,8 @@
     "shotTaken": "ŞUT ATILDI",
     "playEnded": "Oyun bitti",
     "markingLabel": "Markaj",
+    "toggleArrowsOffense": "Hücum oklarını göster/gizle",
+    "toggleArrowsDefense": "Savunma oklarını göster/gizle",
     "markingStateOn": "AÇIK",
     "markingStateOff": "KAPALI",
     "cancelButton": "✕ İptal",
@@ -203,6 +205,8 @@
     "nameLabel": "İsim",
     "namePlaceholder": "Forma adı (opsiyonel)",
     "numberLabel": "Forma Numarası",
+    "colorLabel": "Renk",
+    "teamDefault": "Takım rengi",
     "saveButton": "Kaydet",
     "tooltip": "İsim / numara düzenlemek için çift tıkla"
   },

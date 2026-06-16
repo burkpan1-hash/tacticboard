@@ -1,9 +1,27 @@
 import { useTranslation } from 'react-i18next'
-import type { ActionType } from '../../models/types'
+import type { ActionType, Team } from '../../models/types'
 import { ACTION_COLORS, ACTION_LABEL_KEYS } from '../../utils/actionColors'
 import { ACTION_SHORTCUTS } from '../../hooks/useEditorShortcuts'
 
 const KBD_CLASS = 'absolute top-0.5 right-0.5 text-[9px] font-mono font-bold bg-slate-900/90 text-slate-300 rounded px-1 py-0.5 border border-slate-700 leading-none pointer-events-none'
+
+// Eye / eye-off toggle for a team's action-arrow visibility.
+function ArrowEye({ hidden, color, onToggle, title }: { hidden: boolean; color: string; onToggle: () => void; title: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      title={title}
+      className={`shrink-0 p-1 rounded hover:bg-slate-700 transition-opacity ${hidden ? 'opacity-40' : 'opacity-100'}`}
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+        <circle cx="12" cy="12" r="3" />
+        {hidden && <line x1="3" y1="3" x2="21" y2="21" />}
+      </svg>
+    </button>
+  )
+}
 
 interface OffenseTool {
   type: ActionType
@@ -80,13 +98,15 @@ interface Props {
   onCancel: () => void
   markingsEnabled: boolean
   onToggleMarkings: () => void
+  hiddenArrowTeams: Team[]
+  onToggleArrowTeam: (team: Team) => void
   gameOver?: boolean
   layout?: 'vertical' | 'horizontal'
   isRecordingGroup?: boolean
   onRecordGroupToggle?: () => void
 }
 
-export default function ActionToolbar({ activeType, ballHolderId, hasDefenders, onSelect, onCancel, markingsEnabled, onToggleMarkings, gameOver, layout = 'vertical', isRecordingGroup, onRecordGroupToggle }: Props) {
+export default function ActionToolbar({ activeType, ballHolderId, hasDefenders, onSelect, onCancel, markingsEnabled, onToggleMarkings, hiddenArrowTeams, onToggleArrowTeam, gameOver, layout = 'vertical', isRecordingGroup, onRecordGroupToggle }: Props) {
   const { t } = useTranslation()
 
   if (layout === 'horizontal') {
@@ -158,6 +178,12 @@ export default function ActionToolbar({ activeType, ballHolderId, hasDefenders, 
             <span className={`text-[9px] font-medium ${markingsEnabled ? 'text-blue-400' : 'text-slate-400'}`}>{t('toolbar.markingLabel')}</span>
           </button>
 
+          <div className="w-px h-8 bg-slate-600 mx-1 shrink-0" />
+          <div className="flex items-center gap-0.5 shrink-0">
+            <ArrowEye hidden={hiddenArrowTeams.includes('offense')} color="#f97316" onToggle={() => onToggleArrowTeam('offense')} title={t('toolbar.toggleArrowsOffense')} />
+            <ArrowEye hidden={hiddenArrowTeams.includes('defense')} color="#60a5fa" onToggle={() => onToggleArrowTeam('defense')} title={t('toolbar.toggleArrowsDefense')} />
+          </div>
+
           {onRecordGroupToggle && (
             <>
               <div className="w-px h-8 bg-slate-600 mx-1 shrink-0" />
@@ -220,7 +246,10 @@ export default function ActionToolbar({ activeType, ballHolderId, hasDefenders, 
 
         {/* ATK column */}
         <div className="flex flex-col gap-2">
-          <div className="text-[10px] text-orange-400 font-semibold px-1 tracking-wide">{t('toolbar.offenseHeader')}</div>
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[10px] text-orange-400 font-semibold tracking-wide">{t('toolbar.offenseHeader')}</span>
+            <ArrowEye hidden={hiddenArrowTeams.includes('offense')} color="#f97316" onToggle={() => onToggleArrowTeam('offense')} title={t('toolbar.toggleArrowsOffense')} />
+          </div>
           {OFFENSE_TOOLS.map(tool => {
             const disabled = gameOver || (tool.requiresBall && !ballHolderId)
             const active = activeType === tool.type
@@ -248,7 +277,10 @@ export default function ActionToolbar({ activeType, ballHolderId, hasDefenders, 
 
         {/* DEF column */}
         <div className="flex flex-col gap-2">
-          <div className="text-[10px] text-blue-400 font-semibold px-1 tracking-wide">{t('toolbar.defenseHeader')}</div>
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[10px] text-blue-400 font-semibold tracking-wide">{t('toolbar.defenseHeader')}</span>
+            <ArrowEye hidden={hiddenArrowTeams.includes('defense')} color="#60a5fa" onToggle={() => onToggleArrowTeam('defense')} title={t('toolbar.toggleArrowsDefense')} />
+          </div>
 
           {DEF_TOOLS.map(tool => {
             const disabled = !!gameOver || !hasDefenders

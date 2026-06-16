@@ -97,6 +97,8 @@
     "shotTaken": "TIR EFFECTUÉ",
     "playEnded": "Jeu terminé",
     "markingLabel": "Marquage",
+    "toggleArrowsOffense": "Afficher/masquer les flèches d'attaque",
+    "toggleArrowsDefense": "Afficher/masquer les flèches de défense",
     "markingStateOn": "ON",
     "markingStateOff": "OFF",
     "cancelButton": "✕ Annuler",
@@ -203,6 +205,8 @@
     "nameLabel": "Nom",
     "namePlaceholder": "Nom du maillot (optionnel)",
     "numberLabel": "Numéro du Maillot",
+    "colorLabel": "Couleur",
+    "teamDefault": "Couleur de l'équipe",
     "saveButton": "Enregistrer",
     "tooltip": "Double-clic pour modifier nom / numéro"
   },

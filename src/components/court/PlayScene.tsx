@@ -7,7 +7,7 @@ import { computeStateAtStep } from '../../utils/stateEngine'
 import { denormalize, HALF_COURT_W } from '../../utils/courtCoords'
 import { arrowLine } from '../../utils/actionArrows'
 import { placeActionLabel, type Segment } from '../../utils/labelPlacement'
-import { ACTION_COLORS, ACTION_LABEL_KEYS, actionLabelPlayerId } from '../../utils/actionColors'
+import { ACTION_COLORS, ACTION_LABEL_KEYS, actionLabelPlayerId, actionTeam } from '../../utils/actionColors'
 import type { Action, ActionItem, PlaySet } from '../../models/types'
 import type { FrameState } from '../../utils/frameState'
 
@@ -34,13 +34,16 @@ export default function PlayScene({ set, frame, basketY, cH }: Props) {
         courtType={set.courtType}
         attackBasket={set.attackBasket}
         historyDepth={1}
+        hiddenTeams={set.hiddenArrowTeams}
       />
 
       {/* Growing action arrows during animation — behind the moving player, every action type */}
       {isPlaying && activeStep < total && (() => {
         const ci = set.actions[activeStep] as ActionItem | undefined
         const stepActions: Action[] = !ci ? [] : ci.type === 'group' ? ci.actions : [ci]
-        return stepActions.map(action => (
+        return stepActions
+          .filter(action => !set.hiddenArrowTeams?.includes(actionTeam(action)))
+          .map(action => (
           <GrowingActionArrow
             key={action.id + '-anim'}
             action={action}
@@ -81,14 +84,14 @@ export default function PlayScene({ set, frame, basketY, cH }: Props) {
           const gi = sliceStart + localIdx
           const sb = computeStateAtStep(set.actions, gi, set.initialPositions, set.initialBall, undefined, basketY, HALF_COURT_W, cH)
           const al = item.type === 'group' ? item.actions : [item]
-          al.forEach(a => { const l = arrowLine(a, sb.positions, cH, basketY * cH); if (l) allArrows.push(l) })
+          al.filter(a => !set.hiddenArrowTeams?.includes(actionTeam(a))).forEach(a => { const l = arrowLine(a, sb.positions, cH, basketY * cH); if (l) allArrows.push(l) })
         })
         return visible.flatMap((item, localIdx) => {
           const globalIdx = sliceStart + localIdx
           const stateBefore = computeStateAtStep(set.actions, globalIdx, set.initialPositions, set.initialBall, undefined, basketY, HALF_COURT_W, cH)
           const isLatest = isPlaying ? globalIdx === activeStep : globalIdx === activeStep - 1
           const actionList = item.type === 'group' ? item.actions : [item]
-          return actionList.map(action => {
+          return actionList.filter(action => !set.hiddenArrowTeams?.includes(actionTeam(action))).map(action => {
             const line = arrowLine(action, stateBefore.positions, cH, basketY * cH)
             if (!line) return null
             const playersPx = Object.values(stateBefore.positions).map(p => denormalize(p.x, p.y, HALF_COURT_W, cH))

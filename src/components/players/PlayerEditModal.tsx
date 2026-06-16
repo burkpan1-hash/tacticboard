@@ -4,7 +4,7 @@ import type { Player } from '../../models/types'
 
 interface Props {
   player: Player
-  onSave: (updates: { number: number; name: string }) => void
+  onSave: (updates: { number: number; name: string; color: string }) => void
   onClose: () => void
 }
 
@@ -12,10 +12,14 @@ const NAME_MAX = 16
 const NUM_MIN = 0
 const NUM_MAX = 99
 
+// Marker fill choices — all dark/saturated enough to keep white number + name text readable.
+const PALETTE = ['#dc2626', '#ea580c', '#d97706', '#16a34a', '#0d9488', '#2563eb', '#4f46e5', '#9333ea', '#db2777', '#475569']
+
 export default function PlayerEditModal({ player, onSave, onClose }: Props) {
   const { t } = useTranslation()
   const [name, setName] = useState(player.name ?? '')
   const [numberInput, setNumberInput] = useState(String(player.number))
+  const [color, setColor] = useState(player.color ?? '')
   const nameRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { nameRef.current?.focus() }, [])
@@ -27,11 +31,11 @@ export default function PlayerEditModal({ player, onSave, onClose }: Props) {
   }
 
   function commit() {
-    onSave({ number: clampedNumber(), name: name.slice(0, NAME_MAX) })
+    onSave({ number: clampedNumber(), name: name.slice(0, NAME_MAX), color })
     onClose()
   }
 
-  const swatch = player.team === 'offense' ? '#f97316' : '#1d4ed8'
+  const teamColor = player.team === 'offense' ? '#f97316' : '#1d4ed8'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
@@ -42,7 +46,7 @@ export default function PlayerEditModal({ player, onSave, onClose }: Props) {
         <div className="flex items-center gap-3">
           <div
             className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold border-2 border-white"
-            style={{ backgroundColor: swatch }}
+            style={{ backgroundColor: color || teamColor }}
           >{clampedNumber()}</div>
           <div className="flex flex-col">
             <span className="text-white font-semibold text-sm">{t('playerEdit.title')}</span>
@@ -81,6 +85,32 @@ export default function PlayerEditModal({ player, onSave, onClose }: Props) {
             }}
             className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-orange-500 border border-slate-600"
           />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-slate-400 text-xs font-medium">{t('playerEdit.colorLabel')}</label>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setColor('')}
+              title={t('playerEdit.teamDefault')}
+              className={`w-7 h-7 rounded-full flex items-center justify-center border-2 transition-colors ${color === '' ? 'border-white' : 'border-slate-600 hover:border-slate-400'}`}
+              style={{ backgroundColor: teamColor }}
+            >
+              {color === '' && <span className="text-white text-xs leading-none">✓</span>}
+            </button>
+            {PALETTE.map(c => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setColor(c)}
+                className={`w-7 h-7 rounded-full flex items-center justify-center border-2 transition-colors ${color === c ? 'border-white' : 'border-slate-600 hover:border-slate-400'}`}
+                style={{ backgroundColor: c }}
+              >
+                {color === c && <span className="text-white text-xs leading-none">✓</span>}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="flex flex-col gap-2 pt-1">

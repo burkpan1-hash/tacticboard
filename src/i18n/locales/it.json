@@ -97,6 +97,8 @@
     "shotTaken": "TIRO EFFETTUATO",
     "playEnded": "Schema terminato",
     "markingLabel": "Marcatura",
+    "toggleArrowsOffense": "Mostra/nascondi frecce d'attacco",
+    "toggleArrowsDefense": "Mostra/nascondi frecce di difesa",
     "markingStateOn": "ON",
     "markingStateOff": "OFF",
     "cancelButton": "✕ Annulla",
@@ -203,6 +205,8 @@
     "nameLabel": "Nome",
     "namePlaceholder": "Nome maglia (opzionale)",
     "numberLabel": "Numero Maglia",
+    "colorLabel": "Colore",
+    "teamDefault": "Colore squadra",
     "saveButton": "Salva",
     "tooltip": "Doppio clic per modificare nome / numero"
   },

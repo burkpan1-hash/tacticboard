@@ -23,7 +23,7 @@ import { computeFrameState } from '../utils/frameState'
 import { denormalize } from '../utils/courtCoords'
 import type { Action, ActionItem, ActionType, NormalizedPosition, Player, PlaySet, PositionMap } from '../models/types'
 import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_PADDING_X, COURT_PADDING_Y, HALF_COURT_PADDING_TOP } from '../utils/courtCoords'
-import { ACTION_COLORS, ACTION_LABEL_KEYS, actionLabelPlayerId } from '../utils/actionColors'
+import { ACTION_COLORS, ACTION_LABEL_KEYS, actionLabelPlayerId, actionTeam } from '../utils/actionColors'
 import { arrowLine } from '../utils/actionArrows'
 import { placeActionLabel, type Segment } from '../utils/labelPlacement'
 import GrowingActionArrow from '../components/actions/GrowingActionArrow'
@@ -41,6 +41,7 @@ function playSignature(s: PlaySet | null | undefined): string {
     initialBall: s.initialBall,
     markings: s.markings,
     attackBasket: s.attackBasket,
+    hiddenArrowTeams: s.hiddenArrowTeams,
   })
 }
 
@@ -54,7 +55,7 @@ export default function EditorPage() {
     savedSets, activeSet, setActiveSet,
     activeStep,
     actionCreation, startActionCreation, setPendingSource, cancelActionCreation,
-    addAction, addPlayerToCourt, removePlayerFromCourt, setInitialBall, updateInitialPosition, updateMarkings, saveSet, updatePlayer,
+    addAction, addPlayerToCourt, removePlayerFromCourt, setInitialBall, updateInitialPosition, updateMarkings, toggleArrowTeam, saveSet, updatePlayer,
     flipAttackBasket,
     isPlaying, setIsPlaying,
     isRecordingGroup, startGroupRecording, stopGroupRecording,
@@ -854,6 +855,8 @@ export default function EditorPage() {
             onCancel={cancelAll}
             markingsEnabled={markingsEnabled}
             onToggleMarkings={handleToggleMarkings}
+            hiddenArrowTeams={activeSet.hiddenArrowTeams ?? []}
+            onToggleArrowTeam={toggleArrowTeam}
             gameOver={hasShotAction}
             isRecordingGroup={isRecordingGroup}
             onRecordGroupToggle={() => isRecordingGroup ? stopGroupRecording() : startGroupRecording()}
@@ -958,6 +961,7 @@ export default function EditorPage() {
                 markings={activeMarkings}
                 attackBasket={activeSet.attackBasket}
                 historyDepth={1}
+                hiddenTeams={activeSet.hiddenArrowTeams}
               />
               <ActionPreview
                 actionType={actionCreation.type}
@@ -994,7 +998,9 @@ export default function EditorPage() {
                 const stepActions: Action[] = !currentItem
                   ? []
                   : currentItem.type === 'group' ? currentItem.actions : [currentItem]
-                return stepActions.map(action => (
+                return stepActions
+                  .filter(action => !activeSet.hiddenArrowTeams?.includes(actionTeam(action)))
+                  .map(action => (
                   <GrowingActionArrow
                     key={action.id + '-anim'}
                     action={action}
@@ -1109,7 +1115,7 @@ export default function EditorPage() {
                     activeSet.actions, gi, activeSet.initialPositions, activeSet.initialBall, activeMarkings, basketY, HALF_COURT_W, cH
                   )
                   const al = item.type === 'group' ? item.actions : [item]
-                  al.forEach(a => {
+                  al.filter(a => !activeSet.hiddenArrowTeams?.includes(actionTeam(a))).forEach(a => {
                     const l = arrowLine(a, sb.positions, cH, basketY * cH)
                     if (l) allArrows.push(l)
                   })
@@ -1121,7 +1127,7 @@ export default function EditorPage() {
                   )
                   const isLatest = isPlaying ? globalIdx === activeStep : globalIdx === activeStep - 1
                   const actionList = item.type === 'group' ? item.actions : [item]
-                  return actionList.map(action => {
+                  return actionList.filter(action => !activeSet.hiddenArrowTeams?.includes(actionTeam(action))).map(action => {
                     const line = arrowLine(action, stateBefore.positions, cH, basketY * cH)
                     if (!line) return null
                     const playersPx = Object.values(stateBefore.positions).map(p =>
@@ -1294,6 +1300,8 @@ export default function EditorPage() {
           onCancel={cancelAll}
           markingsEnabled={markingsEnabled}
           onToggleMarkings={handleToggleMarkings}
+          hiddenArrowTeams={activeSet.hiddenArrowTeams ?? []}
+          onToggleArrowTeam={toggleArrowTeam}
           gameOver={hasShotAction}
           isRecordingGroup={isRecordingGroup}
           onRecordGroupToggle={() => isRecordingGroup ? stopGroupRecording() : startGroupRecording()}
