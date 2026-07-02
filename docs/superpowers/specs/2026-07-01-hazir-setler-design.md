@@ -127,12 +127,67 @@ Googlebot would not see DB-rendered text.
 
 ## Crawlability (the reason this exists)
 
-- **Prerender:** guide/preset pages are rendered to static HTML at build time
-  (e.g. `react-snap` / a vite prerender step). Googlebot must see article text
-  without executing JS.
+- **Prerender:** guide/preset pages are rendered to static HTML at build time.
+  Googlebot must see article text without executing JS.
 - **Sitemap:** generated at build to include every published preset slug + the
   guides index; drop `/login` and `/register`. (Current `public/sitemap.xml` is
-  hand-written and omits all content.)
+  hand-written and omits all content.) *(Not yet built — separate follow-up
+  pass, tracked in `project-adsense-content` memory.)*
+
+### Prerender — technical design (added 2026-07-02)
+
+Both `/guides/:slug` and `/sets/:slug` render trees are already SSR-safe: no
+Konva/canvas on these routes (the editor is a separate route), no
+`window`/`document`/`localStorage` access outside `useEffect`, and
+`i18next-browser-languagedetector` (8.2.1) guards every browser API with
+`typeof window/document/navigator === 'undefined'` checks — falls back to
+`fallbackLng: 'en'` cleanly under Node. That makes a small **custom SSR-render
+script** the right call over `react-snap` (would need Chromium added to the
+`node:22-alpine` production image — no such deps today, +~300MB, plus known
+rough edges with Vite's ESM output) or full per-request SSR (unneeded
+complexity for routes that don't need it, e.g. editor/auth).
+
+- **`src/entry-server.tsx`** (new): exports `renderPage(url)`, wraps the
+  *same* `<App/>` used by the client in `<StaticRouter location={url}>`
+  (`react-router-dom/server`) and calls `renderToString`
+  (`react-dom/server` — not `renderToStaticMarkup`, which strips the markers
+  `hydrateRoot` needs). Same tree as the client ⇒ hydration matches with no
+  extra deps (`react-dom/server` and `react-router-dom/server` already ship
+  with existing dependencies).
+- **`scripts/prerender.mjs`** (new): after `vite build` + `vite build --ssr
+  src/entry-server.tsx --outDir dist-ssr`, iterates `/guides`,
+  `/guides/<slug>` for every `GUIDES` entry, `/sets/<slug>` for every
+  `publishedPresets()` entry. For each: calls `renderPage(url)`, takes
+  `dist/index.html` as a template, and replaces the `<div id="root">`
+  contents, `<title>`, `meta[name="description"]`, `link[rel="canonical"]`
+  (currently hardcoded to `/` on every page — a real bug this also fixes),
+  and `og:title`/`og:description`/`og:url`. Writes to
+  `dist/guides/index.html`, `dist/guides/<slug>/index.html`,
+  `dist/sets/<slug>/index.html`. Title/description values mirror what
+  `GuideArticlePage`/`PresetPage` already set client-side via `useEffect` —
+  that effect keeps running post-hydration and is now redundant-but-harmless.
+- **Build script:** `tsc -b && vite build && vite build --ssr
+  src/entry-server.tsx --outDir dist-ssr && node scripts/prerender.mjs`.
+  `Dockerfile` unchanged — it only copies `./dist` out of the builder stage,
+  so `dist-ssr` is discarded with the rest of the builder image.
+- **`src/main.tsx`:** swap unconditional `createRoot(...).render(...)` for a
+  check — `hydrateRoot` if `document.getElementById('root')` already has
+  children (prerendered routes), else `createRoot` (all other routes,
+  unchanged behavior).
+- **Server:** no changes needed. Verified via source read
+  (`node_modules/@hono/node-server/dist/serve-static.mjs`) that
+  `serveStatic({ root: './dist' })` already resolves a directory request
+  (e.g. `/sets/ucla-offense`) to that directory's `index.html`
+  automatically, before falling through to the SPA catch-all.
+- **Verification:** not visible via `npm run dev` — prerendering only
+  happens inside `vite build`. Instead: `npm run build`, confirm the
+  generated HTML files contain real article text (not just the shell), then
+  run the prod server locally (`NODE_ENV=production
+  node_modules/.bin/tsx server/index.ts`) and `curl`/view-source the routes
+  to confirm a non-JS client sees full content. Also check in a real browser
+  for hydration-mismatch console errors and that interactivity (language
+  switcher, option pill bar, "Open in Editor & Play") still works, and that
+  unaffected routes (`/`, `/editor/:id`, `/login`) are unchanged.
 
 ## Scope
 
