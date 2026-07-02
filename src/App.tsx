@@ -14,6 +14,7 @@ import PricingPage from './pages/PricingPage'
 import RefundPage from './pages/RefundPage'
 import GuidesPage from './pages/GuidesPage'
 import GuideArticlePage from './pages/GuideArticlePage'
+import PresetPage from './pages/PresetPage'
 import NotFoundPage from './pages/NotFoundPage'
 import CookieConsentBanner from './components/ui/CookieConsentBanner'
 import { GUIDES_ENABLED } from './config/features'
@@ -39,6 +40,7 @@ export default function App() {
           <>
             <Route path="/guides" element={<GuidesPage />} />
             <Route path="/guides/:slug" element={<GuideArticlePage />} />
+            <Route path="/sets/:slug" element={<PresetPage />} />
           </>
         )}
         <Route path="*" element={<NotFoundPage />} />

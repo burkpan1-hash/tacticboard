@@ -42,6 +42,13 @@ interface PlayStoreState {
   activeStep: number
   setActiveStep: (step: number) => void
 
+  // ── Options (branching reads) ────────────────────────────────
+  activeOptionId: string | null   // null = primary line ("Option 1")
+  setActiveOption: (optionId: string | null) => void
+  addOption: () => void           // branches at activeStep off the primary line
+  renameOption: (optionId: string | null, name: string) => void
+  deleteOption: (optionId: string) => void
+
   // ── Action CRUD ──────────────────────────────────────────────
   addAction: (action: Action) => void
   deleteAction: (actionId: string) => void
@@ -138,6 +145,28 @@ function filterItemsForPlayer(items: ActionItem[], playerId: string): ActionItem
   return result
 }
 
+// ── Option-aware line helpers ────────────────────────────────────────────────
+// The "active line" is the primary actions (activeOptionId null) or an option's
+// own tail (activeOptionId set). All action CRUD operates on the active line, so
+// editing an option only touches that branch — the shared primary trunk is
+// untouched.
+function activeLineActions(s: PlayStoreState): ActionItem[] {
+  const set = s.activeSet
+  if (!set) return []
+  if (!s.activeOptionId) return set.actions
+  return set.options?.find(o => o.id === s.activeOptionId)?.actions ?? set.actions
+}
+function writeActiveLine(set: PlaySet, activeOptionId: string | null, newActions: ActionItem[]): PlaySet {
+  if (!activeOptionId) return { ...set, actions: newActions }
+  return { ...set, options: (set.options ?? []).map(o => o.id === activeOptionId ? { ...o, actions: newActions } : o) }
+}
+// Primary actions shared before the active line's own actions (0 for primary).
+// Composed step index = activeBranchAfter + index within the active line.
+function activeBranchAfter(s: PlayStoreState): number {
+  if (!s.activeOptionId || !s.activeSet) return 0
+  return s.activeSet.options?.find(o => o.id === s.activeOptionId)?.branchAfter ?? 0
+}
+
 export const usePlayStore = create<PlayStoreState>((set, get) => ({
   setupDraft: { name: '', courtType: 'half', offenseCount: 5, defenseCount: 0 },
   setSetupDraft: (draft) => set(s => ({ setupDraft: { ...s.setupDraft, ...draft } })),
@@ -178,12 +207,67 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   setActiveSet: (newSet) => set(s => ({
     activeSet: newSet,
     activeStep: s.activeSet?.id !== newSet.id ? newSet.actions.length : s.activeStep,
+    activeOptionId: s.activeSet?.id !== newSet.id ? null : s.activeOptionId,
     isRecordingGroup: false,
     currentRecordingGroupId: null,
   })),
 
   activeStep: 0,
   setActiveStep: (activeStep) => set({ activeStep }),
+
+  activeOptionId: null,
+  setActiveOption: (optionId) => set(s => {
+    if (!s.activeSet) return s
+    // Switching lines: land on the composed end of the target line so its full
+    // sequence is visible (primary → its own length; option → trunk + tail).
+    if (!optionId) return { activeOptionId: null, activeStep: s.activeSet.actions.length, actionCreation: EMPTY_CREATION, isRecordingGroup: false, currentRecordingGroupId: null }
+    const opt = s.activeSet.options?.find(o => o.id === optionId)
+    if (!opt) return s
+    return { activeOptionId: optionId, activeStep: opt.branchAfter + opt.actions.length, actionCreation: EMPTY_CREATION, isRecordingGroup: false, currentRecordingGroupId: null }
+  }),
+  addOption: () => set(s => {
+    if (!s.activeSet) return s
+    // Branch off the primary line at the current composed step (clamped to the
+    // primary length — options branch off the primary trunk only).
+    const branchAfter = Math.min(s.activeStep, s.activeSet.actions.length)
+    const existing = s.activeSet.options ?? []
+    const id = nanoid()
+    const newOption = { id, name: `Option ${existing.length + 2}`, branchAfter, actions: [] as ActionItem[] }
+    const updated: PlaySet = { ...s.activeSet, options: [...existing, newOption] }
+    get().saveSet(updated)
+    return { activeSet: updated, activeOptionId: id, activeStep: branchAfter, actionCreation: EMPTY_CREATION, isRecordingGroup: false, currentRecordingGroupId: null }
+  }),
+  renameOption: (optionId, name) => set(s => {
+    if (!s.activeSet) return s
+    const trimmed = name.trim()
+    if (!optionId) {
+      // Primary line's editable label.
+      const updated: PlaySet = { ...s.activeSet, primaryName: trimmed || undefined }
+      get().saveSet(updated)
+      return { activeSet: updated }
+    }
+    const updated: PlaySet = {
+      ...s.activeSet,
+      options: (s.activeSet.options ?? []).map(o => o.id === optionId ? { ...o, name: trimmed || o.name } : o),
+    }
+    get().saveSet(updated)
+    return { activeSet: updated }
+  }),
+  deleteOption: (optionId) => set(s => {
+    if (!s.activeSet) return s
+    const updated: PlaySet = {
+      ...s.activeSet,
+      options: (s.activeSet.options ?? []).filter(o => o.id !== optionId),
+    }
+    get().saveSet(updated)
+    // If the deleted option was active, fall back to the primary line.
+    const backToPrimary = s.activeOptionId === optionId
+    return {
+      activeSet: updated,
+      activeOptionId: backToPrimary ? null : s.activeOptionId,
+      activeStep: backToPrimary ? updated.actions.length : s.activeStep,
+    }
+  }),
 
   isRecordingGroup: false,
   currentRecordingGroupId: null,
@@ -194,10 +278,11 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   addAction: (action) => {
     set(s => {
       if (!s.activeSet) return s
+      const line = activeLineActions(s)
       let updated: PlaySet
       if (s.isRecordingGroup && s.currentRecordingGroupId) {
         // Validate against existing group actions before appending
-        const group = s.activeSet.actions.find(
+        const group = line.find(
           item => item.type === 'group' && item.id === s.currentRecordingGroupId
         ) as ActionGroup | undefined
         const existingGroupActions = group?.actions ?? []
@@ -206,28 +291,28 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
           setTimeout(() => get().clearGroupConflictError(), 6000)
           return { groupConflictError: conflict, actionCreation: EMPTY_CREATION }
         }
-        updated = {
-          ...s.activeSet,
-          actions: s.activeSet.actions.map(item =>
-            item.type === 'group' && item.id === s.currentRecordingGroupId
-              ? { ...item, actions: [...item.actions, action] }
-              : item
-          ),
-        }
+        const newLine = line.map(item =>
+          item.type === 'group' && item.id === s.currentRecordingGroupId
+            ? { ...item, actions: [...item.actions, action] }
+            : item
+        )
+        updated = writeActiveLine(s.activeSet, s.activeOptionId, newLine)
         get().saveSet(updated)
         return { activeSet: updated, actionCreation: EMPTY_CREATION }
       }
-      updated = { ...s.activeSet, actions: [...s.activeSet.actions, action] }
+      const newLine = [...line, action]
+      updated = writeActiveLine(s.activeSet, s.activeOptionId, newLine)
       get().saveSet(updated)
-      return { activeSet: updated, activeStep: updated.actions.length, actionCreation: EMPTY_CREATION }
+      return { activeSet: updated, activeStep: activeBranchAfter(s) + newLine.length, actionCreation: EMPTY_CREATION }
     })
   },
 
   deleteAction: (actionId) => {
     set(s => {
       if (!s.activeSet) return s
+      const line = activeLineActions(s)
       const newActions: ActionItem[] = []
-      for (const item of s.activeSet.actions) {
+      for (const item of line) {
         if (item.type === 'group') {
           // Remove the action from inside the group
           const kept = item.actions.filter(a => a.id !== actionId)
@@ -238,8 +323,8 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
           newActions.push(item)
         }
       }
-      const updated = { ...s.activeSet, actions: newActions }
-      const clampedStep = Math.min(s.activeStep, updated.actions.length)
+      const updated = writeActiveLine(s.activeSet, s.activeOptionId, newActions)
+      const clampedStep = Math.min(s.activeStep, activeBranchAfter(s) + newActions.length)
       get().saveSet(updated)
       return { activeSet: updated, activeStep: clampedStep }
     })
@@ -248,13 +333,13 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   updateAction: (actionId, updatedAction) => {
     set(s => {
       if (!s.activeSet) return s
-      const newActions: ActionItem[] = s.activeSet.actions.map(item => {
+      const newActions: ActionItem[] = activeLineActions(s).map(item => {
         if (item.type === 'group') {
           return { ...item, actions: item.actions.map(a => a.id === actionId ? updatedAction : a) }
         }
         return item.id === actionId ? updatedAction : item
       })
-      const updated = { ...s.activeSet, actions: newActions }
+      const updated = writeActiveLine(s.activeSet, s.activeOptionId, newActions)
       get().saveSet(updated)
       return { activeSet: updated, actionCreation: EMPTY_CREATION }
     })
@@ -263,29 +348,34 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   clearAllActions: () => {
     set(s => {
       if (!s.activeSet) return s
-      const updated = { ...s.activeSet, actions: [] }
+      // On an option tab this clears only that option's tail; on primary it
+      // clears the primary line.
+      const updated = writeActiveLine(s.activeSet, s.activeOptionId, [])
       get().saveSet(updated)
-      return { activeSet: updated, activeStep: 0, actionCreation: EMPTY_CREATION, isRecordingGroup: false, currentRecordingGroupId: null }
+      return { activeSet: updated, activeStep: activeBranchAfter(s), actionCreation: EMPTY_CREATION, isRecordingGroup: false, currentRecordingGroupId: null }
     })
   },
 
   undoLastAction: () => {
     set(s => {
-      if (!s.activeSet || s.activeSet.actions.length === 0) return s
+      if (!s.activeSet) return s
+      const line = activeLineActions(s)
+      if (line.length === 0) return s
       // If recording, undo the last action inside the group
       if (s.isRecordingGroup && s.currentRecordingGroupId) {
-        const newActions: ActionItem[] = s.activeSet.actions.map(item => {
+        const newActions: ActionItem[] = line.map(item => {
           if (item.type === 'group' && item.id === s.currentRecordingGroupId) {
             return { ...item, actions: item.actions.slice(0, -1) }
           }
           return item
         })
-        const updated = { ...s.activeSet, actions: newActions }
+        const updated = writeActiveLine(s.activeSet, s.activeOptionId, newActions)
         get().saveSet(updated)
         return { activeSet: updated, actionCreation: EMPTY_CREATION }
       }
-      const updated = { ...s.activeSet, actions: s.activeSet.actions.slice(0, -1) }
-      const newStep = Math.min(s.activeStep, updated.actions.length)
+      const newActions = line.slice(0, -1)
+      const updated = writeActiveLine(s.activeSet, s.activeOptionId, newActions)
+      const newStep = Math.min(s.activeStep, activeBranchAfter(s) + newActions.length)
       get().saveSet(updated)
       return { activeSet: updated, activeStep: newStep, actionCreation: EMPTY_CREATION }
     })
@@ -294,12 +384,14 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   startGroupRecording: () => {
     set(s => {
       if (!s.activeSet || s.isRecordingGroup) return s
+      const line = activeLineActions(s)
       const newGroup: ActionGroup = { id: nanoid(), type: 'group', actions: [] }
-      const updated = { ...s.activeSet, actions: [...s.activeSet.actions, newGroup] }
+      const newLine = [...line, newGroup]
+      const updated = writeActiveLine(s.activeSet, s.activeOptionId, newLine)
       get().saveSet(updated)
       return {
         activeSet: updated,
-        activeStep: updated.actions.length,
+        activeStep: activeBranchAfter(s) + newLine.length,
         isRecordingGroup: true,
         currentRecordingGroupId: newGroup.id,
       }
@@ -309,30 +401,31 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   stopGroupRecording: () => {
     set(s => {
       if (!s.activeSet || !s.currentRecordingGroupId) return s
-      const group = s.activeSet.actions.find(
+      const line = activeLineActions(s)
+      const group = line.find(
         item => item.type === 'group' && item.id === s.currentRecordingGroupId
       ) as ActionGroup | undefined
 
       let newActions: ActionItem[]
       if (!group || group.actions.length === 0) {
         // Empty group — remove it
-        newActions = s.activeSet.actions.filter(item => item.id !== s.currentRecordingGroupId)
+        newActions = line.filter(item => item.id !== s.currentRecordingGroupId)
       } else if (group.actions.length === 1) {
         // Only one action — collapse the group
-        newActions = s.activeSet.actions.flatMap(item =>
+        newActions = line.flatMap(item =>
           item.type === 'group' && item.id === s.currentRecordingGroupId
             ? (item as ActionGroup).actions
             : [item]
         )
       } else {
-        newActions = s.activeSet.actions
+        newActions = line
       }
 
-      const updated = { ...s.activeSet, actions: newActions }
+      const updated = writeActiveLine(s.activeSet, s.activeOptionId, newActions)
       get().saveSet(updated)
       return {
         activeSet: updated,
-        activeStep: updated.actions.length,
+        activeStep: activeBranchAfter(s) + newActions.length,
         isRecordingGroup: false,
         currentRecordingGroupId: null,
       }
@@ -342,9 +435,10 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   createGroup: (actionIds) => {
     set(s => {
       if (!s.activeSet || actionIds.length < 2) return s
+      const line = activeLineActions(s)
       const idSet = new Set(actionIds)
       // Only top-level non-group actions can be grouped
-      const selectedActions = s.activeSet.actions
+      const selectedActions = line
         .filter(item => item.type !== 'group' && idSet.has(item.id))
         .map(item => item as Action)
 
@@ -359,7 +453,7 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
       const newGroup: ActionGroup = { id: nanoid(), type: 'group', actions: selectedActions }
       let inserted = false
       const result: ActionItem[] = []
-      for (const item of s.activeSet.actions) {
+      for (const item of line) {
         if (item.type !== 'group' && idSet.has(item.id)) {
           if (!inserted) { result.push(newGroup); inserted = true }
           // skip — now inside the group
@@ -368,8 +462,8 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
         }
       }
 
-      const updated = { ...s.activeSet, actions: result }
-      const newStep = Math.min(s.activeStep, updated.actions.length)
+      const updated = writeActiveLine(s.activeSet, s.activeOptionId, result)
+      const newStep = Math.min(s.activeStep, activeBranchAfter(s) + result.length)
       get().saveSet(updated)
       return { activeSet: updated, activeStep: newStep }
     })
@@ -379,15 +473,15 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
     set(s => {
       if (!s.activeSet) return s
       const newActions: ActionItem[] = []
-      for (const item of s.activeSet.actions) {
+      for (const item of activeLineActions(s)) {
         if (item.type === 'group' && item.id === groupId) {
           newActions.push(...item.actions)
         } else {
           newActions.push(item)
         }
       }
-      const updated = { ...s.activeSet, actions: newActions }
-      const newStep = Math.min(s.activeStep, updated.actions.length)
+      const updated = writeActiveLine(s.activeSet, s.activeOptionId, newActions)
+      const newStep = Math.min(s.activeStep, activeBranchAfter(s) + newActions.length)
       get().saveSet(updated)
       return { activeSet: updated, activeStep: newStep }
     })
@@ -396,7 +490,7 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   setOptionText: (actionId, text) => {
     set(s => {
       if (!s.activeSet) return s
-      const newActions: ActionItem[] = s.activeSet.actions.map(item => {
+      const newActions: ActionItem[] = activeLineActions(s).map(item => {
         if (item.type === 'group') {
           return { ...item, actions: item.actions.map(a =>
             a.id === actionId ? { ...a, optionText: text.trim() || undefined } : a
@@ -404,7 +498,7 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
         }
         return item.id === actionId ? { ...item, optionText: text.trim() || undefined } : item
       })
-      const updated = { ...s.activeSet, actions: newActions }
+      const updated = writeActiveLine(s.activeSet, s.activeOptionId, newActions)
       get().saveSet(updated)
       return { activeSet: updated }
     })
@@ -413,12 +507,12 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   setGroupName: (groupId, name) => {
     set(s => {
       if (!s.activeSet) return s
-      const newActions: ActionItem[] = s.activeSet.actions.map(item =>
+      const newActions: ActionItem[] = activeLineActions(s).map(item =>
         item.type === 'group' && item.id === groupId
           ? { ...item, name: name.trim() || undefined }
           : item
       )
-      const updated = { ...s.activeSet, actions: newActions }
+      const updated = writeActiveLine(s.activeSet, s.activeOptionId, newActions)
       get().saveSet(updated)
       return { activeSet: updated }
     })
@@ -427,12 +521,12 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   setGroupOptionText: (groupId, text) => {
     set(s => {
       if (!s.activeSet) return s
-      const newActions: ActionItem[] = s.activeSet.actions.map(item =>
+      const newActions: ActionItem[] = activeLineActions(s).map(item =>
         item.type === 'group' && item.id === groupId
           ? { ...item, optionText: text.trim() || undefined }
           : item
       )
-      const updated = { ...s.activeSet, actions: newActions }
+      const updated = writeActiveLine(s.activeSet, s.activeOptionId, newActions)
       get().saveSet(updated)
       return { activeSet: updated }
     })
@@ -474,6 +568,7 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
         initialPositions: positions,
         initialBall: s.activeSet.initialBall.holderId === playerId ? { holderId: '' } : s.activeSet.initialBall,
         actions: filterItemsForPlayer(s.activeSet.actions, playerId),
+        options: s.activeSet.options?.map(o => ({ ...o, actions: filterItemsForPlayer(o.actions, playerId) })),
       }
       get().saveSet(updated)
       return { activeSet: updated }
@@ -514,7 +609,7 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   startActionCreation: (type) => {
     const s = get()
     if (s.isRecordingGroup && s.currentRecordingGroupId) {
-      const group = s.activeSet?.actions.find(
+      const group = activeLineActions(s).find(
         item => item.type === 'group' && item.id === s.currentRecordingGroupId
       ) as ActionGroup | undefined
       const conflict = validateGroupActionType(type, group?.actions ?? [])
@@ -588,6 +683,7 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
           Object.entries(s.activeSet.initialPositions).map(([id, pos]) => [id, mirror(pos)])
         ),
         actions: s.activeSet.actions.map(mirrorItem),
+        options: s.activeSet.options?.map(o => ({ ...o, actions: o.actions.map(mirrorItem) })),
       }
       get().saveSet(updated)
       return { activeSet: updated }

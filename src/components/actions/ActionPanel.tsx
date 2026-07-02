@@ -3,18 +3,25 @@ import { useTranslation } from 'react-i18next'
 import ActionCard from './ActionCard'
 import GroupCard from './GroupCard'
 import { usePlayStore } from '../../store/usePlayStore'
+import { composeOptionLine, branchOffset } from '../../utils/optionLines'
 import { validateGroupActions, type GroupConflictReason } from '../../utils/groupValidation'
 import type { Action } from '../../models/types'
 
 export default function ActionPanel() {
   const { t } = useTranslation()
   const {
-    activeSet, activeStep, isPlaying,
+    activeSet, activeStep, isPlaying, activeOptionId,
     setActiveStep, clearAllActions, setOptionText,
     ungroupGroup, createGroup,
     isRecordingGroup, groupConflictError,
     setGroupName, setGroupOptionText,
   } = usePlayStore()
+
+  // The action line shown = the active option's composed line (primary trunk +
+  // option tail). Items before the branch point are the shared trunk (read-only
+  // context on an option tab).
+  const lineActions = activeSet ? composeOptionLine(activeSet, activeOptionId) : []
+  const branchAfter = activeSet ? branchOffset(activeSet, activeOptionId) : 0
 
   const [confirmClear, setConfirmClear] = useState(false)
   const [selectionMode, setSelectionMode] = useState(false)
@@ -26,7 +33,7 @@ export default function ActionPanel() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
-  }, [activeSet?.actions.length])
+  }, [lineActions.length])
 
   useEffect(() => {
     if (isRecordingGroup) {
@@ -37,7 +44,7 @@ export default function ActionPanel() {
 
   if (!activeSet) return null
 
-  const topLevelActions = activeSet.actions.filter(item => item.type !== 'group')
+  const topLevelActions = lineActions.filter(item => item.type !== 'group')
   const canGroup = selectionMode && selectedIds.size >= 2
 
   function handleClear() {
@@ -48,7 +55,7 @@ export default function ActionPanel() {
   }
 
   function handleGroupConfirm() {
-    const selected = activeSet!.actions
+    const selected = lineActions
       .filter(item => item.type !== 'group' && selectedIds.has(item.id)) as Action[]
     const conflict = validateGroupActions(selected)
     if (conflict) {
@@ -71,7 +78,7 @@ export default function ActionPanel() {
     })
   }
 
-  const hasActions = activeSet.actions.length > 0
+  const hasActions = lineActions.length > 0
 
   const CONFLICT_KEY: Record<GroupConflictReason, string> = {
     SHOT_IN_GROUP:          'actionPanel.conflictShotInGroup',
@@ -122,7 +129,7 @@ export default function ActionPanel() {
           /* ── Normal / recording mode ─────────────── */
           <div className="flex items-center justify-between gap-2">
             <h3 className="text-sm font-semibold text-slate-300 shrink-0">
-              {t('actionPanel.actionsTitle')} <span className="text-slate-500">({activeSet.actions.length})</span>
+              {t('actionPanel.actionsTitle')} <span className="text-slate-500">({lineActions.length})</span>
             </h3>
             <div className="flex items-center gap-1 flex-wrap justify-end">
               {/* Post-hoc group button */}
@@ -176,48 +183,53 @@ export default function ActionPanel() {
 
       {/* List */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-2">
-        {activeSet.actions.length === 0 && (
+        {lineActions.length === 0 && (
           <p className="text-slate-500 text-sm text-center py-8">
             {t('actionPanel.emptyState')}
           </p>
         )}
 
-        {activeSet.actions.map(item => {
+        {lineActions.map((item, idx) => {
           stepCounter++
           const stepNum = stepCounter
+          // On an option tab, items before the branch point are the shared trunk:
+          // shown dimmed and not editable (edit them from Option 1).
+          const isShared = !!activeOptionId && idx < branchAfter
 
           if (item.type === 'group') {
             return (
-              <GroupCard
-                key={item.id}
-                stepNum={stepNum}
-                group={item}
-                players={activeSet.players}
-                isActive={isPlaying ? activeStep === stepNum - 1 : activeStep === stepNum}
-                onClick={() => setActiveStep(stepNum)}
-                onUngroup={() => ungroupGroup(item.id)}
-                onNameChange={(name) => setGroupName(item.id, name)}
-                onOptionTextChange={(text) => setGroupOptionText(item.id, text)}
-              />
+              <div key={item.id} className={isShared ? 'opacity-45' : undefined} title={isShared ? 'Shared trunk — edit from Option 1' : undefined}>
+                <GroupCard
+                  stepNum={stepNum}
+                  group={item}
+                  players={activeSet.players}
+                  isActive={isPlaying ? activeStep === stepNum - 1 : activeStep === stepNum}
+                  onClick={() => setActiveStep(stepNum)}
+                  onUngroup={isShared ? () => {} : () => ungroupGroup(item.id)}
+                  onNameChange={(name) => setGroupName(item.id, name)}
+                  onOptionTextChange={(text) => setGroupOptionText(item.id, text)}
+                />
+              </div>
             )
           }
 
           const isChecked = selectedIds.has(item.id)
           return (
-            <ActionCard
-              key={item.id}
-              stepNum={stepNum}
-              action={item}
-              players={activeSet.players}
-              isActive={isPlaying ? activeStep === stepNum - 1 : activeStep === stepNum}
-              checked={selectionMode ? isChecked : undefined}
-              onCheckChange={selectionMode ? (v) => { if (v) setSelectedIds(p => new Set([...p, item.id])); else toggleSelection(item.id) } : undefined}
-              onClick={() => {
-                if (selectionMode) { toggleSelection(item.id); return }
-                setActiveStep(stepNum)
-              }}
-              onOptionTextChange={(text) => setOptionText(item.id, text)}
-            />
+            <div key={item.id} className={isShared ? 'opacity-45' : undefined} title={isShared ? 'Shared trunk — edit from Option 1' : undefined}>
+              <ActionCard
+                stepNum={stepNum}
+                action={item}
+                players={activeSet.players}
+                isActive={isPlaying ? activeStep === stepNum - 1 : activeStep === stepNum}
+                checked={selectionMode && !isShared ? isChecked : undefined}
+                onCheckChange={selectionMode && !isShared ? (v) => { if (v) setSelectedIds(p => new Set([...p, item.id])); else toggleSelection(item.id) } : undefined}
+                onClick={() => {
+                  if (selectionMode && !isShared) { toggleSelection(item.id); return }
+                  setActiveStep(stepNum)
+                }}
+                onOptionTextChange={(text) => setOptionText(item.id, text)}
+              />
+            </div>
           )
         })}
       </div>

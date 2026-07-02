@@ -10,15 +10,19 @@ import ActionOverlay from '../components/actions/ActionOverlay'
 import ActionPreview from '../components/actions/ActionPreview'
 import ActionToolbar from '../components/toolbar/ActionToolbar'
 import ActionPanel from '../components/actions/ActionPanel'
+import OptionBar from '../components/actions/OptionBar'
 import PlaybackControls from '../components/playback/PlaybackControls'
 import ExportModal from '../components/export/ExportModal'
 import PlayerEditModal from '../components/players/PlayerEditModal'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
+import CourtThemeSwitcher from '../components/ui/CourtThemeSwitcher'
+import { useCourtTheme } from '../store/useCourtTheme'
 import UserButton from '../components/ui/UserButton'
 import UpgradeModal from '../components/ui/UpgradeModal'
 import ShareInterstitialModal from '../components/ui/ShareInterstitialModal'
 import { usePlayStore } from '../store/usePlayStore'
 import { computeStateAtStep, computeAllStepMs } from '../utils/stateEngine'
+import { composeOptionLine } from '../utils/optionLines'
 import { computeFrameState } from '../utils/frameState'
 import { denormalize } from '../utils/courtCoords'
 import type { Action, ActionItem, ActionType, NormalizedPosition, Player, PlaySet, PositionMap } from '../models/types'
@@ -37,6 +41,8 @@ function playSignature(s: PlaySet | null | undefined): string {
   return JSON.stringify({
     name: s.name,
     actions: s.actions,
+    options: s.options,
+    primaryName: s.primaryName,
     initialPositions: s.initialPositions,
     initialBall: s.initialBall,
     markings: s.markings,
@@ -47,6 +53,7 @@ function playSignature(s: PlaySet | null | undefined): string {
 
 export default function EditorPage() {
   const { t } = useTranslation()
+  const courtTheme = useCourtTheme()
   const { setId } = useParams<{ setId: string }>()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -54,6 +61,7 @@ export default function EditorPage() {
   const {
     savedSets, activeSet, setActiveSet,
     activeStep,
+    activeOptionId, setActiveOption, addOption, renameOption, deleteOption,
     actionCreation, startActionCreation, setPendingSource, cancelActionCreation,
     addAction, addPlayerToCourt, removePlayerFromCourt, setInitialBall, updateInitialPosition, updateMarkings, toggleArrowTeam, saveSet, updatePlayer,
     flipAttackBasket,
@@ -318,14 +326,16 @@ export default function EditorPage() {
   }
   // Lazy reads — these need the latest values at the moment the shortcut fires.
   function hasShotActionFromStore(): boolean {
-    return !!usePlayStore.getState().activeSet?.actions.some(a => a.type === 'shot')
+    const s = usePlayStore.getState()
+    if (!s.activeSet) return false
+    return composeOptionLine(s.activeSet, s.activeOptionId).some(a => a.type === 'shot')
   }
   function currentStateBallHolder(): string {
     const s = usePlayStore.getState()
     const set = s.activeSet
     if (!set) return ''
     const state = computeStateAtStep(
-      set.actions, s.activeStep, set.initialPositions, set.initialBall, undefined,
+      composeOptionLine(set, s.activeOptionId), s.activeStep, set.initialPositions, set.initialBall, undefined,
       set.courtType === 'full'
         ? (set.attackBasket === 'bottom' ? 1 - 42 / FULL_COURT_H : 42 / FULL_COURT_H)
         : 42 / HALF_COURT_H,
@@ -428,14 +438,15 @@ export default function EditorPage() {
       return
     }
     const s0 = usePlayStore.getState()
-    const total = s0.activeSet?.actions.length ?? 0
+    const s0Line = s0.activeSet ? composeOptionLine(s0.activeSet, s0.activeOptionId) : []
+    const total = s0Line.length
     if (s0.activeStep >= total) {
       setIsPlaying(false)
       return
     }
     if (s0.activeSet) {
       stepDurationsRef.current = computeAllStepMs(
-        s0.activeSet.actions, s0.activeSet.initialPositions, s0.activeSet.initialBall, basketY
+        s0Line, s0.activeSet.initialPositions, s0.activeSet.initialBall, basketY
       )
     }
     function tick(ts: number) {
@@ -471,12 +482,19 @@ export default function EditorPage() {
   }
 
   const activeMarkings = markingsEnabled ? (activeSet.markings ?? {}) : undefined
-  const total = activeSet.actions.length
+  // The composed action line for the active option (primary trunk + option tail).
+  // Rendering & playback operate on this; persistence still uses the real activeSet.
+  const lineActions = composeOptionLine(activeSet, activeOptionId)
+  const activeLine = { ...activeSet, actions: lineActions }
+  const branchAfter = activeOptionId
+    ? (activeSet.options?.find(o => o.id === activeOptionId)?.branchAfter ?? 0)
+    : 0
+  const total = lineActions.length
   const frame = computeFrameState(
-    activeSet, activeStep, animFraction, isPlaying, basketY, cH, activeMarkings,
+    activeLine, activeStep, animFraction, isPlaying, basketY, cH, activeMarkings,
   )
   const currentState = frame.currentState
-  const hasShotAction = activeSet.actions.some(item =>
+  const hasShotAction = lineActions.some(item =>
     item.type === 'shot' ||
     (item.type === 'group' && item.actions.some(a => a.type === 'shot'))
   )
@@ -830,16 +848,21 @@ export default function EditorPage() {
             />
           ) : (
             <span
-              className="text-white font-semibold cursor-text hover:text-orange-300 transition-colors truncate max-w-[120px] sm:max-w-none"
+              className="text-white font-semibold cursor-text hover:text-orange-300 transition-colors truncate max-w-[120px] sm:max-w-none shrink-0"
               title={t('editor.renamePlayTooltip')}
               onClick={startNameEdit}
             >{activeSet.name}</span>
           )}
+          {/* Options (branching reads) live next to the set name where there's room */}
+          <div className="hidden md:flex min-w-0">
+            <OptionBar />
+          </div>
         </div>
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <span className="hidden sm:block text-slate-400 text-sm">
             {activeSet.courtType === 'half' ? t('common.halfCourt') : t('common.fullCourt')}
           </span>
+          <CourtThemeSwitcher />
           <LanguageSwitcher />
           <UserButton />
         </div>
@@ -946,6 +969,7 @@ export default function EditorPage() {
               scale={courtScale}
               landscape={activeSet.courtType === 'full'}
               attackBasket={activeSet.attackBasket}
+              theme={courtTheme}
               onStageClick={handleCourtClick}
               onMouseMove={handleMouseMove}
               onMouseDown={handleMouseDown}
@@ -953,7 +977,7 @@ export default function EditorPage() {
               onMouseLeave={() => { setMousePos(null); isDraggingDribble.current = false; isDraggingCut.current = false; isDraggingDefenseMove.current = false }}
             >
               <ActionOverlay
-                actions={activeSet.actions}
+                actions={lineActions}
                 initialPositions={activeSet.initialPositions}
                 initialBall={activeSet.initialBall}
                 activeStep={activeStep}
@@ -994,7 +1018,7 @@ export default function EditorPage() {
 
               {/* Growing action arrows during animation — drawn behind the moving player, every action type */}
               {isPlaying && activeStep < total && (() => {
-                const currentItem = activeSet.actions[activeStep] as ActionItem | undefined
+                const currentItem = lineActions[activeStep] as ActionItem | undefined
                 const stepActions: Action[] = !currentItem
                   ? []
                   : currentItem.type === 'group' ? currentItem.actions : [currentItem]
@@ -1062,7 +1086,7 @@ export default function EditorPage() {
                           return
                         }
                       }
-                      if (activeStep === 0 || activeSet.actions.length === 0) {
+                      if (activeStep === 0 || total === 0) {
                         updateInitialPosition(id, newPos)
                         return
                       }
@@ -1106,13 +1130,13 @@ export default function EditorPage() {
                 const sliceStart = Math.max(0, sliceEnd - 1)
                 const isLandscape = activeSet.courtType === 'full'
                 const playerR = Math.round((activeSet.courtType === 'half' ? 17 : 20) * 1.4)
-                const visible = activeSet.actions.slice(sliceStart, sliceEnd)
+                const visible = lineActions.slice(sliceStart, sliceEnd)
                 // Collect every visible arrow segment so each label can dodge them (incl. its own).
                 const allArrows: Segment[] = []
                 visible.forEach((item, localIdx) => {
                   const gi = sliceStart + localIdx
                   const sb = computeStateAtStep(
-                    activeSet.actions, gi, activeSet.initialPositions, activeSet.initialBall, activeMarkings, basketY, HALF_COURT_W, cH
+                    lineActions, gi, activeSet.initialPositions, activeSet.initialBall, activeMarkings, basketY, HALF_COURT_W, cH
                   )
                   const al = item.type === 'group' ? item.actions : [item]
                   al.filter(a => !activeSet.hiddenArrowTeams?.includes(actionTeam(a))).forEach(a => {
@@ -1123,7 +1147,7 @@ export default function EditorPage() {
                 return visible.flatMap((item, localIdx) => {
                   const globalIdx = sliceStart + localIdx
                   const stateBefore = computeStateAtStep(
-                    activeSet.actions, globalIdx, activeSet.initialPositions, activeSet.initialBall, activeMarkings, basketY, HALF_COURT_W, cH
+                    lineActions, globalIdx, activeSet.initialPositions, activeSet.initialBall, activeMarkings, basketY, HALF_COURT_W, cH
                   )
                   const isLatest = isPlaying ? globalIdx === activeStep : globalIdx === activeStep - 1
                   const actionList = item.type === 'group' ? item.actions : [item]
@@ -1157,7 +1181,7 @@ export default function EditorPage() {
 
               {/* optionText badge — rendered topmost, above labels and players */}
               {(() => {
-                const item = activeSet.actions[activeStep - 1]
+                const item = lineActions[activeStep - 1]
                 // Groups don't carry optionText at the group level — skip them
                 const action = item && item.type !== 'group' ? item : null
                 if (!action?.optionText) return null

@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { usePlayStore } from '../../store/usePlayStore'
+import { composeOptionLine } from '../../utils/optionLines'
 import { MOD_KEY } from '../../hooks/useEditorShortcuts'
 
 const KBD_INLINE = 'ml-1 text-[10px] font-mono opacity-70 hidden sm:inline'
@@ -18,11 +19,12 @@ interface Props {
 export default function PlaybackControls({ onExport, onSave, canSave, saveStatus = 'idle', onShare, shareCopied = false }: Props) {
   const { t } = useTranslation()
   const {
-    activeSet, activeStep, setActiveStep, undoLastAction,
+    activeSet, activeStep, setActiveStep, undoLastAction, activeOptionId,
     isPlaying, playbackSpeed, setIsPlaying, setPlaybackSpeed,
   } = usePlayStore()
 
-  const total = activeSet?.actions.length ?? 0
+  // Step count follows the active option's composed line (trunk + option tail).
+  const total = activeSet ? composeOptionLine(activeSet, activeOptionId).length : 0
 
   function stepTo(n: number) {
     setIsPlaying(false)

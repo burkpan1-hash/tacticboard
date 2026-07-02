@@ -53,6 +53,20 @@ export interface ActionGroup {
 
 export type ActionItem = Action | ActionGroup
 
+// ── Option (branching read) ──────────────────────────────────────────────────
+// A play can branch into alternate reads ("if the cut is open → layup, else →
+// continue to the corner"). The primary line is PlaySet.actions ("Option 1").
+// Each PlayOption diverges from the primary line after `branchAfter` actions and
+// carries only its own continuation (`actions`). Options branch off the primary
+// line only — no nesting. The composed line for playback is
+// `primary.actions.slice(0, branchAfter)` ++ `option.actions`.
+export interface PlayOption {
+  id: string
+  name: string
+  branchAfter: number    // how many primary actions are shared before this option diverges
+  actions: ActionItem[]  // this option's own continuation (its "tail")
+}
+
 export interface PlaySet {
   id: string
   name: string
@@ -61,7 +75,9 @@ export interface PlaySet {
   players: Player[]
   initialPositions: PositionMap
   initialBall: BallState
-  actions: ActionItem[]
+  actions: ActionItem[]              // primary line = "Option 1" (the shared trunk)
+  primaryName?: string               // editable label for Option 1 (default "Option 1")
+  options?: PlayOption[]             // extra branches; absent ⇒ single line
   markings?: Record<string, string>  // defenderId → offensePlayerId
   hiddenArrowTeams?: Team[]  // teams whose action arrows + labels are hidden (players still move)
   cloudPlayId?: string  // server-side play id once persisted — drives PUT-vs-POST in handleSave
