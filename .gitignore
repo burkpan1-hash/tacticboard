@@ -23,6 +23,7 @@ tr-toolbar-*.png
 
 # Compiled TypeScript server output
 dist-server/
+dist-ssr/
 .gstack/
 
 # Generated social-video media (large binaries; scripts/ produce these)

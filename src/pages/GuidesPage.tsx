@@ -4,8 +4,8 @@ import Logo from '../components/ui/Logo'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
 import { GUIDES } from '../data/guides'
 
-const PAGE_TITLE = 'Basketball Coaching Guides — Plays, Drills & Strategy'
-const PAGE_DESCRIPTION =
+export const PAGE_TITLE = 'Basketball Coaching Guides — Plays, Drills & Strategy'
+export const PAGE_DESCRIPTION =
   'Free basketball coaching guides: learn the 2-3 zone defense, the pick and roll, the fast break, and more. Then diagram and animate any play on the Basketball Tactic Board.'
 
 export default function GuidesPage() {
