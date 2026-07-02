@@ -4,6 +4,7 @@ import type { CourtType } from '../../models/types'
 import HalfCourt from './HalfCourt'
 import FullCourt from './FullCourt'
 import { HALF_COURT_W, HALF_COURT_H, FULL_COURT_H, COURT_PADDING_X, COURT_PADDING_Y, HALF_COURT_PADDING_TOP } from '../../utils/courtCoords'
+import { COURT_THEMES, type CourtTheme } from '../../config/courtThemes'
 
 interface Props {
   courtType: CourtType
@@ -17,16 +18,17 @@ interface Props {
   onMouseDown?: (e: Konva.KonvaEventObject<MouseEvent>) => void
   onMouseUp?: (e: Konva.KonvaEventObject<MouseEvent>) => void
   onMouseLeave?: () => void
+  /** Court color theme (board only). Defaults to classic — export passes none. */
+  theme?: CourtTheme
 }
 
 const STAGE_W = HALF_COURT_W + 2 * COURT_PADDING_X  // 784
-// Subtle OOB zone color — dark greenish, visible but non-distracting
-const OOB_FILL = '#1e2820'
 
 export default function CourtCanvas({
   courtType, attackBasket, children, stageRef,
   scale = 1, landscape = false,
   onStageClick, onMouseMove, onMouseDown, onMouseUp, onMouseLeave,
+  theme = COURT_THEMES.classic,
 }: Props) {
   const events = { onClick: onStageClick, onMouseMove, onMouseDown, onMouseUp, onMouseLeave }
 
@@ -38,9 +40,9 @@ export default function CourtCanvas({
     return (
       <Stage ref={stageRef} width={STAGE_W * scale} height={stageH * scale} scaleX={scale} scaleY={scale} {...events}>
         <Layer>
-          <Rect x={0} y={0} width={STAGE_W} height={stageH} fill={OOB_FILL} />
+          <Rect x={0} y={0} width={STAGE_W} height={stageH} fill={theme.oob} />
           <Group x={COURT_PADDING_X} y={topPad}>
-            {courtType === 'half' ? <HalfCourt /> : <FullCourt attackBasket={attackBasket} />}
+            {courtType === 'half' ? <HalfCourt theme={theme} /> : <FullCourt attackBasket={attackBasket} theme={theme} />}
           </Group>
         </Layer>
         <Layer>
@@ -64,10 +66,10 @@ export default function CourtCanvas({
       {...events}
     >
       <Layer>
-        <Rect x={0} y={0} width={landscapeW} height={STAGE_W} fill={OOB_FILL} />
+        <Rect x={0} y={0} width={landscapeW} height={STAGE_W} fill={theme.oob} />
         <Group y={STAGE_W} rotation={-90}>
           <Group x={COURT_PADDING_X} y={COURT_PADDING_Y}>
-            <FullCourt />
+            <FullCourt theme={theme} />
           </Group>
         </Group>
       </Layer>

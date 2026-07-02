@@ -3,6 +3,7 @@ import { I18nextProvider } from 'react-i18next'
 import i18n from '../../i18n'
 import CourtCanvas from '../court/CourtCanvas'
 import PlayScene from '../court/PlayScene'
+import { useCourtTheme } from '../../store/useCourtTheme'
 import type { PlaySet } from '../../models/types'
 import type { FrameState } from '../../utils/frameState'
 
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export default function ExportStage({ set, frame, basketY, cH, stageRef }: Props) {
+  const theme = useCourtTheme()
   return (
     <I18nextProvider i18n={i18n}>
       <CourtCanvas
@@ -26,6 +28,7 @@ export default function ExportStage({ set, frame, basketY, cH, stageRef }: Props
         scale={EXPORT_SCALE}
         landscape={set.courtType === 'full'}
         stageRef={stageRef}
+        theme={theme}
       >
         <PlayScene set={set} frame={frame} basketY={basketY} cH={cH} />
       </CourtCanvas>

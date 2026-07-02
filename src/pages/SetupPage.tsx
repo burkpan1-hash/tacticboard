@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid'
 import { useTranslation } from 'react-i18next'
 import { useNoIndex } from '../hooks/useNoIndex'
 import CourtCanvas from '../components/court/CourtCanvas'
+import { useCourtTheme } from '../store/useCourtTheme'
 import PlayerNode from '../components/players/PlayerNode'
 import PlayerSetup from '../components/setup/PlayerSetup'
 import FormationPicker from '../components/setup/FormationPicker'
@@ -41,6 +42,7 @@ function defaultPositions(players: Player[]): PositionMap {
 export default function SetupPage() {
   useNoIndex()
   const { t } = useTranslation()
+  const courtTheme = useCourtTheme()
   const navigate = useNavigate()
   const {
     setupDraft, setSetupDraft,
@@ -267,6 +269,7 @@ export default function SetupPage() {
               scale={courtScale}
               landscape={isLandscape}
               attackBasket={isLandscape ? attackBasket : undefined}
+              theme={courtTheme}
             >
               {players.map((p) => {
                 const pos: NormalizedPosition = draftPositions[p.id] ?? { x: 0.5, y: 0.5 }
@@ -326,6 +329,7 @@ export default function SetupPage() {
           courtType={setupDraft.courtType}
           scale={courtScale}
           landscape={isLandscape}
+          theme={courtTheme}
         >
           {players.map((p) => {
             const pos: NormalizedPosition = draftPositions[p.id] ?? { x: 0.5, y: 0.5 }

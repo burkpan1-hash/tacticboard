@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { usePlayStore } from '../store/usePlayStore'
 import CourtCanvas from '../components/court/CourtCanvas'
+import { useCourtTheme } from '../store/useCourtTheme'
 import PlaybackControls from '../components/playback/PlaybackControls'
 import { computeFrameState } from '../utils/frameState'
 import {
@@ -23,6 +24,7 @@ export default function SharePage() {
   const { token } = useParams<{ token: string }>()
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const courtTheme = useCourtTheme()
   const { setActiveSet, activeSet, activeStep, isPlaying, setIsPlaying, playbackSpeed } = usePlayStore()
   const [title, setTitle] = useState('')
   const [notFound, setNotFound] = useState(false)
@@ -159,6 +161,7 @@ export default function SharePage() {
           attackBasket={activeSet.attackBasket}
           scale={scale}
           landscape={activeSet.courtType === 'full'}
+          theme={courtTheme}
         >
           <PlayScene set={activeSet} frame={frame} basketY={basketY} cH={cH} />
         </CourtCanvas>
