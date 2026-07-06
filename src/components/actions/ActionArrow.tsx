@@ -105,7 +105,7 @@ export default function ActionArrow({ action, positions, courtType, basketY }: P
       const to   = pxPos(action.toPosition)
 
       if (action.waypoints && action.waypoints.length > 1) {
-        const shortened = shortenPathEnd([from, ...action.waypoints.map(pxPos)], PLAYER_RADIUS + ARROW_GAP)
+        const shortened = shortenPathEnd([from, ...action.waypoints.map(pxPos), to], PLAYER_RADIUS + ARROW_GAP)
         const pts = shortened.flatMap(p => [p.x, p.y])
         const n = pts.length
         return (

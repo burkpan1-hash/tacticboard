@@ -66,7 +66,7 @@ export default function GrowingActionArrow({ action, positions, courtType, baske
     case 'dribble': {
       const f = px(action.playerId)
       if (!f) return null
-      const full = action.waypoints?.length ? [f, ...action.waypoints.map(pp)] : [f, pp(action.toPosition)]
+      const full = action.waypoints?.length ? [f, ...action.waypoints.map(pp), pp(action.toPosition)] : [f, pp(action.toPosition)]
       const g = grow(full, PLAYER_RADIUS + ARROW_GAP)
       if (!g) return null
       // Snake/wavy line — the dribble's signature look.
@@ -78,7 +78,7 @@ export default function GrowingActionArrow({ action, positions, courtType, baske
     case 'defense-move': {
       const f = px(action.playerId)
       if (!f) return null
-      const full = action.waypoints?.length ? [f, ...action.waypoints.map(pp)] : [f, pp(action.toPosition)]
+      const full = action.waypoints?.length ? [f, ...action.waypoints.map(pp), pp(action.toPosition)] : [f, pp(action.toPosition)]
       const g = grow(full, PLAYER_RADIUS + ARROW_GAP)
       return g ? headedArrow(g.flatMap(p => [p.x, p.y])) : null
     }

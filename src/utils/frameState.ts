@@ -49,7 +49,7 @@ export function computeFrameState(
           a.playerId === id && a.waypoints && a.waypoints.length > 1,
         )
         if (moverAction && (moverAction.type === 'dribble' || moverAction.type === 'cut' || moverAction.type === 'defense-move') && moverAction.waypoints) {
-          const path = [from, ...moverAction.waypoints]
+          const path = [from, ...moverAction.waypoints, moverAction.toPosition]
           const lens: number[] = []
           let pathTotal = 0
           for (let i = 1; i < path.length; i++) {
