@@ -1,18 +1,24 @@
 import { useEffect } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { Link, useParams, useNavigate, Navigate } from 'react-router-dom'
 import Logo from '../components/ui/Logo'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
-import { getPreset } from '../data/presets'
+import { getPreset, getFamily, familyMembers } from '../data/presets'
+import { localizePreset } from '../data/presets/translations'
 import { usePlayStore } from '../store/usePlayStore'
-import { primaryLabel } from '../utils/optionLines'
+import FamilyHubPage from './FamilyHubPage'
 
 export default function PresetPage() {
+  const { t, i18n } = useTranslation()
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
   const setActiveSet = usePlayStore((s) => s.setActiveSet)
   const setActiveStep = usePlayStore((s) => s.setActiveStep)
-  const setActiveOption = usePlayStore((s) => s.setActiveOption)
-  const preset = slug ? getPreset(slug) : undefined
+  const basePreset = slug ? getPreset(slug) : undefined
+  const preset = basePreset ? localizePreset(basePreset, i18n.language.split('-')[0]) : undefined
+  // `slug` may name a family instead of one preset — e.g. "ucla-offense" groups
+  // the layup/flex/stagger presets under one heading with its own chooser page.
+  const family = !preset && slug ? getFamily(slug) : undefined
 
   // Per-page title + meta description — real content signal for crawlers.
   useEffect(() => {
@@ -29,19 +35,17 @@ export default function PresetPage() {
     }
   }, [preset])
 
-  if (!preset) return <Navigate to="/guides" replace />
+  if (!preset) {
+    if (family && slug) return <FamilyHubPage family={family} members={familyMembers(slug)} />
+    return <Navigate to="/sets" replace />
+  }
 
   const { article } = preset
 
-  const options = preset.playData.options ?? []
-
-  // Load the preset into the editor with a chosen option active and jump to it.
-  // Clone so repeated visits never mutate the shared preset object.
-  function openInEditor(optionId: string | null = null) {
+  // Load the preset into the editor. Clone so repeated visits never mutate the
+  // shared preset object.
+  function openInEditor() {
     setActiveSet(structuredClone(preset!.playData))
-    setActiveOption(optionId)
-    // Open at the initial alignment (the setters land on the composed end) so the
-    // user sees the set from the start and can press play to watch it unfold.
     setActiveStep(0)
     navigate(`/editor/${preset!.playData.id}`)
   }
@@ -55,9 +59,15 @@ export default function PresetPage() {
         </div>
 
         <nav className="text-sm text-slate-500 mb-4">
-          <Link to="/" className="hover:text-orange-400 transition-colors">Home</Link>
+          <Link to="/" className="hover:text-orange-400 transition-colors">{t('sets.nav.home')}</Link>
           <span className="mx-2">/</span>
-          <Link to="/guides" className="hover:text-orange-400 transition-colors">Plays</Link>
+          <Link to="/sets" className="hover:text-orange-400 transition-colors">{t('sets.nav.plays')}</Link>
+          {preset.family && (
+            <>
+              <span className="mx-2">/</span>
+              <Link to={`/sets/${preset.family.slug}`} className="hover:text-orange-400 transition-colors">{preset.family.title}</Link>
+            </>
+          )}
           <span className="mx-2">/</span>
           <span className="text-slate-300">{preset.title}</span>
         </nav>
@@ -66,48 +76,35 @@ export default function PresetPage() {
           <span className="text-xs font-semibold uppercase tracking-wide text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded">
             {preset.category}
           </span>
-          <span className="text-xs text-slate-500">{preset.readMinutes} min read</span>
+          <span className="text-xs text-slate-500">{t('sets.page.readMinutes', { count: preset.readMinutes })}</span>
         </div>
 
         <h1 className="text-3xl font-bold mb-4 leading-tight">{preset.title}</h1>
 
         {/* Playable animation entry point. Inline on-page player comes with the
-            full build; for now "Open in Editor" plays the set in the board.
-            When the set has options (branching reads), each gets its own button. */}
+            full build; for now "Open in Editor" plays the set in the board. */}
         <div className="mb-8 bg-gradient-to-br from-orange-500/15 to-slate-800 border border-orange-500/30 rounded-xl p-6 text-center">
-          <h2 className="text-lg font-semibold text-white mb-1">Watch this play in motion</h2>
+          <h2 className="text-lg font-semibold text-white mb-1">{t('sets.page.watchTitle')}</h2>
           <p className="text-slate-400 text-sm mb-4">
-            {options.length > 0
-              ? 'This set has multiple options — pick a read to open it on the board and press play.'
-              : 'Open the set on the board and press play to see every cut, screen, and pass animate step by step.'}
+            {t('sets.page.watchDesc')}
           </p>
-          {options.length === 0 ? (
-            <button
-              onClick={() => openInEditor(null)}
-              className="inline-block px-5 py-2.5 rounded-lg bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold transition-colors"
-            >
-              Open in Editor &amp; Play →
-            </button>
-          ) : (
-            <div className="flex flex-wrap justify-center gap-2">
-              <button
-                onClick={() => openInEditor(null)}
-                className="px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold transition-colors"
-              >
-                ▶ {primaryLabel(preset.playData)}
-              </button>
-              {options.map((o) => (
-                <button
-                  key={o.id}
-                  onClick={() => openInEditor(o.id)}
-                  className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-orange-500 border border-slate-600 hover:border-orange-400 text-white text-sm font-semibold transition-colors"
-                >
-                  ▶ {o.name}
-                </button>
-              ))}
-            </div>
-          )}
+          <button
+            onClick={openInEditor}
+            className="inline-block px-5 py-2.5 rounded-lg bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold transition-colors"
+          >
+            {t('sets.page.openButton')}
+          </button>
         </div>
+
+        {preset.family && (
+          <p className="text-sm text-slate-500 mb-8 -mt-4">
+            <Trans
+              i18nKey="sets.page.partOf"
+              values={{ family: preset.family.title }}
+              components={{ 1: <Link to={`/sets/${preset.family.slug}`} className="text-orange-400 hover:text-orange-300 transition-colors" /> }}
+            />
+          </p>
+        )}
 
         <p className="text-lg text-slate-300 leading-relaxed mb-8">{article.intro}</p>
 
@@ -125,21 +122,21 @@ export default function PresetPage() {
         </article>
 
         <section className="mt-10 bg-slate-800 border border-slate-700 rounded-xl p-5">
-          <h2 className="text-lg font-semibold text-white mb-3">Key Takeaways</h2>
+          <h2 className="text-lg font-semibold text-white mb-3">{t('sets.page.keyTakeaways')}</h2>
           <ul className="flex flex-col gap-2">
-            {article.keyTakeaways.map((t, i) => (
+            {article.keyTakeaways.map((takeaway, i) => (
               <li key={i} className="flex gap-2 text-slate-300 leading-relaxed">
                 <span className="text-orange-400 shrink-0">•</span>
-                <span>{t}</span>
+                <span>{takeaway}</span>
               </li>
             ))}
           </ul>
         </section>
 
         <div className="mt-12 pt-6 border-t border-slate-800 text-center text-sm text-slate-500">
-          <Link to="/guides" className="hover:text-orange-400 transition-colors">← All Plays</Link>
+          <Link to="/sets" className="hover:text-orange-400 transition-colors">{t('sets.page.allPlays')}</Link>
           <span className="mx-3">·</span>
-          <Link to="/" className="hover:text-orange-400 transition-colors">Home</Link>
+          <Link to="/" className="hover:text-orange-400 transition-colors">{t('sets.nav.home')}</Link>
         </div>
       </div>
     </div>

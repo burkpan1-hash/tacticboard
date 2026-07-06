@@ -28,3 +28,7 @@ dist-ssr/
 
 # Generated social-video media (large binaries; scripts/ produce these)
 content/
+
+# Cached source-site HTML/images for Hazır Setler content research — not
+# project source, survives across sessions so re-fetching isn't needed
+.content-cache/

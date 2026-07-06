@@ -17,6 +17,8 @@
   "home": {
     "appName": "Basketball Tactic Board",
     "newPlayButton": "+ Neues Spiel",
+    "browseSetsButton": "Fertige Sets durchsuchen",
+    "browseSetsDesc": "Öffne einen von Trainern geschriebenen, bereits animierten Spielzug.",
     "emptyState": "Noch keine Spiele. Erstelle das erste!",
     "renameTooltip": "Klicken zum Umbenennen",
     "renameTitleTooltip": "Klicken um den Namen zu ändern",
@@ -278,5 +280,35 @@
     "errorRateLimited": "Zu viele Versuche. Warte kurz und versuche es erneut.",
     "errorGoogleUnavailable": "Google-Anmeldung ist nicht konfiguriert.",
     "errorGeneric": "Etwas ist schiefgelaufen. Versuche es erneut."
+  },
+  "sets": {
+    "hub": {
+      "pageTitle": "Fertige Spielzüge — Vorgefertigte Basketball-Spielzüge",
+      "pageDescription": "Fertige Basketball-Spielzüge, Zug für Zug erklärt: der Aufbau, die Lesarten und eine abspielbare Animation für jeden. Öffne jeden Spielzug auf dem Taktikboard und passe ihn an.",
+      "title": "Fertige Spielzüge",
+      "intro": "Geschrieben für Trainer, die verstehen wollen, warum ein Spielzug funktioniert — nicht nur das Diagramm auswendig lernen. Jeder kommt mit einer vollständigen Erklärung und einer abspielbaren Animation, die du direkt auf dem Board öffnen, anpassen und mit deinem Team teilen kannst.",
+      "playsCount_one": "{{count}} Spielzug",
+      "playsCount_other": "{{count}} Spielzüge",
+      "backHome": "← Zurück zur Startseite",
+      "openBoard": "Board öffnen"
+    },
+    "family": {
+      "description": "{{count}} Spielzüge starten aus derselben Ausgangsstellung, jeder mit einem eigenen Abschluss. Wähle unten eine Variante für die vollständige Trainererklärung und eine abspielbare Animation auf dem Board.",
+      "metaDescription": "{{count}} Spielzüge, die aus der Aufstellung {{family}} starten — wähle eine Variante, um die vollständige Erklärung zu sehen und sie auf dem Board abzuspielen.",
+      "allPlays": "← Alle Spielzüge"
+    },
+    "page": {
+      "watchTitle": "Diesen Spielzug in Bewegung ansehen",
+      "watchDesc": "Öffne den Spielzug auf dem Board und drücke Play, um jeden Schnitt, jedes Screen und jeden Pass Schritt für Schritt animiert zu sehen.",
+      "openButton": "Im Editor öffnen & abspielen →",
+      "partOf": "Teil der Reihe <1>{{family}}</1> — sieh dir die anderen Varianten dieses Spielzugs an.",
+      "keyTakeaways": "Die wichtigsten Punkte",
+      "allPlays": "← Alle Spielzüge",
+      "readMinutes": "{{count}} Min. Lesezeit"
+    },
+    "nav": {
+      "home": "Startseite",
+      "plays": "Spielzüge"
+    }
   }
 }

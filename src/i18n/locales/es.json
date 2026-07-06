@@ -17,6 +17,8 @@
   "home": {
     "appName": "Basketball Tactic Board",
     "newPlayButton": "+ Nueva Jugada",
+    "browseSetsButton": "Explorar Jugadas Listas",
+    "browseSetsDesc": "Abre una jugada escrita por un entrenador, ya animada en la pizarra.",
     "emptyState": "Sin jugadas aún. ¡Crea la primera!",
     "renameTooltip": "Clic para renombrar",
     "renameTitleTooltip": "Clic para editar nombre",
@@ -278,5 +280,35 @@
     "errorRateLimited": "Demasiados intentos. Espera un momento e inténtalo de nuevo.",
     "errorGoogleUnavailable": "El inicio de sesión con Google no está configurado.",
     "errorGeneric": "Algo salió mal. Inténtalo de nuevo."
+  },
+  "sets": {
+    "hub": {
+      "pageTitle": "Jugadas Listas — Sistemas de Baloncesto Predefinidos",
+      "pageDescription": "Jugadas de baloncesto listas para usar, explicadas paso a paso: la disposición, las lecturas y una animación jugable para cada una. Abre cualquier jugada en la pizarra táctica y hazla tuya.",
+      "title": "Jugadas Listas",
+      "intro": "Escritas para entrenadores que quieren entender por qué funciona una jugada, no solo memorizar el diagrama. Cada una incluye una explicación completa y una animación jugable que puedes abrir directamente en la pizarra, modificar y compartir con tu equipo.",
+      "playsCount_one": "{{count}} jugada",
+      "playsCount_other": "{{count}} jugadas",
+      "backHome": "← Volver al inicio",
+      "openBoard": "Abrir la pizarra"
+    },
+    "family": {
+      "description": "{{count}} jugadas que parten de la misma disposición, cada una con un final distinto. Elige una lectura abajo para ver la explicación completa y una animación jugable en la pizarra.",
+      "metaDescription": "{{count}} jugadas que parten de la disposición {{family}} — elige una lectura para ver la explicación completa y reproducirla en la pizarra.",
+      "allPlays": "← Todas las jugadas"
+    },
+    "page": {
+      "watchTitle": "Mira esta jugada en movimiento",
+      "watchDesc": "Abre la jugada en la pizarra y pulsa reproducir para ver cada corte, bloqueo y pase animarse paso a paso.",
+      "openButton": "Abrir en el editor y reproducir →",
+      "partOf": "Parte de la familia <1>{{family}}</1> — mira las otras lecturas de esta misma jugada.",
+      "keyTakeaways": "Puntos clave",
+      "allPlays": "← Todas las jugadas",
+      "readMinutes": "{{count}} min de lectura"
+    },
+    "nav": {
+      "home": "Inicio",
+      "plays": "Jugadas"
+    }
   }
 }

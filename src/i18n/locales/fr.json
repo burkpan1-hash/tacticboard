@@ -17,6 +17,8 @@
   "home": {
     "appName": "Basketball Tactic Board",
     "newPlayButton": "+ Nouveau Jeu",
+    "browseSetsButton": "Parcourir les Sets Prêts",
+    "browseSetsDesc": "Ouvrez un jeu écrit par un coach, déjà animé sur le terrain.",
     "emptyState": "Aucun jeu encore. Créez le premier !",
     "renameTooltip": "Cliquer pour renommer",
     "renameTitleTooltip": "Cliquer pour modifier le nom",
@@ -278,5 +280,35 @@
     "errorRateLimited": "Trop de tentatives. Attends un instant et réessaie.",
     "errorGoogleUnavailable": "La connexion Google n'est pas configurée.",
     "errorGeneric": "Une erreur est survenue. Réessaie."
+  },
+  "sets": {
+    "hub": {
+      "pageTitle": "Systèmes Prêts à l'Emploi — Actions de Basket Préconçues",
+      "pageDescription": "Des systèmes de basket prêts à l'emploi, expliqués action par action : la mise en place, les lectures et une animation jouable pour chacun. Ouvrez n'importe quel système sur le tableau tactique et adaptez-le.",
+      "title": "Systèmes Prêts à l'Emploi",
+      "intro": "Écrits pour les entraîneurs qui veulent comprendre pourquoi un système fonctionne, pas seulement mémoriser le diagramme. Chacun est accompagné d'une explication complète et d'une animation jouable que vous pouvez ouvrir directement sur le tableau, modifier et partager avec votre équipe.",
+      "playsCount_one": "{{count}} système",
+      "playsCount_other": "{{count}} systèmes",
+      "backHome": "← Retour à l'accueil",
+      "openBoard": "Ouvrir le tableau"
+    },
+    "family": {
+      "description": "{{count}} systèmes partent du même alignement, chacun avec une conclusion différente. Choisissez une lecture ci-dessous pour l'explication complète et une animation jouable sur le tableau.",
+      "metaDescription": "{{count}} systèmes qui partent de l'alignement {{family}} — choisissez une lecture pour voir l'explication complète et la jouer sur le tableau.",
+      "allPlays": "← Tous les systèmes"
+    },
+    "page": {
+      "watchTitle": "Regardez ce système en mouvement",
+      "watchDesc": "Ouvrez le système sur le tableau et appuyez sur lecture pour voir chaque coupe, écran et passe s'animer étape par étape.",
+      "openButton": "Ouvrir dans l'éditeur et lire →",
+      "partOf": "Fait partie de la famille <1>{{family}}</1> — découvrez les autres lectures de ce même système.",
+      "keyTakeaways": "Points clés",
+      "allPlays": "← Tous les systèmes",
+      "readMinutes": "{{count}} min de lecture"
+    },
+    "nav": {
+      "home": "Accueil",
+      "plays": "Systèmes"
+    }
   }
 }

@@ -17,6 +17,8 @@
   "home": {
     "appName": "Basketball Tactic Board",
     "newPlayButton": "+ Yeni Oyun",
+    "browseSetsButton": "Hazır Setlere Bak",
+    "browseSetsDesc": "Koçlar tarafından yazılmış, hazır animasyonlu bir seti aç.",
     "emptyState": "Henüz oyun yok. İlkini oluştur!",
     "renameTooltip": "Yeniden adlandırmak için tıkla",
     "renameTitleTooltip": "İsmi düzenlemek için tıkla",
@@ -278,5 +280,35 @@
     "errorRateLimited": "Çok fazla deneme. Biraz bekleyip tekrar dene.",
     "errorGoogleUnavailable": "Google girişi henüz kurulu değil.",
     "errorGeneric": "Bir şeyler ters gitti. Lütfen tekrar dene."
+  },
+  "sets": {
+    "hub": {
+      "pageTitle": "Hazır Setler — Kullanıma Hazır Basketbol Setleri",
+      "pageDescription": "Adım adım anlatılan hazır basketbol setleri: kuruluş, okumalar ve her biri için oynatılabilir bir animasyon. İstediğiniz seti taktik tahtasında açın ve kendinize göre uyarlayın.",
+      "title": "Hazır Setler",
+      "intro": "Sadece diyagramı ezberlemek değil, bir setin neden işe yaradığını anlamak isteyen koçlar için yazıldı. Her biri tam bir anlatımla ve doğrudan tahtada açıp değiştirebileceğiniz, takımınızla paylaşabileceğiniz oynatılabilir bir animasyonla geliyor.",
+      "playsCount_one": "{{count}} set",
+      "playsCount_other": "{{count}} set",
+      "backHome": "← Ana Sayfaya Dön",
+      "openBoard": "Tahtayı Aç"
+    },
+    "family": {
+      "description": "Aynı kuruluştan açılan {{count}} set, her birinin kendi bitişi var. Tam koçluk anlatımı ve tahtada oynatılabilir animasyon için aşağıdan bir okuma seçin.",
+      "metaDescription": "{{family}} kuruluşundan açılan {{count}} set — tam anlatımı görmek ve tahtada oynatmak için bir okuma seçin.",
+      "allPlays": "← Tüm Setler"
+    },
+    "page": {
+      "watchTitle": "Bu seti hareket halinde izleyin",
+      "watchDesc": "Seti tahtada açın ve her kesim, perde ve pasın adım adım nasıl canlandığını görmek için oynat'a basın.",
+      "openButton": "Editörde Aç ve Oynat →",
+      "partOf": "<1>{{family}}</1> ailesinin bir parçası — aynı setten gelen diğer okumaları görün.",
+      "keyTakeaways": "Önemli Noktalar",
+      "allPlays": "← Tüm Setler",
+      "readMinutes": "{{count}} dk okuma"
+    },
+    "nav": {
+      "home": "Ana Sayfa",
+      "plays": "Setler"
+    }
   }
 }

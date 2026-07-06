@@ -17,6 +17,8 @@
   "home": {
     "appName": "Basketball Tactic Board",
     "newPlayButton": "+ New Play",
+    "browseSetsButton": "Browse Ready-Made Sets",
+    "browseSetsDesc": "Open a coach-written play, already animated on the board.",
     "emptyState": "No plays yet. Create your first!",
     "renameTooltip": "Click to rename",
     "renameTitleTooltip": "Click to edit name",
@@ -278,5 +280,35 @@
     "errorRateLimited": "Too many attempts. Please wait a moment and try again.",
     "errorGoogleUnavailable": "Google sign-in is not configured.",
     "errorGeneric": "Something went wrong. Please try again."
+  },
+  "sets": {
+    "hub": {
+      "pageTitle": "Ready-Made Sets — Preset Basketball Plays",
+      "pageDescription": "Ready-made basketball sets, broken down play by play: the setup, the reads, and a playable animation for each one. Open any set on the tactics board and make it your own.",
+      "title": "Ready-Made Sets",
+      "intro": "Ready-made basketball sets, written for coaches who want to understand why a play works, not just memorize the diagram. Each one comes with a full breakdown and a playable animation you can open straight on the board, tweak, and share with your team.",
+      "playsCount_one": "{{count}} play",
+      "playsCount_other": "{{count}} plays",
+      "backHome": "← Back to Home",
+      "openBoard": "Open the Board"
+    },
+    "family": {
+      "description": "{{count}} plays open from this same alignment, each with its own finish. Pick a read below for the full coaching breakdown and a playable animation on the board.",
+      "metaDescription": "{{count}} plays that open from the {{family}} alignment — pick a read to see the full breakdown and play it on the board.",
+      "allPlays": "← All Plays"
+    },
+    "page": {
+      "watchTitle": "Watch this play in motion",
+      "watchDesc": "Open the set on the board and press play to see every cut, screen, and pass animate step by step.",
+      "openButton": "Open in Editor & Play →",
+      "partOf": "Part of the <1>{{family}}</1> family — see the other reads off this same set.",
+      "keyTakeaways": "Key Takeaways",
+      "allPlays": "← All Plays",
+      "readMinutes": "{{count}} min read"
+    },
+    "nav": {
+      "home": "Home",
+      "plays": "Plays"
+    }
   }
 }

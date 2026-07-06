@@ -1,9 +1,8 @@
 import { renderToString } from 'react-dom/server'
 import { StaticRouter } from 'react-router'
 import App from './App'
-import { GUIDES } from './data/guides'
-import { publishedPresets } from './data/presets'
-import { PAGE_TITLE as GUIDES_INDEX_TITLE, PAGE_DESCRIPTION as GUIDES_INDEX_DESCRIPTION } from './pages/GuidesPage'
+import { publishedPresets, allFamilies } from './data/presets'
+import { PAGE_TITLE as SETS_INDEX_TITLE, PAGE_DESCRIPTION as SETS_INDEX_DESCRIPTION } from './pages/PresetsPage'
 
 const TITLE_SUFFIX = ' — Basketball Tactic Board'
 
@@ -14,17 +13,17 @@ export interface StaticPage {
 }
 
 // Every route that gets prerendered to static HTML at build time. Kept in one
-// place so scripts/prerender.mjs never has to know how guides/presets are
-// structured — it only needs { url, title, description }.
+// place so scripts/prerender.mjs never has to know how presets are structured
+// — it only needs { url, title, description }.
 export function getStaticPages(): StaticPage[] {
   const pages: StaticPage[] = [
-    { url: '/guides', title: GUIDES_INDEX_TITLE, description: GUIDES_INDEX_DESCRIPTION },
+    { url: '/sets', title: SETS_INDEX_TITLE, description: SETS_INDEX_DESCRIPTION },
   ]
-  for (const guide of GUIDES) {
+  for (const { family, members } of allFamilies()) {
     pages.push({
-      url: `/guides/${guide.slug}`,
-      title: `${guide.title}${TITLE_SUFFIX}`,
-      description: guide.description,
+      url: `/sets/${family.slug}`,
+      title: `${family.title}${TITLE_SUFFIX}`,
+      description: `${members.length} plays that open from the ${family.title} alignment.`,
     })
   }
   for (const preset of publishedPresets()) {

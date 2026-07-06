@@ -17,6 +17,8 @@
   "home": {
     "appName": "Basketball Tactic Board",
     "newPlayButton": "+ Nuovo Schema",
+    "browseSetsButton": "Sfoglia Schemi Pronti",
+    "browseSetsDesc": "Apri uno schema scritto da un allenatore, già animato sul campo.",
     "emptyState": "Nessuno schema ancora. Crea il primo!",
     "renameTooltip": "Clic per rinominare",
     "renameTitleTooltip": "Clic per modificare il nome",
@@ -278,5 +280,35 @@
     "errorRateLimited": "Troppi tentativi. Attendi un attimo e riprova.",
     "errorGoogleUnavailable": "L'accesso con Google non è configurato.",
     "errorGeneric": "Qualcosa è andato storto. Riprova."
+  },
+  "sets": {
+    "hub": {
+      "pageTitle": "Schemi Pronti — Giochi di Basket Predefiniti",
+      "pageDescription": "Schemi di basket pronti all'uso, spiegati passo dopo passo: l'impostazione, le letture e un'animazione riproducibile per ciascuno. Apri qualsiasi schema sulla lavagna tattica e personalizzalo.",
+      "title": "Schemi Pronti",
+      "intro": "Scritti per allenatori che vogliono capire perché uno schema funziona, non solo memorizzare il diagramma. Ognuno include una spiegazione completa e un'animazione riproducibile che puoi aprire direttamente sulla lavagna, modificare e condividere con la tua squadra.",
+      "playsCount_one": "{{count}} schema",
+      "playsCount_other": "{{count}} schemi",
+      "backHome": "← Torna alla Home",
+      "openBoard": "Apri la Lavagna"
+    },
+    "family": {
+      "description": "{{count}} schemi che partono dalla stessa disposizione, ciascuno con una conclusione diversa. Scegli una lettura qui sotto per la spiegazione completa e un'animazione riproducibile sulla lavagna.",
+      "metaDescription": "{{count}} schemi che partono dalla disposizione {{family}} — scegli una lettura per vedere la spiegazione completa e riprodurla sulla lavagna.",
+      "allPlays": "← Tutti gli Schemi"
+    },
+    "page": {
+      "watchTitle": "Guarda questo schema in movimento",
+      "watchDesc": "Apri lo schema sulla lavagna e premi play per vedere ogni taglio, blocco e passaggio animato passo dopo passo.",
+      "openButton": "Apri nell'Editor e Riproduci →",
+      "partOf": "Fa parte della famiglia <1>{{family}}</1> — guarda le altre letture di questo stesso schema.",
+      "keyTakeaways": "Punti Chiave",
+      "allPlays": "← Tutti gli Schemi",
+      "readMinutes": "{{count}} min di lettura"
+    },
+    "nav": {
+      "home": "Home",
+      "plays": "Schemi"
+    }
   }
 }
