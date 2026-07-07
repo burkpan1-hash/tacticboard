@@ -340,7 +340,9 @@ export default function HomePage() {
           <span className="mx-3">·</span>
           <a href="/terms" className="hover:text-orange-400 transition-colors">Terms</a>
           <span className="mx-3">·</span>
-          <a href="mailto:support@basketballtacticboard.com" className="hover:text-orange-400 transition-colors">Support</a>
+          <a href="/about" className="hover:text-orange-400 transition-colors">About</a>
+          <span className="mx-3">·</span>
+          <a href="/contact" className="hover:text-orange-400 transition-colors">Contact</a>
         </div>
         <div className="text-slate-600">support@basketballtacticboard.com</div>
       </footer>

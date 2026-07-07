@@ -12,8 +12,11 @@ import PrivacyPage from './pages/PrivacyPage'
 import TermsPage from './pages/TermsPage'
 import PricingPage from './pages/PricingPage'
 import RefundPage from './pages/RefundPage'
+import AboutPage from './pages/AboutPage'
+import ContactPage from './pages/ContactPage'
 import PresetsPage from './pages/PresetsPage'
 import PresetPage from './pages/PresetPage'
+import PresetDraftsPage from './pages/PresetDraftsPage'
 import NotFoundPage from './pages/NotFoundPage'
 import CookieConsentBanner from './components/ui/CookieConsentBanner'
 import { SETS_ENABLED } from './config/features'
@@ -35,11 +38,16 @@ export default function App() {
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/refund" element={<RefundPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/contact" element={<ContactPage />} />
         {SETS_ENABLED && (
           <>
             <Route path="/sets" element={<PresetsPage />} />
             <Route path="/sets/:slug" element={<PresetPage />} />
           </>
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/dev/presets" element={<PresetDraftsPage />} />
         )}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

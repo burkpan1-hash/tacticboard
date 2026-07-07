@@ -1,7 +1,7 @@
 import { renderToString } from 'react-dom/server'
 import { StaticRouter } from 'react-router'
 import App from './App'
-import { publishedPresets, allFamilies } from './data/presets'
+import { publishedPresets, publishedFamilies } from './data/presets'
 import { PAGE_TITLE as SETS_INDEX_TITLE, PAGE_DESCRIPTION as SETS_INDEX_DESCRIPTION } from './pages/PresetsPage'
 
 const TITLE_SUFFIX = ' — Basketball Tactic Board'
@@ -19,7 +19,13 @@ export function getStaticPages(): StaticPage[] {
   const pages: StaticPage[] = [
     { url: '/sets', title: SETS_INDEX_TITLE, description: SETS_INDEX_DESCRIPTION },
   ]
-  for (const { family, members } of allFamilies()) {
+  for (const { family, members } of publishedFamilies()) {
+    // Single-member families reuse their one preset's slug as the family
+    // slug (see the PresetFamily comment in data/presets/types.ts) — visiting
+    // that URL always resolves to the preset itself (PresetPage checks
+    // getPreset() first), so the hub is unreachable there. Only real
+    // multi-member families get a hub page.
+    if (members.length === 1 && members[0].slug === family.slug) continue
     pages.push({
       url: `/sets/${family.slug}`,
       title: `${family.title}${TITLE_SUFFIX}`,

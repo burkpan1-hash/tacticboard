@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import Logo from '../components/ui/Logo'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
-import { allFamilies } from '../data/presets'
+import { publishedFamilies } from '../data/presets'
 import { localizePreset } from '../data/presets/translations'
 
 // English-only fallback for the build-time prerender script (entry-server.tsx),
@@ -31,7 +31,7 @@ export default function PresetsPage() {
     }
   }, [t])
 
-  const families = allFamilies()
+  const families = publishedFamilies()
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100">

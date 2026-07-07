@@ -76,4 +76,20 @@ export function allFamilies(): { family: PresetFamily; members: Preset[] }[] {
   return [...seen.values()]
 }
 
+// Same as `allFamilies()` but with draft members filtered out, and families
+// left with zero published members dropped entirely. This is what public
+// listing pages (PresetsPage, entry-server's prerender/sitemap list) must use
+// — `allFamilies()` itself intentionally still returns drafts, since nothing
+// else currently needs a published-only view of it.
+export function publishedFamilies(): { family: PresetFamily; members: Preset[] }[] {
+  return allFamilies()
+    .map(({ family, members }) => ({ family, members: members.filter((m) => m.status === 'published') }))
+    .filter(({ members }) => members.length > 0)
+}
+
+// Published-only variant of `familyMembers()` — see `publishedFamilies()`.
+export function publishedFamilyMembers(slug: string): Preset[] {
+  return familyMembers(slug).filter((m) => m.status === 'published')
+}
+
 export type { Preset, PresetFamily } from './types'

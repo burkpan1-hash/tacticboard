@@ -3,7 +3,7 @@ import { Trans, useTranslation } from 'react-i18next'
 import { Link, useParams, useNavigate, Navigate } from 'react-router-dom'
 import Logo from '../components/ui/Logo'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
-import { getPreset, getFamily, familyMembers } from '../data/presets'
+import { getPreset, getFamily, publishedFamilyMembers } from '../data/presets'
 import { localizePreset } from '../data/presets/translations'
 import { usePlayStore } from '../store/usePlayStore'
 import FamilyHubPage from './FamilyHubPage'
@@ -36,7 +36,8 @@ export default function PresetPage() {
   }, [preset])
 
   if (!preset) {
-    if (family && slug) return <FamilyHubPage family={family} members={familyMembers(slug)} />
+    const publishedMembers = family && slug ? publishedFamilyMembers(slug) : []
+    if (family && publishedMembers.length > 0) return <FamilyHubPage family={family} members={publishedMembers} />
     return <Navigate to="/sets" replace />
   }
 

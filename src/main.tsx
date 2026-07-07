@@ -12,7 +12,7 @@ initSentry()
 // Analytics waits for cookie consent internally — safe to call at any point.
 initAnalytics()
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+const tree = (
   <React.StrictMode>
     <SentryErrorBoundary
       fallback={
@@ -37,3 +37,14 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </SentryErrorBoundary>
   </React.StrictMode>
 )
+
+const container = document.getElementById('root')!
+// Prerendered routes (scripts/prerender.mjs) ship with real markup already
+// inside #root — hydrate that instead of wiping and re-rendering, so
+// hydrateRoot can match it up with zero flash. Every other route still gets
+// a plain client render, unchanged.
+if (container.firstChild) {
+  ReactDOM.hydrateRoot(container, tree)
+} else {
+  ReactDOM.createRoot(container).render(tree)
+}
