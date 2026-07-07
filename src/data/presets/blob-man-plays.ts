@@ -102,7 +102,7 @@ export const fourLowFlex: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const boxGate: Preset = {
@@ -214,7 +214,7 @@ export const boxGate: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const boxFloppyGate: Preset = {
@@ -309,7 +309,7 @@ export const boxFloppyGate: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const duke: Preset = {
@@ -402,7 +402,7 @@ export const duke: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const ramRed: Preset = {
@@ -505,7 +505,7 @@ export const ramRed: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const stackDouble: Preset = {
@@ -603,7 +603,7 @@ export const stackDouble: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const twoInside: Preset = {
@@ -688,5 +688,5 @@ export const twoInside: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }

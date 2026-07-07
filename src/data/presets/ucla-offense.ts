@@ -142,7 +142,7 @@ export const uclaLayup: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const uclaFlexCut: Preset = {
@@ -236,7 +236,7 @@ export const uclaFlexCut: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const uclaStaggerThree: Preset = {
@@ -334,5 +334,5 @@ export const uclaStaggerThree: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }

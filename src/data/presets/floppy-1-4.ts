@@ -170,7 +170,7 @@ export const floppyPerimeterCatch: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const floppyDuckInLayup: Preset = {
@@ -272,5 +272,5 @@ export const floppyDuckInLayup: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }

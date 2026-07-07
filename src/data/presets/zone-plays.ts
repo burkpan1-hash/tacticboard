@@ -102,7 +102,7 @@ export const flare23: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const lob32: Preset = {
@@ -190,7 +190,7 @@ export const lob32: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const baselineSwing: Preset = {
@@ -280,7 +280,7 @@ export const baselineSwing: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const doublesZone: Preset = {
@@ -371,7 +371,7 @@ export const doublesZone: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const pickOverload: Preset = {
@@ -458,7 +458,7 @@ export const pickOverload: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const skipper: Preset = {
@@ -545,7 +545,7 @@ export const skipper: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const swinger: Preset = {
@@ -636,5 +636,5 @@ export const swinger: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }

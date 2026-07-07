@@ -119,7 +119,7 @@ export const backScreenPost: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const doubleCurls: Preset = {
@@ -230,7 +230,7 @@ export const doubleCurls: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const flexWarrior: Preset = {
@@ -334,7 +334,7 @@ export const flexWarrior: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const pistonElevator: Preset = {
@@ -439,7 +439,7 @@ export const pistonElevator: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const xCross: Preset = {
@@ -555,5 +555,5 @@ export const xCross: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }

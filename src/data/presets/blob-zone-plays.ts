@@ -97,7 +97,7 @@ export const belmontFlash: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const boxFlash: Preset = {
@@ -198,7 +198,7 @@ export const boxFlash: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const cross: Preset = {
@@ -295,7 +295,7 @@ export const cross: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const doubleSkip: Preset = {
@@ -398,7 +398,7 @@ export const doubleSkip: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const hawk: Preset = {
@@ -484,7 +484,7 @@ export const hawk: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const sideCrossElevator: Preset = {
@@ -565,7 +565,7 @@ export const sideCrossElevator: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
 
 export const stackZone: Preset = {
@@ -649,5 +649,5 @@ export const stackZone: Preset = {
     ],
   },
 
-  status: 'draft',
+  status: 'published',
 }
